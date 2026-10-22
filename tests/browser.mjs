@@ -67,6 +67,11 @@ async function download() {
   return { name: saved.suggestedFilename(), bytes };
 }
 async function decode(bytes, mime) {
+  if(mime==='image/tiff') {
+    const {decodeTiff}=await import('../src/lib/adapters/tiff.ts');
+    const {width,height,data}=decodeTiff(bytes);
+    return {width,height,corners:[[.25,.25],[.75,.25],[.25,.75],[.75,.75]].map(([x,y])=>[...data.subarray((Math.floor(y*height)*width+Math.floor(x*width))*4,(Math.floor(y*height)*width+Math.floor(x*width))*4+4)])};
+  }
   return page.evaluate(async ({ bytes, mime }) => {
     const bitmap = await createImageBitmap(new Blob([new Uint8Array(bytes)], { type: mime }));
     const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
@@ -153,7 +158,7 @@ try {
   const svg=Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 80"><rect width="64" height="40" fill="red"/><rect x="64" width="64" height="40" fill="blue"/><rect y="40" width="64" height="40" fill="green" fill-opacity="0.5"/></svg>');
   const avif=await fixture('avif');
   const capabilities={};
-  for (const [input,ext,mime,bytes] of [['BMP','bmp','image/bmp',bmp],['ICO','ico','image/x-icon',icon.bytes],['AVIF','avif','image/avif',avif],['SVG','svg','image/svg+xml',svg]]) {
+  for (const [input,ext,mime,bytes] of [['BMP','bmp','image/bmp',bmp],['ICO','ico','image/x-icon',icon.bytes],['AVIF','avif','image/avif',avif],['SVG','svg','image/svg+xml',svg],['GIF','gif','image/gif',await fixture('gif')],['TIFF','tiff','image/tiff',await fixture('tiff')]]) {
     await upload(`extended.${ext}`,mime,bytes); await readyDetails();
     const outputs=await page.getByRole('combobox',{name:'Output format'}).locator('option').allTextContents();
     assert.ok(!outputs.includes('SVG'));
@@ -177,7 +182,7 @@ try {
         assert.ok(decoded.corners[0][0]>170,`${input} → ${output} red pixels`);
         if (output!=='JPEG') {
           assert.equal(decoded.corners[3][3],0,`${input} → ${output} full transparency`);
-          if (input!=='ICO') assert.ok(Math.abs(decoded.corners[2][3]-128)<=2,`${input} → ${output} partial transparency`);
+          if (input!=='ICO' && input!=='GIF') assert.ok(Math.abs(decoded.corners[2][3]-128)<=2,`${input} → ${output} partial transparency`);
         }
       }
       assert.deepEqual(dimensions,[expected,input==='ICO' || output==='ICO' ? 256 : 80]);
@@ -201,9 +206,11 @@ try {
   for (let y=0;y<80;y++) for (let x=0;x<128;x++) { const p=(y*128+x)*4, d=54+(79-y)*384+x*3; bmp24[d]=rgba[p+2]; bmp24[d+1]=rgba[p+1]; bmp24[d+2]=rgba[p]; }
   await upload('24bit.bmp','image/bmp',bmp24); await readyDetails(); await choose('PNG'); await convert();
   const opaque=await decode((await download()).bytes,'image/png'); assert.equal(opaque.corners[3][3],255); await again();
-  for (const output of ['BMP','ICO']) for (const [ext,mime,bytes] of [['png','image/png',png],['jpg','image/jpeg',jpeg],['webp','image/webp',webp]]) {
+  for (const output of ['BMP','ICO','TIFF']) for (const [ext,mime,bytes] of [['png','image/png',png],['jpg','image/jpeg',jpeg],['webp','image/webp',webp]]) {
     await upload(`original.${ext}`,mime,bytes); await readyDetails(); await choose(output); await convert();
-    assert.equal(detectFormat((await download()).bytes)?.id,output); await again();
+    const saved=await download(); assert.equal(detectFormat(saved.bytes)?.id,output);
+    if(output==='TIFF') { const decoded=await decode(saved.bytes,'image/tiff'); assert.deepEqual([decoded.width,decoded.height],[128,80]); }
+    await again();
   }
   for (const body of ['<script>alert(1)</script>','<foreignObject/>','<image href="https://example.invalid/leak"/>','<rect fill="url(https://example.invalid/leak)"/>','<style>@import "https://example.invalid/leak";</style>']) {
     await upload('unsafe.svg','image/svg+xml',Buffer.from(`<svg width="128" height="80">${body}</svg>`));

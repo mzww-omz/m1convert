@@ -1,11 +1,15 @@
 import { formatsFor } from './registry.ts';
-import type { Analysis, ConversionResult, Stage } from './engine-types.ts';
+import { sampleRates } from './audio-formats.ts';
+import type { AudioSettings, ArchiveSettings, Analysis, ConversionResult, Stage } from './engine-types.ts';
 export { outputName } from './results.ts';
 
 export type Phase = 'upload' | 'details' | 'progress' | 'complete' | 'error';
 export interface State {
 	phase: Phase;
 	file: File | null;
+	files?: File[];
+	audio: AudioSettings;
+	archive: ArchiveSettings;
 	analysis: Analysis | null;
 	analysisError: string;
 	format: string;
@@ -18,11 +22,13 @@ export interface State {
 	result: ConversionResult | null;
 }
 export type Event =
-	| { type: 'LOAD'; file: File }
+	| { type: 'LOAD'; file: File; files?:File[] }
 	| { type: 'ANALYZED'; runId: number; analysis: Analysis }
 	| { type: 'ANALYSIS_FAILED'; runId: number; message: string }
 	| { type: 'FORMAT'; format: string }
 	| { type: 'QUALITY'; quality: number }
+	| { type:'AUDIO'; sampleRate?:number; channels?:number }
+	| { type:'ARCHIVE'; compression:'store'|'deflate' }
 	| { type: 'FRAME'; frame: number }
 	| { type: 'START' | 'CANCEL' | 'AGAIN' | 'RESET' | 'RETRY' | 'ANALYZE' }
 	| { type: 'TICK'; runId: number; progress: number | null; stage: Stage }
@@ -31,18 +37,19 @@ export type Event =
 
 export const initialState: State = {
 	phase: 'upload', file: null, analysis: null, analysisError: '', format: '', quality: 90,
-	progress: null, stage: 'reading', runId: 0, error: '', result: null
+	progress: null, stage: 'reading', runId: 0, error: '', result: null,
+	audio:{sampleRate:0,channels:0}, archive:{compression:'deflate'}
 };
 
 export function transition(state: State, event: Event): State {
 	if (event.type === 'RESET') return { ...initialState, runId: state.runId + 1 };
-	if (event.type === 'LOAD') return { ...initialState, phase: 'details', file: event.file, runId: state.runId + 1 };
+	if (event.type === 'LOAD') return { ...initialState, phase: 'details', file: event.file, files:event.files, runId: state.runId + 1 };
 	if ('runId' in event && event.runId !== state.runId) return state;
 	if (event.type === 'ANALYZED' || event.type === 'ANALYSIS_FAILED') {
 		if (state.phase !== 'details' || state.analysis || state.analysisError) return state;
 		if (event.type === 'ANALYSIS_FAILED') return { ...state, analysisError: event.message };
 		const outputs = formatsFor(event.analysis.info.format, event.analysis.outputs);
-		if (!outputs.length) return { ...state, analysisError: 'No supported image encoders are available in this browser.' };
+		if (!outputs.length) return { ...state, analysisError: 'No supported outputs are available in this browser.' };
 		return { ...state, analysis: { ...event.analysis, outputs }, frame:event.analysis.info.frame, format: outputs.includes('WEBP') ? 'WEBP' : outputs[0] };
 	}
 	if ('runId' in event && state.phase !== 'progress') return state;
@@ -53,6 +60,14 @@ export function transition(state: State, event: Event): State {
 			return state.phase === 'details' && state.analysis?.outputs.includes(event.format) ? { ...state, format: event.format } : state;
 		case 'FRAME':
 			return state.phase === 'details' && Number.isInteger(event.frame) && state.analysis?.info.frames?.[event.frame] ? { ...state, frame:event.frame } : state;
+		case 'AUDIO': {
+			const sampleRate=event.sampleRate??state.audio.sampleRate, channels=event.channels??state.audio.channels;
+			return state.phase==='details' && state.analysis?.info.category==='audio' && [0,...sampleRates].includes(sampleRate) && [0,1,2].includes(channels)
+				? {...state,audio:{sampleRate,channels}} : state;
+		}
+		case 'ARCHIVE':
+			return state.phase==='details' && state.analysis?.info.category==='archive' && ['store','deflate'].includes(event.compression)
+				? {...state,archive:{compression:event.compression}} : state;
 		case 'QUALITY':
 			return state.phase === 'details' && Number.isFinite(event.quality) ? { ...state, quality: Math.max(1, Math.min(100, event.quality)) } : state;
 		case 'START':

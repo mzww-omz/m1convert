@@ -1,11 +1,11 @@
 export type Stage = 'reading' | 'decoding' | 'encoding' | 'verifying';
 export interface Progress { stage: Stage; percent: number | null }
 export const stageLabels: Record<Stage, string> = {
-	reading: 'Reading image', decoding: 'Decoding image', encoding: 'Encoding image', verifying: 'Checking output'
+	reading: 'Reading file', decoding: 'Decoding file', encoding: 'Encoding file', verifying: 'Checking output'
 };
 export interface AudioSettings { sampleRate:number; channels:number }
 export interface ArchiveSettings { compression:'store'|'deflate' }
-export interface ConversionRequest { file: File; format: string; quality: number; frame?: number; audio?:AudioSettings; archive?:ArchiveSettings }
+export interface ConversionRequest { file: File; format: string; quality: number; frame?: number; audio?:AudioSettings; archive?:ArchiveSettings; files?:File[] }
 export interface ConversionResult {
 	blob: Blob;
 	name: string;

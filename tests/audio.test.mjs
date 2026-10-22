@@ -43,6 +43,15 @@ test('independent WAV and AIFF fixtures convert to WAV with rate/channel options
     await assert.rejects(pcmCodec.run({file,format:'MP3',quality:90},noop),/supported/i);
   }
 });
+test('audio batches validate every file and package actual WAV results without duplicate names', async () => {
+  const files=await Promise.all(['tone.wav','tone.aiff'].map(async name=>new File([await readFile(new URL('./fixtures/'+name,import.meta.url))],name)));
+  const result=await pcmCodec.run({file:files[0],files,format:'WAV',quality:90,audio:{sampleRate:16000,channels:1}},noop);
+  assert.equal(result.format,'ZIP');
+  const {decodeZip}=await import('../src/lib/adapters/archive.ts');
+  const entries=await decodeZip(new Uint8Array(await result.blob.arrayBuffer())); assert.equal(entries.length,2);
+  for(const entry of entries) { const pcm=decodePcm(entry.data,'WAV'); assert.equal(pcm.sampleRate,16000);assert.equal(pcm.channels,1); }
+  await assert.rejects(pcmCodec.run({file:files[0],files:[files[0],new File(['bad'],'bad.wav')],format:'WAV',quality:90},noop),/audio|supported/i);
+});
 test('resampling attenuates frequencies above the new Nyquist limit', () => {
   const samples=Float32Array.from({length:4800},(_,i)=>Math.sin(2*Math.PI*16000*i/48000));
   const converted=convertPcm({sampleRate:48000,channels:1,samples},{sampleRate:16000,channels:1});

@@ -33,6 +33,20 @@ test('controller ignores stale analysis and conversions even if an adapter ignor
   c.destroy(); assert.equal(c.state.file, null);
 });
 
+test('category settings and batch arrays cross the Worker structured-clone boundary', async () => {
+  for(const category of ['audio','archive']) {
+    const file=new File(['test'],category==='audio'?'input.wav':'input.tar');
+    let received;
+    const c=new Converter({inspect:async()=>({info:{format:category==='audio'?'WAV':'TAR',mime:'application/octet-stream',category},outputs:category==='audio'?['WAV']:['ZIP'],preview:null}),run:async request=>{received=structuredClone(request);return result;}});
+    c.send({type:'LOAD',file,files:category==='audio'?[file,file]:undefined});await flush();
+    c.send({type:'START'});await flush();
+    assert.equal(c.state.phase,'complete',c.state.error);
+    if(category==='audio') {assert.deepEqual(received.audio,{sampleRate:0,channels:0});assert.equal(received.files.length,2);}
+    else assert.deepEqual(received.archive,{compression:'deflate'});
+    c.destroy();
+  }
+});
+
 test('URL allocation failure produces a recoverable error rather than leaving progress stuck', async () => {
   const c = new Converter({ inspect: async () => analysis, run: async () => result });
   c.send({ type: 'LOAD', file: file() }); await flush();

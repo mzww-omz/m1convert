@@ -5,6 +5,7 @@
 	import { formatBytes } from '#lib/machine.ts';
 	import { formatById } from '#lib/registry.ts';
 	import { stageLabels } from '#lib/engine.ts';
+	import { sampleRates } from '#lib/audio-formats.ts';
 
 	const converter = new Converter();
 	const thumbnail = $derived(converter.state.analysis?.preview ?? null);
@@ -32,8 +33,9 @@
 	function accept(files: FileList | File[] | null) {
 		if (!files?.length) return;
 		if (converter.state.phase === 'progress') return;
-		notice = files.length > 1 ? 'One file at a time. The first file was selected.' : '';
-		converter.send({ type: 'LOAD', file: files[0] });
+		const batch=files.length>1 && Array.from(files).every(f=>/\.(wav|wave|aif|aiff)$/i.test(f.name));
+		notice = batch ? `${files.length} audio files. Converted one at a time; download all as ZIP.` : files.length > 1 ? 'One file at a time. The first file was selected.' : '';
+		converter.send({ type: 'LOAD', file: files[0], ...(batch?{files:Array.from(files)}:{}) });
 	}
 
 	function start(retry = false) {
@@ -56,7 +58,7 @@
 
 <svelte:head>
 	<title>Convert — Local file converter</title>
-	<meta name="description" content="Convert PNG, JPEG, WebP, AVIF, BMP, ICO and static SVG images locally. Your files stay in your browser." />
+	<meta name="description" content="Convert images, PCM audio and ZIP, TAR or GZIP archives locally. Your files stay in your browser." />
 </svelte:head>
 
 <svelte:window onpaste={paste} ondrop={drop}
@@ -70,7 +72,7 @@
 		<h1>Convert</h1>
 	</header>
 
-	<input bind:this={input} class="file-input" type="file" tabindex="-1" aria-label="Choose file"
+	<input bind:this={input} class="file-input" type="file" multiple tabindex="-1" aria-label="Choose file"
 		onchange={() => { accept(input.files); input.value = ''; }} />
 
 	<section class="workspace" aria-label="File converter">
@@ -83,7 +85,7 @@
 						<div class="file-row">
 							<div class="file-information">
 								<h2 class="filename" title={view.file?.name} tabindex="-1" data-focus>{view.file?.name}</h2>
-								<p class="meta">{view.analysis?.info.mime || (view.analysisError ? 'Unverified format' : 'Checking format…')} <span aria-hidden="true">·</span> {formatBytes(view.file?.size ?? 0)}</p>
+								<p class="meta">{view.analysis?.info.mime || (view.analysisError ? 'Unverified format' : 'Checking format…')} <span aria-hidden="true">·</span> {formatBytes(view.file?.size ?? 0)}{#if view.analysis?.info.category === 'audio'} · {view.analysis.info.sampleRate} Hz · {view.analysis.info.channels === 1 ? 'Mono' : 'Stereo'}{:else if view.analysis?.info.category === 'archive'} · {view.analysis.info.entries} entries{/if}</p>
 							</div>
 							<button class="text-button remove" aria-label="Remove file" onclick={() => { notice = ''; converter.send({ type: 'RESET' }); }}>Remove</button>
 						</div>
@@ -104,7 +106,28 @@
 									{#each view.analysis?.outputs ?? [] as format}<option value={format}>{format}</option>{/each}
 								</select>
 							</label>
-							{#if formatById(view.format)?.quality}
+							{#if view.analysis?.info.category === 'audio'}
+								<label class="field">Sample rate
+									<select value={view.audio.sampleRate} onchange={(event)=>converter.send({type:'AUDIO',sampleRate:+event.currentTarget.value})}>
+										<option value={0}>Original</option>
+										{#each sampleRates as rate}<option value={rate}>{rate} Hz</option>{/each}
+									</select>
+								</label>
+								<label class="field">Channels
+									<select value={view.audio.channels} onchange={(event)=>converter.send({type:'AUDIO',channels:+event.currentTarget.value})}>
+										<option value={0}>Original</option><option value={1}>Mono</option><option value={2}>Stereo</option>
+									</select>
+								</label>
+								<div class="field format-note">Encoding<span>16-bit PCM</span></div>
+							{:else if view.analysis?.info.category === 'archive'}
+								{#if view.format === 'ZIP'}
+									<label class="field">Compression
+										<select value={view.archive.compression} onchange={(event)=>converter.send({type:'ARCHIVE',compression:event.currentTarget.value as 'store'|'deflate'})}>
+											<option value="deflate">Deflate (if available)</option><option value="store">Store (no compression)</option>
+										</select>
+									</label>
+								{:else}<div class="field format-note">Compression<span>{view.format === 'TAR' ? 'None' : 'Browser default'}</span></div>{/if}
+							{:else if formatById(view.format)?.quality}
 								<label class="field quality">Quality <span class="quality-value">{view.quality}%</span>
 									<input type="range" min="1" max="100" value={view.quality} oninput={(event) => converter.send({ type: 'QUALITY', quality: +event.currentTarget.value })} />
 								</label>
@@ -119,7 +142,7 @@
 								</label>
 							{/if}
 						</div>
-						<p class="engine-note" id="conversion-note" role="status">{view.analysisError || (!view.analysis ? 'Checking image…' : view.format === 'JPEG' ? 'Transparency is filled with white.' : view.format === 'ICO' ? 'Creates 16, 32, 48 and 256 px icons. Aspect ratio is kept.' : view.analysis.info.format === 'ICO' ? 'Preview shows the largest frame. Converts the selected frame.' : view.analysis.info.format === 'AVIF' ? '8-bit still AVIF only. HDR and color profiles are not preserved.' : 'Converted locally. Your original stays unchanged.')}</p>
+						<p class="engine-note" id="conversion-note" role="status">{view.analysisError || (!view.analysis ? 'Checking file…' : view.analysis.info.category === 'audio' ? 'PCM WAV output. Metadata is removed; changing sample rate can affect quality.' : view.analysis.info.category === 'archive' ? 'Paths and file times are kept where possible. Links and unsafe archives are rejected.' : view.analysis.info.format === 'TIFF' ? 'Single-page uncompressed 8-bit RGB/RGBA only. Metadata is removed.' : view.format === 'JPEG' ? 'Transparency is filled with white.' : view.format === 'ICO' ? 'Creates 16, 32, 48 and 256 px icons. Aspect ratio is kept.' : view.analysis.info.format === 'ICO' ? 'Preview shows the largest frame. Converts the selected frame.' : view.analysis.info.format === 'AVIF' ? '8-bit still AVIF only. HDR and color profiles are not preserved.' : 'Converted locally. Your original stays unchanged.')}</p>
 						{#if notice}<p class="notice" role="status">{notice}</p>{/if}
 						<div class="actions">
 							<button class="text-button" onclick={() => input.click()}>Change file</button>
@@ -143,7 +166,7 @@
 						<h2 tabindex="-1" data-focus>Complete</h2>
 						<div class="result-file"><p class="filename" title={view.result?.name}>{view.result?.name}</p><p class="meta">{view.result?.mime} <span aria-hidden="true">·</span> {formatBytes(view.result?.blob.size ?? 0)}{#if view.result?.width && view.result.height} · {view.result.width} × {view.result.height}{/if}</p></div>
 						<button class="primary download" onclick={() => converter.download()}>Download</button>
-						<p class="engine-note">Saved without original metadata.</p>
+						<p class="engine-note">{view.analysis?.info.category === 'archive' ? 'File contents and paths kept. Some archive metadata is not retained.' : view.files?.length ? 'Converted audio files are inside the ZIP. Original metadata is removed.' : 'Saved without original metadata.'}</p>
 						<div class="result-actions"><button class="text-button" onclick={() => converter.send({ type: 'AGAIN' })}>Convert Again</button><button class="text-button" onclick={() => { notice = ''; converter.send({ type: 'RESET' }); }}>New File</button></div>
 					</div>
 				{:else}

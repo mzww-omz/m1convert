@@ -14,7 +14,7 @@ port.onmessage = async ({ data }) => {
 		const file = data.type === 'inspect' ? data.file : data.request.file;
 		if (file.size > LIMITS.maxFileBytes) throw new Error('File exceeds the 32 MiB limit.');
 		const input = detectFormat(new Uint8Array(await file.slice(0, 4096).arrayBuffer()));
-		if (!input) throw new Error('This file is not supported. Choose a supported still image.');
+		if (!input) throw new Error('This file is not supported. Choose a supported image, PCM audio or archive.');
 		const definition = data.type === 'inspect'
 			? adapters.find(a => a.inputs.includes(input.id))
 			: adapters.find(a => a.id === planConversion(input.id, data.request.format).steps[0].adapter);
@@ -23,6 +23,6 @@ port.onmessage = async ({ data }) => {
 		if (data.type === 'inspect') port.postMessage({ type: 'analyzed', analysis: await adapter.inspect(file, stage) });
 		else port.postMessage({ type: 'converted', result: await adapter.run(data.request, stage) });
 	} catch (error) {
-		port.postMessage({ type: 'error', message: error instanceof Error ? error.message : 'Image processing failed. Try again.' });
+		port.postMessage({ type: 'error', message: error instanceof Error ? error.message : 'File processing failed. Try again.' });
 	}
 };

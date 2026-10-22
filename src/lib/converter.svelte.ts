@@ -40,7 +40,7 @@ export class Converter {
 		if (!state.file) return;
 		const controller = this.controller = new AbortController();
 		try {
-			const result = await this.engine.run({ file: state.file, format: state.format, quality: state.quality, ...(state.frame === undefined ? {} : {frame:state.frame}) }, controller.signal,
+			const result = await this.engine.run({ file: state.file, format: state.format, quality: state.quality, ...(state.frame === undefined ? {} : {frame:state.frame}), ...(state.analysis?.info.category==='audio' ? {audio:{...state.audio},files:state.files?Array.from(state.files):undefined} : {}), ...(state.analysis?.info.category==='archive' ? {archive:{...state.archive}} : {}) }, controller.signal,
 				progress => this.send({ type: 'TICK', runId: state.runId, progress: progress.percent, stage: progress.stage }));
 			if (!controller.signal.aborted) this.send({ type: 'DONE', runId: state.runId, result });
 		} catch (error) {
@@ -48,7 +48,7 @@ export class Converter {
 		}
 	}
 
-	private message(error: unknown) { return error instanceof Error ? error.message : 'Image processing failed. Try again.'; }
+	private message(error: unknown) { return error instanceof Error ? error.message : 'File processing failed. Try again.'; }
 	download() { if (this.state.phase === 'complete') this.results.download(); }
 	destroy() {
 		this.send({ type: 'RESET' });

@@ -116,6 +116,18 @@ export const pcmCodec:EngineAdapter={
 	},
 	async run(request,stage) {
 		if(request.format!=='WAV') fail('This audio output format is not supported.');
+		if(request.files && request.files.length>1) {
+			if(request.files.length>32 || request.files[0].name!==request.file.name || request.files.reduce((n,f)=>n+f.size,0)>MAX_BYTES) fail('Audio batch exceeds 32 files or 32 MiB total.');
+			const {encodeZip,decodeZip}=await import('./archive.ts');
+			const entries=[];
+			for(let i=0;i<request.files.length;i++) {
+				const result=await pcmCodec.run({...request,file:request.files[i],files:undefined},stage);
+				entries.push({name:`${i+1}-${result.name}`,data:new Uint8Array(await result.blob.arrayBuffer()),directory:false,mtime:0});
+			}
+			stage('encoding'); const bytes=await encodeZip(entries,false); stage('verifying');
+			await decodeZip(bytes);
+			return {blob:new Blob([bytes.slice()],{type:'application/zip'}),name:'converted-audio.zip',format:'ZIP',mime:'application/zip'};
+		}
 		stage('reading'); const {pcm}=await read(request.file); stage('decoding');
 		const converted=convertPcm(pcm,request.audio??{sampleRate:0,channels:0}); stage('encoding');
 		const bytes=encodeWav(converted); stage('verifying'); const verified=decodePcm(bytes,'WAV');
