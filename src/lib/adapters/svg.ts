@@ -51,8 +51,9 @@ export function svgInfo(bytes: Uint8Array) {
 	else if (!height) height=ratio ? width/ratio : 150;
 	width=Math.round(width); height=Math.round(height);
 	checkDimensions(width,height,bytes.length);
+	if (width*height > 4_000_000) throw new Error('SVG rasterization exceeds the 4 million pixels limit.');
 	// Explicit dimensions make native rasterization deterministic even for viewBox-only input.
-	const svg=source.replace(/<svg\b[^>]*>/, match => match.replace(/\s+(?:width|height)\s*=\s*(["']).*?\1/g,'').replace(/\s+xmlns\s*=\s*(["']).*?\1/g,'').replace(/\/? >$/,'>'));
+	const svg=source.replace(/<svg\b[^>]*>/, match => match.replace(/\s+(?:width|height)\s*=\s*(["']).*?\1/g,'').replace(/\s+xmlns\s*=\s*(["']).*?\1/g,''));
 	const normalized=svg.replace(/<svg\b/,`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"`);
 	return { width,height,svg:normalized };
 }

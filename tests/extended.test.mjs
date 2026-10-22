@@ -17,6 +17,9 @@ test('BMP RGBA round-trip, 24-bit padding, row order and explicit rejection', as
   v.setInt32(18,1,true); v.setInt32(22,2,true); v.setUint16(26,1,true); v.setUint16(28,24,true);
   b.set([255,0,0,0,0,0,255,0],54);
   assert.deepEqual([...decodeBmp(b).data], [255,0,0,255,0,0,255,255]);
+  const bottom=bytes.slice(), bv=new DataView(bottom.buffer); bv.setInt32(22,2,true);
+  bottom.set(bytes.subarray(130,138),122); bottom.set(bytes.subarray(122,130),130);
+  assert.deepEqual(decodeBmp(bottom).data,pixel);
   v.setInt32(22,-2,true);
   assert.deepEqual([...decodeBmp(b).data], [0,0,255,255,255,0,0,255]);
   v.setUint32(30,1,true); assert.throws(() => bmpInfo(b), /compression/i);
@@ -37,6 +40,15 @@ test('ICO directory preserves all frames and rejects offsets, counts and dimensi
   const mismatch = bytes.slice(); mismatch[6]=16;
   await assert.rejects(inspectFile(new File([mismatch], 'test.ico')), /dimension|ICO/i);
   const count = bytes.slice(); count[4]=0; assert.throws(() => icoFrames(count), /ICO/i);
+  const { decodeIconDib }=await import('../src/lib/adapters/ico.ts');
+  for (const bits of [24,32]) {
+    const dib=new Uint8Array(48), d=new DataView(dib.buffer);
+    d.setUint32(0,40,true); d.setInt32(4,1,true); d.setInt32(8,2,true); d.setUint16(12,1,true); d.setUint16(14,bits,true);
+    dib.set([0,0,255, bits===32 ? 128 : 0],40);
+    assert.deepEqual([...decodeIconDib(dib,{width:1,height:1}).data],[255,0,0,bits===32 ? 128 : 255]);
+    dib[44]=128; assert.equal(decodeIconDib(dib,{width:1,height:1}).data[3],0);
+    d.setUint32(16,1,true); assert.throws(()=>decodeIconDib(dib,{width:1,height:1}),/ICO/);
+  }
 });
 
 test('SVG allowlist rejects active content, references, CSS, entities and malformed XML', async () => {
@@ -50,6 +62,8 @@ test('SVG allowlist rejects active content, references, CSS, entities and malfor
     assert.throws(() => svgInfo(encode(`<svg width="10" height="10">${body}</svg>`)), /SVG|XML/i,body);
   }
   assert.throws(() => svgInfo(encode('<!DOCTYPE svg [<!ENTITY x "hi">]><svg/>')), /SVG|XML/i);
+  assert.throws(() => svgInfo(encode('<svg width="4000" height="4000"/>')), /SVG.*4 million/i);
+  assert.throws(() => svgInfo(encode('<svg width="1" height="1">'+'<g>'.repeat(65)+'</g>'.repeat(65)+'</svg>')), /SVG|XML/i);
 });
 
 test('AVIF signatures and bounded BMFF metadata reject sequences and truncation', async () => {
@@ -62,6 +76,10 @@ test('AVIF signatures and bounded BMFF metadata reject sequences and truncation'
   const info=await inspectFile(new File([bytes],'test.avif',{type:'image/avif'}));
   assert.deepEqual([info.width,info.height],[2,3]);
   await assert.rejects(inspectFile(new File([bytes.subarray(0,-1)],'test.avif')), /AVIF|corrupt/i);
+  const hdr=Buffer.from(bytes); hdr[hdr.indexOf('av1C')+6]=64;
+  await assert.rejects(inspectFile(new File([hdr],'test.avif')), /10\/12-bit|HDR/);
+  const compatible=Buffer.concat([box('ftyp',Buffer.from('mif1\0\0\0\0mif1miafavif')),meta,box('mdat',Buffer.from([1]))]);
+  assert.equal(detectFormat(compatible)?.id,'AVIF');
   const sequence=Buffer.from(bytes); sequence.write('avis',16);
   await assert.rejects(inspectFile(new File([sequence],'test.avif')), /Animated|sequence/i);
 });

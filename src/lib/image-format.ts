@@ -177,7 +177,7 @@ export async function inspectFile(file: File): Promise<ImageInfo> {
 }
 
 export async function verifyOutput(blob: Blob, formatId: string): Promise<void> {
-	const format = detectFormat(new Uint8Array(await blob.slice(0, 32).arrayBuffer()));
+	const format = detectFormat(new Uint8Array(await blob.slice(0, 4096).arrayBuffer()));
 	if (!blob.size || blob.size > LIMITS.maxOutputBytes || format?.id !== formatId || blob.type !== format.mime)
 		throw new Error('The browser could not encode the requested output format.');
 }

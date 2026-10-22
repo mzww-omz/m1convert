@@ -15,7 +15,12 @@ export const imageFormats: readonly FormatDefinition[] = [
 	{ id: 'WEBP', mime: 'image/webp', extension: 'webp', extensions: ['webp'], quality: true,
 		matches: b => b.length >= 12 && ascii(b, 0, 4) === 'RIFF' && ascii(b, 8, 4) === 'WEBP' },
 	{ id: 'AVIF', mime: 'image/avif', extension: 'avif', extensions: ['avif'], quality: true,
-		matches: b => b.length >= 16 && ascii(b,4,4) === 'ftyp' && (['avif','avis'].includes(ascii(b,8,4)) || ['avif','avis'].includes(ascii(b,16,4))) },
+		matches: b => {
+			if (b.length < 16 || ascii(b,4,4) !== 'ftyp') return false;
+			const end=Math.min(new DataView(b.buffer,b.byteOffset,b.length).getUint32(0),b.length,4096);
+			for (let p=8;p+4<=end;p+=4) if (p!==12 && ['avif','avis'].includes(ascii(b,p,4))) return true;
+			return false;
+		} },
 	{ id: 'BMP', mime: 'image/bmp', extension: 'bmp', extensions: ['bmp'], quality: false,
 		matches: b => b[0] === 66 && b[1] === 77 },
 	{ id: 'ICO', mime: 'image/x-icon', extension: 'ico', extensions: ['ico'], quality: false,
