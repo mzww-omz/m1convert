@@ -1,4 +1,4 @@
-import type { Analysis, ConversionEngine, ConversionResult, Progress, WorkerReply, WorkerRequest } from './engine-types.ts';
+import type { Analysis, ConversionEngine, ConversionResult, Progress, WorkerReply, WorkerRequest, VerifiedOutputs } from './engine-types.ts';
 
 type WorkerPort = Pick<Worker, 'postMessage' | 'terminate' | 'onmessage' | 'onerror' | 'onmessageerror'>;
 
@@ -9,6 +9,8 @@ export function createWorkerEngine(
 	}, timeoutMs = 30_000,
 	rasterize = async (svg: string, signal: AbortSignal) => (await import('./adapters/svg-raster.ts')).rasterizeSvg(svg,signal)
 ): ConversionEngine {
+	// Remember only proven format IDs, never the disposable worker's file buffers or WASM heap.
+	let verifiedOutputs:VerifiedOutputs={};
 	function job(request: WorkerRequest, signal: AbortSignal, onProgress: (progress: Progress) => void): Promise<WorkerReply> {
 		return new Promise((resolve, reject) => {
 			if (signal.aborted) return reject(new DOMException('Cancelled', 'AbortError'));
@@ -54,12 +56,20 @@ export function createWorkerEngine(
 
 	return {
 		async inspect(file, signal) {
-			const reply = await job({ type: 'inspect', file }, signal, () => {});
-			return (reply as { type: 'analyzed'; analysis: Analysis }).analysis;
+			try {
+				const snapshot=Object.fromEntries(Object.entries(verifiedOutputs).map(([category,outputs])=>[category,[...outputs]]));
+				const reply = await job({ type: 'inspect', file, verifiedOutputs:snapshot }, signal, () => {});
+				const analysis=(reply as { type:'analyzed'; analysis:Analysis }).analysis;
+				const category=analysis.info.category==='audio'?'audio':analysis.info.mime.startsWith('image/')?'image':undefined;
+				if(category&&!signal.aborted)verifiedOutputs[category]=[...new Set([...(verifiedOutputs[category]??[]),...analysis.outputs])];
+				return analysis;
+			} catch(error) { if(!signal.aborted)verifiedOutputs={}; throw error; }
 		},
 		async run(request, signal, onProgress) {
-			const reply = await job({ type: 'convert', request }, signal, onProgress);
-			return (reply as { type: 'converted'; result: ConversionResult }).result;
+			try {
+				const reply = await job({ type: 'convert', request }, signal, onProgress);
+				return (reply as { type: 'converted'; result: ConversionResult }).result;
+			} catch(error) { if(!signal.aborted)verifiedOutputs={}; throw error; }
 		}
 	};
 }

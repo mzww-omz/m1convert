@@ -108,6 +108,10 @@ To add an engine:
 
 The planner currently returns one direct step. Its steps-list contract allows later multi-hop planning, but no unimplemented intermediary route or codec is advertised or executed. A queue/framework/plugin loader is intentionally not introduced for this local converter.
 
+## Checking latency
+
+Successful image/audio encoder probes are reused within the current page, while every file and every conversion output is still validated. Workers and WASM heaps are not kept alive. Failed probes are retried; runtime errors invalidate remembered capabilities. First audio discovery overlaps independent native/WASM probes. Local repeated-WAV analysis dropped from 224–270 ms to 16–18 ms; first-time downloads and large-file decoding still take time. See [measurements and safety details](docs/checking-performance.md).
+
 ## Verification
 
 Node 22.18+ is needed for native TypeScript stripping in unit tests. All test toolchain packages are already present in the repository dependencies.
@@ -124,6 +128,7 @@ With the local server running and an existing Playwright + Chromium installation
 npm run test:browser
 npm run test:categories
 npm run test:audio
+npm run test:checking
 ```
 
 For an installation outside this repository:

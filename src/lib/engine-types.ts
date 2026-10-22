@@ -18,14 +18,15 @@ export interface AssetInfo { format: string; mime: string; width?: number; heigh
 export interface Analysis { info: AssetInfo; outputs: string[]; preview: Blob | null }
 export type StageReporter=(stage:Stage,percent?:number)=>void;
 export interface EngineAdapter {
-	inspect(file: File, stage: StageReporter): Promise<Analysis>;
+	inspect(file: File, stage: StageReporter, verifiedOutputs?:readonly string[]): Promise<Analysis>;
 	run(request: ConversionRequest, stage: StageReporter): Promise<ConversionResult>;
 }
 export interface ConversionEngine {
 	inspect(file: File, signal: AbortSignal): Promise<Analysis>;
 	run(request: ConversionRequest, signal: AbortSignal, onProgress: (progress: Progress) => void): Promise<ConversionResult>;
 }
-export type WorkerRequest = { type: 'inspect'; file: File } | { type: 'convert'; request: ConversionRequest };
+export type VerifiedOutputs = Partial<Record<'image'|'audio',string[]>>;
+export type WorkerRequest = { type: 'inspect'; file: File; verifiedOutputs?:VerifiedOutputs } | { type: 'convert'; request: ConversionRequest };
 export type WorkerReply =
 	| { type: 'rasterize'; svg: string }
 	| { type: 'stage'; stage: Stage; percent?:number }

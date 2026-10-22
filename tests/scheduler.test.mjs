@@ -27,6 +27,30 @@ test('scheduler resolves the actual worker result and cleans up the worker', asy
   assert.equal(worker.terminated, true);
 });
 
+test('verified encoder capabilities cross disposable workers without retaining files or caching failures',async()=>{
+ const requests=[],workers=[];let reply;
+ const engine=createWorkerEngine(()=>{const worker=new WorkerPort((request,port)=>{requests.push(request);queueMicrotask(()=>port.emit(reply));});workers.push(worker);return worker;});
+ const inspect=async(info,outputs)=>{reply={type:'analyzed',analysis:{info,outputs,preview:null}};return engine.inspect(request.file,new AbortController().signal);};
+ const image={format:'PNG',mime:'image/png'},audio={format:'WAV',mime:'audio/wav',category:'audio'};
+ await inspect(image,['PNG','ICO']);await inspect(audio,['WAV','MP3']);
+ assert.deepEqual(requests[1].verifiedOutputs,{image:['PNG','ICO']});
+ await inspect(audio,['WAV','FLAC']);assert.deepEqual(requests[2].verifiedOutputs,{image:['PNG','ICO'],audio:['WAV','MP3']});
+ await inspect(image,['PNG']);assert.deepEqual(requests[3].verifiedOutputs,{image:['PNG','ICO'],audio:['WAV','MP3','FLAC']});
+ reply={type:'error',message:'Codec could not load'};await assert.rejects(engine.run(request,new AbortController().signal,()=>{}),/Codec/);
+ await inspect(audio,['WAV']);assert.deepEqual(requests.at(-1).verifiedOutputs,{});
+ assert.ok(workers.every(w=>w.terminated),'capability cache must not retain workers/WASM heaps');
+});
+
+test('cancelled/stale analysis cannot seed capabilities or discard earlier successful probes',async()=>{
+ const requests=[],workers=[];const engine=createWorkerEngine(()=>{const w=new WorkerPort(request=>requests.push(request));workers.push(w);return w;});
+ const analysis={info:{format:'PNG',mime:'image/png'},outputs:['PNG'],preview:null};
+ let pending=engine.inspect(request.file,new AbortController().signal);workers[0].emit({type:'analyzed',analysis});await pending;
+ const controller=new AbortController();pending=engine.inspect(request.file,controller.signal);controller.abort();await assert.rejects(pending,{name:'AbortError'});
+ workers[1].emit({type:'analyzed',analysis:{info:{format:'WAV',mime:'audio/wav',category:'audio'},outputs:['MP3'],preview:null}});
+ pending=engine.inspect(request.file,new AbortController().signal);assert.deepEqual(requests[2].verifiedOutputs,{image:['PNG']});
+ workers[2].emit({type:'analyzed',analysis});await pending;assert.ok(workers.every(w=>w.terminated));
+});
+
 test('measured audio frame progress crosses the worker boundary; invalid percentages stay indeterminate',async()=>{
  const engine=createWorkerEngine(()=>new WorkerPort((_,port)=>queueMicrotask(()=>{
   for(const percent of [25,95,Infinity,NaN,200])port.emit({type:'stage',stage:'encoding',percent});

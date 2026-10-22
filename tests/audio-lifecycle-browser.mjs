@@ -25,11 +25,16 @@ try {
  await page.getByRole('button',{name:'Convert',exact:true}).click();await page.getByRole('button',{name:'Cancel',exact:true}).waitFor();
  await page.waitForFunction(()=>window.stage?.stage==='encoding'&&window.stage.percent>5&&window.stage.percent<90&&window.active===1);
  await cancel();assert.equal(await page.getByRole('combobox',{name:'Bitrate',exact:true}).inputValue(),'128');await page.waitForTimeout(400);assert.equal(await page.getByRole('button',{name:'Download',exact:true}).count(),0);
- // A missing WASM resource does not remove the pre-existing PCM route.
+ // A runtime load failure invalidates remembered capabilities; the next analysis re-probes.
  await page.route('**/vendor/**/*.wasm',route=>route.abort());await upload('tests/fixtures/audio/music.wav');
+ await select().selectOption('MP3');await page.getByRole('button',{name:'Convert',exact:true}).click();await page.locator('.error-message').waitFor();
+ await page.getByRole('button',{name:'Back to details',exact:true}).click();await ready();await upload('tests/fixtures/audio/music.wav');
+ await page.waitForFunction(()=>document.querySelector('select')&&!document.querySelector('select').disabled&&![...document.querySelector('select').options].some(o=>o.value==='MP3'));
  const limited=await select().locator('option').evaluateAll(opts=>opts.map(o=>o.value));assert.ok(limited.includes('WAV'));assert.ok(!limited.includes('MP3')&&!limited.includes('FLAC'));
  await select().selectOption('WAV');await page.getByRole('button',{name:'Convert',exact:true}).click();await page.getByRole('button',{name:'Download',exact:true}).waitFor();assert.equal(await page.evaluate(()=>window.active),0);await page.unrouteAll();
  await page.getByRole('button',{name:'New File'}).click();await page.locator('[data-phase=upload]').waitFor();assert.equal(await page.evaluate(()=>window.liveUrls.size),0);
+ await upload('tests/fixtures/audio/music.wav');assert.ok((await select().locator('option').evaluateAll(opts=>opts.map(o=>o.value))).includes('MP3'),'failed probes must be retried after WASM becomes available');
+ await page.getByRole('button',{name:'Remove file'}).click();await page.locator('[data-phase=upload]').waitFor();
  // Browser capability simulation, not a claim that Firefox/Safari was executed.
  const nativeMissing=await browser.newPage();await nativeMissing.addInitScript(()=>{
   const Native=Worker;window.Worker=class extends Native{constructor(url,options){const wrapper=URL.createObjectURL(new Blob([`import ${JSON.stringify(String(url))}; self.AudioEncoder=undefined; self.AudioDecoder=undefined;`],{type:'text/javascript'}));super(wrapper,options);URL.revokeObjectURL(wrapper);}};

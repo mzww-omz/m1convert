@@ -88,11 +88,12 @@ async function verify(blob: Blob, id: string, width: number, height: number) {
 		const bitmap=await decode(blob,info); bitmap.close();
 	}
 }
-async function availableOutputs(): Promise<string[]> {
+async function availableOutputs(verified:readonly string[]=[]): Promise<string[]> {
 	const canvas = new OffscreenCanvas(2, 2), outputs: string[] = [];
 	try {
 		context(canvas).fillRect(0,0,2,2);
 		for (const format of imageOutputs) {
+			if(verified.includes(format.id)){outputs.push(format.id);continue;}
 			try { const blob=await encode(canvas,format.id,90); await verify(blob,format.id,2,2); outputs.push(format.id); }
 			catch { /* Unsupported encoders (including silent PNG fallback) are not advertised. */ }
 		}
@@ -107,7 +108,7 @@ async function read(file: File, stage: (stage: Stage) => void, frame?: number) {
 	return {info,bitmap};
 }
 export const canvasCodec: EngineAdapter = {
-	async inspect(file, stage) {
+	async inspect(file, stage, verifiedOutputs) {
 		const { info, bitmap } = await read(file, stage);
 		const scale = Math.min(1, 320 / info.width, 180 / info.height);
 		const canvas = new OffscreenCanvas(Math.max(1, Math.round(info.width * scale)), Math.max(1, Math.round(info.height * scale)));
@@ -115,7 +116,7 @@ export const canvasCodec: EngineAdapter = {
 			context(canvas).drawImage(bitmap, 0, 0, canvas.width, canvas.height);
 			bitmap.close();
 			const preview = await canvas.convertToBlob({ type: 'image/png' });
-			const outputs = await availableOutputs();
+			const outputs = await availableOutputs(verifiedOutputs);
 			if (!outputs.length) throw new Error('No supported image encoders are available in this browser.');
 			return { info, preview, outputs };
 		} finally { bitmap.close(); canvas.width = canvas.height = 1; }

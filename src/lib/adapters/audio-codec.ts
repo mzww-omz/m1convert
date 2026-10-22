@@ -18,24 +18,30 @@ export async function readAudio(file:File,output=false,onDecode?:()=>void) {
 	if('total' in header&&typeof header.total==='number'&&header.total&&pcm.samples.length!==header.total*pcm.channels)throw new Error('FLAC decoded sample count does not match STREAMINFO.');
 	return {pcm,format:header.format};
 }
-export function availableAudioOutputs() {
+export function availableAudioOutputs(verified:readonly string[]=[]) {
 	if(!outputs)outputs=(async()=>{
-		const result=['WAV'],pcm:Pcm={sampleRate:48000,channels:2,samples:Float32Array.from({length:8192},(_,i)=>.2*Math.sin(i*.1))};
-		for(const format of ['MP3','FLAC','OGG','OPUS'])try {
-			const bytes=await encodeWasm(pcm,format,192),def=audioFormats.find(f=>f.id===format)!;
-			inspectAudioBytes(new File([bytes.slice()],`probe.${def.extension}`,{type:def.mime}),bytes);
-			const decoded=await decodeWasm(bytes,format);
-			if(decoded.channels===2&&decoded.sampleRate===48000&&Math.abs(decoded.samples.length-pcm.samples.length)<48000*.1*2)result.push(format);
-		}catch{/* Only actual encoders whose output decodes correctly are advertised. */}
-		try {
-			const {nativeAacAvailable,encodeAac,decodeAac}=await import('./native-aac.ts');
-			if(await nativeAacAvailable())for(const format of ['AAC','M4A'])try {
-				const bytes=await encodeAac(pcm,format,192),def=audioFormats.find(f=>f.id===format)!,file=new File([bytes.slice()],`probe.${def.extension}`,{type:def.mime});
-				inspectAudioBytes(file,bytes);const decoded=await decodeAac(file);
-				if(decoded.sampleRate===48000&&decoded.channels===2&&Math.abs(decoded.samples.length-pcm.samples.length)<48000*.1*2)result.push(format);
-			}catch{/* Native codec support includes genuine mux/decode verification. */}
-		}catch{/* Native AAC is optional; WASM and PCM paths remain available. */}
-		return result;
+		const result=['WAV',...compressedOutputs.filter(format=>verified.includes(format))],pcm:Pcm={sampleRate:48000,channels:2,samples:Float32Array.from({length:8192},(_,i)=>.2*Math.sin(i*.1))};
+		const probeWasm=async()=>{
+			for(const format of ['MP3','FLAC','OGG','OPUS'].filter(format=>!result.includes(format)))try {
+				const bytes=await encodeWasm(pcm,format,192),def=audioFormats.find(f=>f.id===format)!;
+				inspectAudioBytes(new File([bytes.slice()],`probe.${def.extension}`,{type:def.mime}),bytes);
+				const decoded=await decodeWasm(bytes,format);
+				if(decoded.channels===2&&decoded.sampleRate===48000&&Math.abs(decoded.samples.length-pcm.samples.length)<48000*.1*2)result.push(format);
+			}catch{/* Only actual encoders whose output decodes correctly are advertised. */}
+		};
+		const probeNativeAac=async()=>{
+			if(result.includes('AAC')&&result.includes('M4A')||typeof AudioEncoder==='undefined'||typeof AudioDecoder==='undefined')return;
+			try {
+				const {nativeAacAvailable,encodeAac,decodeAac}=await import('./native-aac.ts');
+				if(await nativeAacAvailable())for(const format of ['AAC','M4A'].filter(format=>!result.includes(format)))try {
+					const bytes=await encodeAac(pcm,format,192),def=audioFormats.find(f=>f.id===format)!,file=new File([bytes.slice()],`probe.${def.extension}`,{type:def.mime});
+					inspectAudioBytes(file,bytes);const decoded=await decodeAac(file);
+					if(decoded.sampleRate===48000&&decoded.channels===2&&Math.abs(decoded.samples.length-pcm.samples.length)<48000*.1*2)result.push(format);
+				}catch{/* Native codec support includes genuine mux/decode verification. */}
+			}catch{/* Native AAC is optional; WASM and PCM paths remain available. */}
+		};
+		await Promise.all([probeWasm(),probeNativeAac()]);
+		return ['WAV',...compressedOutputs].filter(format=>result.includes(format));
 	})();return outputs;
 }
 async function single(request:ConversionRequest,stage:StageReporter) {
@@ -62,9 +68,9 @@ async function single(request:ConversionRequest,stage:StageReporter) {
 	return {blob,name,format,mime:def.mime};
 }
 export const audioCodec:EngineAdapter={
-	async inspect(file,stage) {
+	async inspect(file,stage,verifiedOutputs) {
 		stage('reading');const {pcm,format}=await readAudio(file,false,()=>stage('decoding'));stage('verifying');const def=audioFormats.find(f=>f.id===format)!;
-		return {info:{format,mime:def.mime,category:'audio',sampleRate:pcm.sampleRate,channels:pcm.channels,duration:pcm.samples.length/pcm.channels/pcm.sampleRate,codec:format==='M4A'?'AAC':format==='OGG'?'Vorbis':format},outputs:await availableAudioOutputs(),preview:null};
+		return {info:{format,mime:def.mime,category:'audio',sampleRate:pcm.sampleRate,channels:pcm.channels,duration:pcm.samples.length/pcm.channels/pcm.sampleRate,codec:format==='M4A'?'AAC':format==='OGG'?'Vorbis':format},outputs:await availableAudioOutputs(verifiedOutputs),preview:null};
 	},
 	async run(request,stage) {
 		if(!request.files||request.files.length<2)return single(request,stage);

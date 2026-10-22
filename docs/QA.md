@@ -1,6 +1,6 @@
 # Verification history
 
-Latest results: [Compressed audio verification](#compressed-audio-verification). Earlier Phase 2 / continuous-development records are historical; their exclusions/counts describe those earlier commits.
+Latest results: [Checking latency verification](#checking-latency-verification). Earlier Phase 2 / continuous-development / compressed-audio records are historical; their counts describe those earlier commits.
 
 # Phase 2 verification — extended image formats
 
@@ -167,3 +167,27 @@ Verified 2026-10-22 on Node **26.0.0**, existing Chromium **156.0.8078.4**, macO
 - The recorded 56-path run had click→Download-visible latency 208–1539 ms, median 664 ms, on two-second audio. This includes morph/startup overhead and is not a codec-only or universal throughput claim. Result JSON and downloaded fixtures are in ignored `artifacts/audio/`.
 - Firefox 1553 and WebKit 2368 executable paths are still absent; no browser was installed. Actual Safari/Firefox, physical devices, wider music/speech/profile corpora and peak memory remain unverified. One FFmpeg experimental-native-Vorbis fixture exposed a right-channel discrepancy between that decoder and libvorbis; the quality fixture instead uses standard libvorbis output independently verified by FFmpeg. This experimental-encoder interoperability case is unresolved, not hidden as a claimed fix.
 - Full matrix, limits, source provenance and dependency comparison: [`compressed-audio.md`](compressed-audio.md).
+
+## Checking latency verification
+
+2026-10-22, existing Chromium 156.0.8078.4, production preview. Successful encoder IDs are remembered per engine/page and passed to disposable workers; no user files, PCM, previews or codec heaps are cached. Unknown/failed probes are retried, runtime errors invalidate the remembered IDs, and Cancel/stale replies cannot poison them. Independent initial native/WASM probes overlap, without racing the shared WASM filesystem. Input content/codec/size checks and actual conversion-output verification are unchanged.
+
+Paired request→analysis timing (UI animations excluded), using the same local small PNG and two-second WAV/MP3 fixtures:
+
+| Case | Before | After |
+| --- | ---: | ---: |
+| First WAV / codec discovery | 513 ms | 396 ms |
+| Further WAVs | 224–270 ms | 16–18 ms |
+| MP3 with capabilities already known | 189–214 ms | 87–128 ms |
+| Further PNGs | 37–42 ms | 20–22 ms |
+
+Repeat final verification: first WAV 415 ms, further WAVs 14/14 ms, further PNGs 9/9 ms, MP3 150/95 ms. These are local observations, not universal first-load/network guarantees. The first WAV still needs codec discovery/downloads; real file decoding remains required for every input.
+
+- **69 Node tests passed**, including capability reuse/invalidation, cancellation and stale reply tests.
+- `npm run check`: 0 errors / 0 warnings; production build passed (expected adapter-auto notice only).
+- `npm run test:checking`: passed, output choices unchanged and warm WAV sends no vendor/WASM requests.
+- Full image browser suite, archive/legacy PCM suite, 56-pair compressed audio matrix and lifecycle suite passed; **126 verified pairs retained**. No UI/MorphSurface/CSS changes.
+- A formerly available WASM resource becoming unavailable causes an explicit conversion failure and cache reset; next analysis hides unavailable encoders. Restoring the resource re-enables them on a new probe. Successful workers still terminate; no new worker/URL leaks or uploads/external requests were observed.
+- No new dependency, push or deploy. Firefox/Safari, physical devices and peak memory remain unverified. Optional LSP routes were unavailable; Svelte check is the observed type gate.
+
+Artifacts and benchmark instructions: [`checking-performance.md`](checking-performance.md), ignored `artifacts/checking/{before,after,verified}.json`.

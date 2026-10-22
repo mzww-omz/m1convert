@@ -116,10 +116,10 @@ async function read(file:File) {
 	return {pcm:decodePcm(b,format.id),format};
 }
 export const pcmCodec:EngineAdapter={
-	async inspect(file,stage) {
+	async inspect(file,stage,verifiedOutputs) {
 		stage('reading'); const {pcm,format}=await read(file); stage('verifying');
 		const {availableAudioOutputs}=await import('./audio-codec.ts');
-		return {info:{format:format.id,mime:format.mime,category:'audio',sampleRate:pcm.sampleRate,channels:pcm.channels,duration:pcm.samples.length/pcm.channels/pcm.sampleRate},outputs:await availableAudioOutputs(),preview:null};
+		return {info:{format:format.id,mime:format.mime,category:'audio',sampleRate:pcm.sampleRate,channels:pcm.channels,duration:pcm.samples.length/pcm.channels/pcm.sampleRate},outputs:await availableAudioOutputs(verifiedOutputs),preview:null};
 	},
 	async run(request,stage) {
 		if(request.format!=='WAV') fail('This audio output format is not supported.');

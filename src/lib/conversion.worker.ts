@@ -26,7 +26,10 @@ port.onmessage = async ({ data }) => {
 			: adapters.find(a => a.id === planConversion(input.id, data.request.format).steps[0].adapter);
 		if (!definition) throw new Error('This conversion is not supported.');
 		const adapter = await definition.load();
-		if (data.type === 'inspect') port.postMessage({ type: 'analyzed', analysis: await adapter.inspect(file, stage) });
+		if (data.type === 'inspect') {
+			const category=input.mime.startsWith('image/')?'image':input.mime.startsWith('audio/')?'audio':undefined;
+			port.postMessage({ type:'analyzed', analysis:await adapter.inspect(file,stage,category?data.verifiedOutputs?.[category]:undefined) });
+		}
 		else port.postMessage({ type: 'converted', result: await adapter.run(data.request, stage) });
 	} catch (error) {
 		port.postMessage({ type: 'error', message: error instanceof Error ? error.message : 'File processing failed. Try again.' });
