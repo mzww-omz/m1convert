@@ -1,5 +1,8 @@
 node_modules
 
+# Generated browser QA
+/artifacts/
+
 # Output
 .output
 .vercel

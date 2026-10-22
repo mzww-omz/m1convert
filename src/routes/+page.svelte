@@ -5,6 +5,7 @@
 	import { formatBytes, formatsFor, outputName } from '#lib/machine.ts';
 
 	const converter = new Converter();
+	const selectedFile = $derived(converter.state.file);
 	let input: HTMLInputElement;
 	let dragDepth = $state(0);
 	let preview = $state('');
@@ -20,7 +21,7 @@
 	});
 
 	$effect(() => {
-		const file = converter.state.file;
+		const file = selectedFile;
 		previewFailed = false;
 		dimensions = '';
 		// Native asynchronous image decoding only; never read an entire file into JS.
