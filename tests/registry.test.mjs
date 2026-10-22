@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { formats, detectFormat, formatsFor, planConversion } from '../src/lib/registry.ts';
-import { inspectFile, LIMITS } from '../src/lib/image-format.ts';
+import { inspectFile, checkDimensions, LIMITS } from '../src/lib/image-format.ts';
 
 export const fixture = async (extension, type = `image/${extension === 'jpg' ? 'jpeg' : extension}`, name = `swatch.${extension}`) => new File([await readFile(new URL(`./fixtures/swatch.${extension}`, import.meta.url))], name, { type });
 
@@ -44,6 +44,7 @@ test('encoded size, pre-decode dimensions, decoded pixels and working memory are
   const huge = await fixture('png');
   Object.defineProperty(huge, 'size', { value: LIMITS.maxFileBytes + 1 });
   await assert.rejects(inspectFile(huge), /32 MiB/);
+  assert.throws(() => checkDimensions(4000, 4000, 64 * 1024 ** 2), /memory/);
   const original = new Uint8Array(await (await fixture('png')).arrayBuffer());
   for (const [width, height] of [[9000, 1], [8000, 8000], [0, 80]]) {
     const bytes = original.slice();

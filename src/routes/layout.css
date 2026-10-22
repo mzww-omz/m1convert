@@ -29,6 +29,8 @@ h2 { font-size: 15px; font-weight: 500; line-height: 1.5; }
 h1 { font-size: 23px; line-height: 1.3; font-weight: 550; letter-spacing: -0.8px; }
 .workspace { display: flex; justify-content: center; align-items: center; width: 100%; min-height: 500px; }
 .file-input { display: none; }
+/* Keep morph content measurable; Tailwind's .hidden must not collapse its layout. */
+.surface-content.hidden { display: block; }
 .drop-area { display: flex; align-items: center; justify-content: center; width: 100%; height: 280px; border: 0; background: transparent; font-size: 14px; color: #666; transition: color 150ms, background-color 150ms; }
 .drop-area:hover { background: #fafafa; color: var(--ink); }
 .drop-area:focus-visible { outline-offset: -7px; }

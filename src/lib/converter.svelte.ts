@@ -16,10 +16,10 @@ export class Converter {
 		const previous = this.state;
 		const next = transition(previous, event);
 		if (next === previous) return;
-		if (next.runId !== previous.runId || (previous.phase === 'progress' && next.phase !== 'progress')) this.controller?.abort();
 		if (next.result !== previous.result) {
 			if (next.result) this.results.set(next.result); else this.results.clear();
 		}
+		if (next.runId !== previous.runId || (previous.phase === 'progress' && next.phase !== 'progress')) this.controller?.abort();
 		this.state = next;
 		if (event.type === 'LOAD' || event.type === 'ANALYZE') void this.inspect(next);
 		if (next.phase === 'progress' && next.runId !== previous.runId) void this.run(next);

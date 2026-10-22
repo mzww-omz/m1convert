@@ -1,5 +1,3 @@
-import type { ImageInfo } from './image-format.ts';
-
 export type Stage = 'reading' | 'decoding' | 'encoding' | 'verifying';
 export interface Progress { stage: Stage; percent: number | null }
 export const stageLabels: Record<Stage, string> = {
@@ -11,10 +9,11 @@ export interface ConversionResult {
 	name: string;
 	format: string;
 	mime: string;
-	width: number;
-	height: number;
+	width?: number;
+	height?: number;
 }
-export interface Analysis { info: ImageInfo; outputs: string[]; preview: Blob }
+export interface AssetInfo { format: string; mime: string; width?: number; height?: number }
+export interface Analysis { info: AssetInfo; outputs: string[]; preview: Blob | null }
 export interface EngineAdapter {
 	inspect(file: File, stage: (stage: Stage) => void): Promise<Analysis>;
 	run(request: ConversionRequest, stage: (stage: Stage) => void): Promise<ConversionResult>;

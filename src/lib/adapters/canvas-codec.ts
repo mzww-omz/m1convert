@@ -88,9 +88,7 @@ export const canvasCodec: EngineAdapter = {
 			stage('verifying');
 			await verifyOutput(blob, format.id);
 			const name = outputName(request.file.name, format.id);
-			const encoded = await inspectFile(new File([blob], name, { type: blob.type }));
-			if (encoded.width !== info.width || encoded.height !== info.height) throw new Error('The encoded image dimensions changed unexpectedly.');
-			const check = await decode(blob, encoded);
+			const check = await decode(blob, { ...info, mime: format.mime });
 			check.close();
 			return { blob, name, format: format.id, mime: format.mime, width: info.width, height: info.height };
 		} finally {

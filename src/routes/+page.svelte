@@ -91,7 +91,7 @@
 						{#if preview && !previewFailed}
 							<div class="preview">
 								<img src={preview} alt="Selected file preview" decoding="async" onerror={() => { previewFailed = true; }} />
-								{#if view.analysis}<span class="image-size">{view.analysis.info.width} × {view.analysis.info.height}</span>{/if}
+								{#if view.analysis?.info.width && view.analysis.info.height}<span class="image-size">{view.analysis.info.width} × {view.analysis.info.height}</span>{/if}
 							</div>
 						{:else if previewFailed}
 							<p class="preview-note" role="status">Preview unavailable. Your image can still be converted.</p>
@@ -134,7 +134,7 @@
 				{:else if view.phase === 'complete'}
 					<div class="panel result-panel">
 						<h2 tabindex="-1" data-focus>Complete</h2>
-						<div class="result-file"><p class="filename" title={view.result?.name}>{view.result?.name}</p><p class="meta">{view.result?.mime} <span aria-hidden="true">·</span> {formatBytes(view.result?.blob.size ?? 0)} · {view.result?.width} × {view.result?.height}</p></div>
+						<div class="result-file"><p class="filename" title={view.result?.name}>{view.result?.name}</p><p class="meta">{view.result?.mime} <span aria-hidden="true">·</span> {formatBytes(view.result?.blob.size ?? 0)}{#if view.result?.width && view.result.height} · {view.result.width} × {view.result.height}{/if}</p></div>
 						<button class="primary download" onclick={() => converter.download()}>Download</button>
 						<p class="engine-note">Saved without original metadata.</p>
 						<div class="result-actions"><button class="text-button" onclick={() => converter.send({ type: 'AGAIN' })}>Convert Again</button><button class="text-button" onclick={() => { notice = ''; converter.send({ type: 'RESET' }); }}>New File</button></div>

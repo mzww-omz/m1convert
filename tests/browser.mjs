@@ -227,17 +227,29 @@ try {
     }
     ctx.putImageData(data, 0, 0);
     const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: .85 });
-    return [...new Uint8Array(await blob.arrayBuffer())];
+    return new Promise(resolve => { const reader = new FileReader(); reader.onload = () => resolve(reader.result.split(',')[1]); reader.readAsDataURL(blob); });
   });
-  await upload('large.jpg', 'image/jpeg', Buffer.from(large)); await readyDetails(); await choose('PNG');
-  await page.evaluate(() => { window.workerStats.stages = []; });
+  await upload('large.jpg', 'image/jpeg', Buffer.from(large, 'base64')); await readyDetails(); await choose('PNG');
+  await page.evaluate(() => {
+    window.workerStats.stages = []; window.heavySamples = []; window.heavySampling = true;
+    const sample = time => { const r = document.querySelector('[data-surface]').getBoundingClientRect(); window.heavySamples.push({ time, height: r.height }); if (window.heavySampling) requestAnimationFrame(sample); }; requestAnimationFrame(sample);
+  });
   await page.getByRole('button', { name: 'Convert', exact: true }).evaluate(el => { el.click(); el.click(); el.click(); });
   await phase('progress', false);
   await page.getByRole('button', { name: 'Cancel' }).waitFor();
+  await page.waitForFunction(() => document.querySelector('.surface-content')?.inert === false);
   assert.equal(await page.getByRole('progressbar').getAttribute('aria-valuenow'), null);
   assert.equal(await page.locator('.percentage').count(), 0);
   await page.screenshot({ path: `${artifacts}/progress.png` });
   await page.getByRole('button', { name: 'Cancel' }).click({ force: true }); await readyDetails();
+  const heavyMetrics = await page.evaluate(() => {
+    window.heavySampling = false;
+    const s = window.heavySamples, intervals = s.slice(1).map((v, i) => v.time - s[i].time).sort((a, b) => a - b);
+    return { frames: s.length, medianMs: intervals[Math.floor(intervals.length / 2)], p95Ms: intervals[Math.floor(intervals.length * .95)], minHeight: Math.min(...s.map(v => v.height)) };
+  });
+  assert.ok(heavyMetrics.minHeight >= 140, 'the physical frame must not collapse while content exits');
+  await writeFile(`${artifacts}/heavy-motion-metrics.json`, JSON.stringify(heavyMetrics, null, 2));
+  console.log('HEAVY MOTION', JSON.stringify(heavyMetrics));
   await page.waitForTimeout(1300);
   assert.equal(await page.locator('[data-surface]').getAttribute('data-phase'), 'details');
   assert.equal(await page.evaluate(() => window.workerStats.active), 0);
