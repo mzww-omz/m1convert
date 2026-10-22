@@ -3,7 +3,7 @@ export interface Progress { stage: Stage; percent: number | null }
 export const stageLabels: Record<Stage, string> = {
 	reading: 'Reading image', decoding: 'Decoding image', encoding: 'Encoding image', verifying: 'Checking output'
 };
-export interface ConversionRequest { file: File; format: string; quality: number }
+export interface ConversionRequest { file: File; format: string; quality: number; frame?: number }
 export interface ConversionResult {
 	blob: Blob;
 	name: string;
@@ -12,7 +12,7 @@ export interface ConversionResult {
 	width?: number;
 	height?: number;
 }
-export interface AssetInfo { format: string; mime: string; width?: number; height?: number }
+export interface AssetInfo { format: string; mime: string; width?: number; height?: number; frames?: {width:number;height:number}[]; frame?:number }
 export interface Analysis { info: AssetInfo; outputs: string[]; preview: Blob | null }
 export interface EngineAdapter {
 	inspect(file: File, stage: (stage: Stage) => void): Promise<Analysis>;
@@ -24,6 +24,7 @@ export interface ConversionEngine {
 }
 export type WorkerRequest = { type: 'inspect'; file: File } | { type: 'convert'; request: ConversionRequest };
 export type WorkerReply =
+	| { type: 'rasterize'; svg: string }
 	| { type: 'stage'; stage: Stage }
 	| { type: 'analyzed'; analysis: Analysis }
 	| { type: 'converted'; result: ConversionResult }

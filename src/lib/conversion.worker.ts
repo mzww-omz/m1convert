@@ -9,11 +9,12 @@ const port = self as unknown as {
 const stage = (value: Stage) => port.postMessage({ type: 'stage', stage: value });
 
 port.onmessage = async ({ data }) => {
+	if (data.type !== 'inspect' && data.type !== 'convert') return;
 	try {
 		const file = data.type === 'inspect' ? data.file : data.request.file;
 		if (file.size > LIMITS.maxFileBytes) throw new Error('File exceeds the 32 MiB limit.');
-		const input = detectFormat(new Uint8Array(await file.slice(0, 32).arrayBuffer()));
-		if (!input) throw new Error('This file is not supported. Choose a PNG, JPEG or WebP image.');
+		const input = detectFormat(new Uint8Array(await file.slice(0, 4096).arrayBuffer()));
+		if (!input) throw new Error('This file is not supported. Choose a supported still image.');
 		const definition = data.type === 'inspect'
 			? adapters.find(a => a.inputs.includes(input.id))
 			: adapters.find(a => a.id === planConversion(input.id, data.request.format).steps[0].adapter);
