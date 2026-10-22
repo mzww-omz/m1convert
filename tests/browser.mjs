@@ -238,6 +238,7 @@ try {
   await phase('progress', false);
   await page.getByRole('button', { name: 'Cancel' }).waitFor();
   await page.waitForFunction(() => document.querySelector('.surface-content')?.inert === false);
+  await page.waitForFunction(() => Number(getComputedStyle(document.querySelector('.surface-content')).opacity) > .98);
   assert.equal(await page.getByRole('progressbar').getAttribute('aria-valuenow'), null);
   assert.equal(await page.locator('.percentage').count(), 0);
   await page.screenshot({ path: `${artifacts}/progress.png` });
@@ -263,6 +264,12 @@ try {
   console.log('PASS real heavy-work cancellation, indeterminate progress, rapid starts, stale-result suppression and reduced-motion');
 
   await page.setViewportSize({ width: 320, height: 640 });
+  await upload('large.jpg', 'image/jpeg', Buffer.from(large, 'base64')); await readyDetails(); await choose('PNG');
+  await page.getByRole('button', { name: 'Convert', exact: true }).click();
+  await phase('progress', false);
+  await page.waitForFunction(() => Number(getComputedStyle(document.querySelector('.surface-content')).opacity) > .98 && document.querySelector('.surface-content')?.inert === false);
+  await page.screenshot({ path: `${artifacts}/mobile-progress.png`, fullPage: true });
+  await page.getByRole('button', { name: 'Cancel' }).click({ force: true }); await readyDetails();
   await upload('a-very-long-filename-'.repeat(12) + '.png'); await readyDetails();
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   await page.screenshot({ path: `${artifacts}/mobile-details.png`, fullPage: true });
