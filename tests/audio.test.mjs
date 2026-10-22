@@ -43,6 +43,14 @@ test('independent WAV and AIFF fixtures convert to WAV with rate/channel options
     await assert.rejects(pcmCodec.run({file,format:'MP3',quality:90},noop),/supported/i);
   }
 });
+test('independent 8-bit, extensible 24-bit and float32 WAV fixtures decode without reinterpreting encodings', async () => {
+  for(const name of ['tone8.wav','tone24.wav','tone-float.wav']) {
+    const file=new File([await readFile(new URL('./fixtures/'+name,import.meta.url))],name);
+    const info=await pcmCodec.inspect(file,noop);assert.equal(info.info.duration,.1);
+    const result=await pcmCodec.run({file,format:'WAV',quality:90},noop);
+    const pcm=decodePcm(new Uint8Array(await result.blob.arrayBuffer()),'WAV');assert.ok(pcm.samples.some(v=>Math.abs(v)>.05));
+  }
+});
 test('audio batches validate every file and package actual WAV results without duplicate names', async () => {
   const files=await Promise.all(['tone.wav','tone.aiff'].map(async name=>new File([await readFile(new URL('./fixtures/'+name,import.meta.url))],name)));
   const result=await pcmCodec.run({file:files[0],files,format:'WAV',quality:90,audio:{sampleRate:16000,channels:1}},noop);

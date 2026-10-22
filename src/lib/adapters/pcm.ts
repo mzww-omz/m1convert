@@ -23,7 +23,12 @@ export function decodePcm(b:Uint8Array,format:string):Pcm {
 			if(hasFormat || size<(little?16:18)) fail('Invalid or duplicate audio format chunk.'); hasFormat=true;
 			if(little) {
 				encoding=v.getUint16(start,true); channels=v.getUint16(start+2,true); rate=v.getUint32(start+4,true); bits=v.getUint16(start+14,true);
-				if((encoding!==1&&encoding!==3) || (encoding===3&&bits!==32) || (size!==16&&(size!==18||v.getUint16(start+16,true)!==0))) fail('Only PCM integer or float32 WAV is supported.');
+				if(encoding===0xfffe) {
+					const tail=[0,0,16,0,128,0,0,170,0,56,155,113];
+					if(size!==40 || v.getUint16(start+16,true)!==22 || v.getUint16(start+18,true)!==bits || ![0,channels===1?4:3].includes(v.getUint32(start+20,true)) || !tail.every((n,i)=>b[start+28+i]===n)) fail('Unsupported extensible WAV layout or subtype.');
+					encoding=v.getUint32(start+24,true);
+				} else if(size!==16&&(size!==18||v.getUint16(start+16,true)!==0)) fail('Unsupported WAV format chunk.');
+				if((encoding!==1&&encoding!==3) || (encoding===3&&bits!==32)) fail('Only PCM integer or float32 WAV is supported.');
 				if(v.getUint16(start+12,true)!==channels*(bits/8)||v.getUint32(start+8,true)!==rate*channels*(bits/8)) fail('Invalid WAV block alignment or byte rate.');
 			} else {
 				if(size!==18) fail('Unsupported AIFF format chunk.');

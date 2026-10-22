@@ -57,6 +57,18 @@ test('ZIP rejects forged sizes, traversal, symlink modes and overlapping records
     const bad=base.slice(); mutate(bad,new DataView(bad.buffer)); await assert.rejects(decodeZip(bad));
   }
 });
+test('only representable TAR routes are advertised and generated gzip/ZIP never trip bomb guards', async () => {
+  const long=await encodeZip([{...entries[1],name:'x'.repeat(150)}],false);
+  const analysis=await archiveCodec.inspect(new File([long],'long.zip'),noop);
+  assert.ok(!analysis.outputs.includes('TAR')); assert.ok(!analysis.outputs.includes('TAR.GZ'));
+  const repetitive=encodeTar([{...entries[1],name:'zeros.bin',data:new Uint8Array(2*1024**2)}]);
+  const file=new File([repetitive],'zeros.tar');
+  for(const format of ['ZIP','GZIP','TAR.GZ']) {
+    const result=await archiveCodec.run({file,format,quality:90},noop);
+    const check=await archiveCodec.inspect(new File([result.blob],result.name,{type:result.mime}),noop);
+    assert.ok(check.outputs.includes('ZIP'));
+  }
+});
 test('archive adapter converts real TAR/ZIP/GZIP bytes with validated names and outputs', async () => {
   const tar=encodeTar(entries), file=new File([tar],'sample.tar',{type:'application/x-tar'});
   const analysis=await archiveCodec.inspect(file,noop);

@@ -3,7 +3,7 @@ import { archiveFormats } from '../archive-formats.ts';
 import { ascii } from '../formats.ts';
 import { outputName } from '../results.ts';
 
-const MAX = 64 * 1024 ** 2, INPUT = 32 * 1024 ** 2, COUNT = 1000, RATIO = 200;
+const MAX = 64 * 1024 ** 2, INPUT = 32 * 1024 ** 2, COUNT = 1000;
 const utf8 = new TextEncoder(), decoder = new TextDecoder('utf-8', {fatal:true});
 export interface Entry { name:string; data:Uint8Array; directory:boolean; mtime:number }
 function fail(message:string):never { throw new Error(message); }
@@ -84,9 +84,18 @@ export function decodeTar(b:Uint8Array):Entry[] {
 	}
 	return fail('Truncated TAR end marker.');
 }
+function tarName(name:string) {
+	if(utf8.encode(name).length<=100) return {name,prefix:''};
+	for(let split=name.lastIndexOf('/',name.length-2);split>0;split=name.lastIndexOf('/',split-1)) {
+		if(utf8.encode(name.slice(0,split)).length<=155 && utf8.encode(name.slice(split+1)).length<=100)
+			return {name:name.slice(split+1),prefix:name.slice(0,split)};
+	}
+	return null;
+}
+const tarSize=(entries:readonly Entry[])=>1024+entries.reduce((n,e)=>n+512+Math.ceil(e.data.length/512)*512,0);
 export function encodeTar(entries:readonly Entry[]):Uint8Array {
 	validateEntries(entries);
-	const size=1024+entries.reduce((n,e)=>n+512+Math.ceil(e.data.length/512)*512,0);
+	const size=tarSize(entries);
 	if(size>MAX) fail('TAR output exceeds the 64 MiB limit.');
 	const b=new Uint8Array(size); let p=0;
 	const str=(s:string,offset:number)=>b.set(utf8.encode(s),p+offset);
@@ -95,13 +104,8 @@ export function encodeTar(entries:readonly Entry[]):Uint8Array {
 		str(n.toString(8).padStart(length-1,'0')+'\0',offset);
 	};
 	for(const e of entries) {
-		let name=e.name, prefix='';
-		if(utf8.encode(name).length>100) {
-			let split=name.lastIndexOf('/',name.length-2);
-			while(split>0 && utf8.encode(name.slice(0,split)).length>155) split=name.lastIndexOf('/',split-1);
-			if(split<1 || utf8.encode(name.slice(split+1)).length>100) fail('Archive filename cannot fit a USTAR header.');
-			prefix=name.slice(0,split); name=name.slice(split+1);
-		}
+		const parts=tarName(e.name); if(!parts) fail('Archive filename cannot fit a USTAR header.');
+		const {name,prefix}=parts;
 		str(name,0); num(e.directory?0o755:0o644,100,8); num(0,108,8); num(0,116,8); num(e.data.length,124,12); num(e.mtime,136,12);
 		b.fill(32,p+148,p+156); b[p+156]=e.directory?53:48; str('ustar\0'+'00',257); str(prefix,345);
 		const sum=b.subarray(p,p+512).reduce((n,v)=>n+v,0); str(sum.toString(8).padStart(6,'0')+'\0 ',148);
@@ -130,7 +134,7 @@ export async function decodeZip(b:Uint8Array):Promise<Entry[]> {
 		const name=decoder.decode(nameBytes), directory=name.endsWith('/'), mode=attrs>>>16, kind=mode&0xf000;
 		if(kind && kind!==(directory?0x4000:0x8000)) fail('ZIP links/devices are not allowed.');
 		path(name,directory); total+=size;
-		if(total>MAX || size>Math.max(packed*RATIO,1024*1024) || (directory&&size)) fail('Archive expansion size or compression ratio exceeds the limit.');
+		if(total>MAX || (directory&&size)) fail('Archive expansion size exceeds the limit or directory has data.');
 		if(v.getUint32(offset,true)!==0x04034b50 || v.getUint16(offset+6,true)!==flags || v.getUint16(offset+8,true)!==method) fail('Corrupt ZIP local header.');
 		const localN=v.getUint16(offset+26,true), localExtra=v.getUint16(offset+28,true), data=offset+30+localN+localExtra;
 		if(data+packed>central || localN!==n || !nameBytes.every((c,j)=>b[offset+30+j]===c)) fail('ZIP local filename/size mismatch.');
@@ -190,8 +194,8 @@ async function read(file:File, output=false) {
 	if(format==='ZIP') entries=await decodeZip(b);
 	else if(format==='TAR') entries=decodeTar(b);
 	else {
-		const expanded=await transform(b,'gzip',true,Math.min(MAX,Math.max(1024*1024,b.length*RATIO)));
-		if(archiveFormats.find(f=>f.id==='TAR')!.matches(expanded)) { entries=decodeTar(expanded); format='TAR.GZ'; }
+		const expanded=await transform(b,'gzip',true,MAX);
+		if(ascii(expanded,257,5)==='ustar' || (/\.(?:tar\.gz|tgz)$/i.test(file.name) && archiveFormats.find(f=>f.id==='TAR')!.matches(expanded))) { entries=decodeTar(expanded); format='TAR.GZ'; }
 		else {
 			if(/\.(?:tar\.gz|tgz)$/i.test(file.name)) fail('The compressed contents are not a TAR archive.');
 			const name=file.name.replace(/\.gz$/i,'')||'file'; entries=[{name,data:expanded,directory:false,mtime:0}];
@@ -199,7 +203,10 @@ async function read(file:File, output=false) {
 	}
 	validateEntries(entries); return {entries,format,mime:definition.mime};
 }
-function outputs(entries:Entry[]) { return ['ZIP','TAR',...(supported('gzip')?['TAR.GZ',...(entries.filter(e=>!e.directory).length===1?['GZIP']:[])]:[])]; }
+function outputs(entries:Entry[]) {
+	const tar=tarSize(entries)<=MAX && entries.every(e=>tarName(e.name));
+	return ['ZIP',...(tar?['TAR']:[]),...(supported('gzip')?[...(tar?['TAR.GZ']:[]),...(entries.filter(e=>!e.directory).length===1?['GZIP']:[])]:[])];
+}
 export const archiveCodec:EngineAdapter={
 	async inspect(file,stage) {
 		stage('reading'); const {entries,format,mime}=await read(file); stage('verifying');
