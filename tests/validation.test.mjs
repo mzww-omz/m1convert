@@ -21,6 +21,13 @@ test('untrusted EXIF offsets and malformed RIFF chunk lengths cannot reach nativ
   await assert.rejects(inspectFile(new File([webp], 'bad-chunk.webp')), /corrupt|truncated/);
 });
 
+test('output inspection uses the output byte limit, not the smaller upload limit', async () => {
+  const output=new File([await read('png')],'output.png',{type:'image/png'});
+  Object.defineProperty(output,'size',{value:48*1024**2});
+  await assert.rejects(inspectFile(output),/32 MiB/);
+  assert.equal((await inspectFile(output,true)).width,128);
+});
+
 test('output budget rejects oversized encoder results without allocating a giant payload', async () => {
   const blob = new Blob([await read('png')], { type: 'image/png' });
   Object.defineProperty(blob, 'size', { value: LIMITS.maxOutputBytes + 1 });

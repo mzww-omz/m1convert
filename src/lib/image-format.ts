@@ -137,9 +137,9 @@ function webpInfo(bytes: Uint8Array) {
 	return { width, height, orientation };
 }
 
-export async function inspectFile(file: File): Promise<ImageInfo> {
+export async function inspectFile(file: File, output = false): Promise<ImageInfo> {
 	if (!file.size) throw new Error('The file is empty. Choose a PNG, JPEG or WebP image.');
-	if (file.size > LIMITS.maxFileBytes) throw new Error('File exceeds the 32 MiB limit.');
+	if (file.size > (output ? LIMITS.maxOutputBytes : LIMITS.maxFileBytes)) throw new Error(output ? 'Output exceeds the 64 MiB limit.' : 'File exceeds the 32 MiB limit.');
 	const bytes = new Uint8Array(await file.arrayBuffer());
 	const format = detectFormat(bytes);
 	if (!format) throw new Error('This file is not supported. Choose a supported still image.');

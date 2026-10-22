@@ -72,7 +72,7 @@ async function encode(canvas: OffscreenCanvas, id: string, quality: number): Pro
 async function verify(blob: Blob, id: string, width: number, height: number) {
 	await verifyOutput(blob,id);
 	const format=imageFormats.find(f=>f.id===id)!;
-	const info=await inspectFile(new File([blob],`output.${format.extension}`,{type:format.mime}));
+	const info=await inspectFile(new File([blob],`output.${format.extension}`,{type:format.mime}),true);
 	if (id==='ICO') {
 		if (info.frames?.length !== 4 || info.frames.some((f,i)=> f.width!==[16,32,48,256][i] || f.height!==f.width)) throw new Error('ICO output sizes do not match.');
 		for (let i=0;i<4;i++) { const bitmap=await decode(blob,{...info},i); bitmap.close(); }
