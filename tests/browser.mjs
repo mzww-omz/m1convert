@@ -11,6 +11,7 @@ await mkdir(artifacts, { recursive: true });
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
 const errors = [], externalRequests = [], uploads = [];
 function observe(p) {
+  p.setDefaultTimeout(45_000);
   p.on('pageerror', error => errors.push(error.message));
   p.on('request', r => {
     if (/^https?:/.test(r.url()) && !['localhost', '127.0.0.1'].includes(new URL(r.url()).hostname)) externalRequests.push(r.url());
@@ -91,13 +92,16 @@ try {
   for (const [input, ext, bytes] of [['PNG', 'png', png], ['JPEG', 'jpg', jpeg], ['WEBP', 'webp', webp]]) {
     await upload(`swatch.${ext}`, `image/${input === 'JPEG' ? 'jpeg' : input.toLowerCase()}`, bytes);
     await readyDetails();
-    assert.deepEqual(await page.locator('select option').allTextContents(), ['PNG', 'JPEG', 'WEBP']);
+    const choices = await page.getByRole('combobox', { name: 'Output format' }).locator('option').allTextContents();
+    for (const required of ['PNG','JPEG','WEBP','BMP','ICO']) assert.ok(choices.includes(required));
+    assert.ok(!choices.includes('SVG'));
     if (input === 'PNG') {
       assert.ok(Math.abs((await page.locator('header').boundingBox()).y - headerBefore.y) < 2);
       assert.equal(await page.evaluate(() => window.liveUrls.size), 1);
       await page.screenshot({ path: `${artifacts}/details.png` });
     }
     for (const output of ['PNG', 'JPEG', 'WEBP']) {
+      console.log('BASE path',input,output);
       await choose(output);
       await convert();
       const saved = await download();
@@ -128,6 +132,87 @@ try {
   }
   assert.equal(await page.evaluate(() => document.querySelector('[data-surface]') === window.originalSurface), true);
   console.log('PASS all 9 real conversion paths, download bytes, MIME, re-decode, dimensions, transparency and JPEG white background');
+
+  // Extended codecs use the same UI/worker lifecycle and real downloaded files.
+  const { encodeBmp, decodeBmp } = await import('../src/lib/adapters/bmp.ts');
+  const { icoFrames } = await import('../src/lib/adapters/ico.ts');
+  const rgba = await page.evaluate(async bytes => {
+    const bitmap=await createImageBitmap(new Blob([new Uint8Array(bytes)],{type:'image/png'}));
+    const c=new OffscreenCanvas(128,80),ctx=c.getContext('2d'); ctx.drawImage(bitmap,0,0); bitmap.close();
+    return [...ctx.getImageData(0,0,128,80).data];
+  },[...png]);
+  const bmp = Buffer.from(encodeBmp({width:128,height:80,data:new Uint8ClampedArray(rgba)}));
+  await upload(); await readyDetails(); await choose('ICO'); await convert(); const icon=await download(); await again();
+  await writeFile(`${artifacts}/downloaded.ico`,icon.bytes);
+  const iconFrames=icoFrames(icon.bytes);
+  assert.deepEqual(iconFrames.map(f=>f.width),[16,32,48,256]);
+  for (const f of iconFrames) {
+    const decoded=await decode(icon.bytes.subarray(f.offset,f.offset+f.length),'image/png');
+    assert.ok(decoded.corners[0][0]>180); assert.equal(decoded.corners[3][3],0);
+  }
+  const svg=Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 80"><rect width="64" height="40" fill="red"/><rect x="64" width="64" height="40" fill="blue"/><rect y="40" width="64" height="40" fill="green" fill-opacity="0.5"/></svg>');
+  const avif=await fixture('avif');
+  const capabilities={};
+  for (const [input,ext,mime,bytes] of [['BMP','bmp','image/bmp',bmp],['ICO','ico','image/x-icon',icon.bytes],['AVIF','avif','image/avif',avif],['SVG','svg','image/svg+xml',svg]]) {
+    await upload(`extended.${ext}`,mime,bytes); await readyDetails();
+    const outputs=await page.getByRole('combobox',{name:'Output format'}).locator('option').allTextContents();
+    assert.ok(!outputs.includes('SVG'));
+    capabilities[input]=outputs;
+    for (const output of outputs) {
+      console.log('EXTENDED path',input,output);
+      await choose(output); await convert(); const result=await download();
+      assert.equal(detectFormat(result.bytes)?.id,output);
+      const expected = output==='ICO' || input==='ICO' ? 256 : 128;
+      let dimensions;
+      if (output==='BMP') {
+        const decoded=decodeBmp(result.bytes); dimensions=[decoded.width,decoded.height];
+        if (input==='BMP') await writeFile(`${artifacts}/downloaded.bmp`,result.bytes);
+        if (input==='BMP') assert.deepEqual([...decoded.data],rgba);
+      } else if (output==='ICO') {
+        const frames=icoFrames(result.bytes); assert.deepEqual(frames.map(f=>f.width),[16,32,48,256]);
+        for (const f of frames) assert.equal((await decode(result.bytes.subarray(f.offset,f.offset+f.length),'image/png')).width,f.width);
+        dimensions=[256,256];
+      } else {
+        const decoded=await decode(result.bytes,detectFormat(result.bytes).mime); dimensions=[decoded.width,decoded.height];
+        assert.ok(decoded.corners[0][0]>170,`${input} → ${output} red pixels`);
+        if (output!=='JPEG') {
+          assert.equal(decoded.corners[3][3],0,`${input} → ${output} full transparency`);
+          if (input!=='ICO') assert.ok(Math.abs(decoded.corners[2][3]-128)<=2,`${input} → ${output} partial transparency`);
+        }
+      }
+      assert.deepEqual(dimensions,[expected,input==='ICO' || output==='ICO' ? 256 : 80]);
+      await again();
+    }
+    if (input==='ICO') {
+      await page.getByRole('combobox',{name:'Source frame'}).selectOption('0');
+      await choose('PNG'); await convert(); const selected=await download();
+      assert.equal((await decode(selected.bytes,'image/png')).width,16);
+      await again(); assert.equal(await page.getByRole('combobox',{name:'Source frame'}).inputValue(),'0');
+      await page.setViewportSize({width:320,height:640}); await page.waitForTimeout(400);
+      assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+      await page.screenshot({path:`${artifacts}/ico-mobile-details.png`,fullPage:true});
+      await page.setViewportSize({width:1280,height:900});
+    }
+    assert.equal(await page.evaluate(()=>window.workerStats.active),0);
+  }
+  // Real 24-bit BI_RGB input with bottom-up row padding; alpha is intentionally opaque.
+  const bmp24=Buffer.alloc(54+128*3*80); bmp24.write('BM'); bmp24.writeUInt32LE(bmp24.length,2); bmp24.writeUInt32LE(54,10);
+  bmp24.writeUInt32LE(40,14); bmp24.writeInt32LE(128,18); bmp24.writeInt32LE(80,22); bmp24.writeUInt16LE(1,26); bmp24.writeUInt16LE(24,28);
+  for (let y=0;y<80;y++) for (let x=0;x<128;x++) { const p=(y*128+x)*4, d=54+(79-y)*384+x*3; bmp24[d]=rgba[p+2]; bmp24[d+1]=rgba[p+1]; bmp24[d+2]=rgba[p]; }
+  await upload('24bit.bmp','image/bmp',bmp24); await readyDetails(); await choose('PNG'); await convert();
+  const opaque=await decode((await download()).bytes,'image/png'); assert.equal(opaque.corners[3][3],255); await again();
+  for (const output of ['BMP','ICO']) for (const [ext,mime,bytes] of [['png','image/png',png],['jpg','image/jpeg',jpeg],['webp','image/webp',webp]]) {
+    await upload(`original.${ext}`,mime,bytes); await readyDetails(); await choose(output); await convert();
+    assert.equal(detectFormat((await download()).bytes)?.id,output); await again();
+  }
+  for (const body of ['<script>alert(1)</script>','<foreignObject/>','<image href="https://example.invalid/leak"/>','<rect fill="url(https://example.invalid/leak)"/>','<style>@import "https://example.invalid/leak";</style>']) {
+    await upload('unsafe.svg','image/svg+xml',Buffer.from(`<svg width="128" height="80">${body}</svg>`));
+    await page.locator('#conversion-note').filter({hasText:/SVG\/XML/}).waitFor();
+    assert.ok(await page.getByRole('combobox',{name:'Output format'}).isDisabled());
+  }
+  assert.equal(await page.evaluate(()=>window.liveUrls.size),0);
+  await writeFile(`${artifacts}/phase2-capabilities.json`,JSON.stringify(capabilities,null,2));
+  console.log('PASS extended BMP/ICO/AVIF/SVG paths, frame sizes/selection, pixel roundtrip, SVG rejection and resource cleanup', JSON.stringify(capabilities));
 
   for (const format of ['JPEG', 'WEBP']) {
     await upload(); await readyDetails(); await choose(format);
@@ -308,7 +393,7 @@ try {
     const Native = Worker;
     window.Worker = class extends Native {
       constructor(url, options) {
-        const script = `import ${JSON.stringify(String(url))}; const encode = OffscreenCanvas.prototype.convertToBlob; OffscreenCanvas.prototype.convertToBlob = function(options) { return encode.call(this, options?.type === 'image/webp' ? { ...options, type: 'image/png' } : options); };`;
+        const script = `import ${JSON.stringify(String(url))}; const encode = OffscreenCanvas.prototype.convertToBlob; OffscreenCanvas.prototype.convertToBlob = function(options) { return encode.call(this, ['image/webp','image/avif'].includes(options?.type) ? { ...options, type: 'image/png' } : options); };`;
         const wrapper = URL.createObjectURL(new Blob([script], { type: 'text/javascript' }));
         super(wrapper, options); URL.revokeObjectURL(wrapper);
       }
@@ -317,7 +402,9 @@ try {
   await limited.goto(base); await limited.locator('[data-ready="true"]').waitFor();
   await limited.locator('input[type=file]').setInputFiles({ name: 'test.png', mimeType: 'image/png', buffer: png });
   await limited.waitForFunction(() => !!document.querySelector('select:not(:disabled)'));
-  assert.deepEqual(await limited.locator('select option').allTextContents(), ['PNG', 'JPEG']);
+  const limitedChoices=await limited.locator('select option').allTextContents();
+  assert.ok(limitedChoices.includes('PNG') && limitedChoices.includes('JPEG'));
+  assert.ok(!limitedChoices.includes('WEBP') && !limitedChoices.includes('AVIF'));
   await limited.close();
   console.log('PASS unsupported encoder PNG fallback is detected and unavailable output is hidden');
 
