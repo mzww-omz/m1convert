@@ -1,22 +1,33 @@
 # Convert
 
-Minimal appearance, fluid interaction. A fully client-side PNG / JPEG / WebP converter built on Svelte 5, TypeScript, SvelteKit and Vite. Files never leave the browser. No conversion service, CDN, telemetry or added runtime dependency.
+Minimal appearance, fluid interaction. A fully client-side PNG / JPEG / WebP / AVIF / BMP / ICO / static SVG converter built on Svelte 5, TypeScript, SvelteKit and Vite. Files never leave the browser. No conversion service, CDN, telemetry or added runtime dependency.
 
 ## Supported conversions
 
-| Input → Output | PNG | JPEG | WebP |
-| --- | --- | --- | --- |
-| PNG | Yes | Yes | Yes |
-| JPEG | Yes | Yes | Yes |
-| WebP | Yes | Yes | Yes |
+| Input → Output | PNG | JPEG | WebP | BMP | ICO | AVIF | SVG |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| PNG / JPEG / WebP | Yes | Yes | Yes | Yes | Yes | Conditional | No |
+| BMP (24/32-bit) | Yes | Yes | Yes | Yes | Yes | Conditional | No |
+| ICO (PNG or 24/32-bit DIB) | Yes | Yes | Yes | Yes | Yes | Conditional | No |
+| AVIF (8-bit still, native decode) | Yes | Yes | Yes | Yes | Yes | Conditional | No |
+| SVG (safe static subset, input only) | Yes | Yes | Yes | Yes | Yes | Conditional | No |
+
+Every Yes also requires successful runtime codec probes. Chromium verified **35 input/output pairs** (7 inputs × 5 outputs). AVIF is **input-only in the tested environment**: native Canvas falls back to PNG for AVIF encoding. AVIF output is exposed only if a genuine native encoder passes signature, structure, re-decode and dimension checks. No output-only format is registered; SVG output, raster-to-vector tracing and embedded-raster pseudo-SVG are unsupported.
 
 Same-format re-encoding is supported. Output choices are restricted to encoders actually verified in the current browser: an encoder silently falling back to PNG is not treated as support.
 
-- PNG and WebP retain transparency. JPEG composites transparency onto **white**.
-- JPEG / WebP expose quality from 1–100.
+- PNG, WebP, BMP V4 and ICO retain transparency. JPEG composites transparency onto **white**.
+- JPEG / WebP and a verified AVIF encoder expose quality from 1–100.
 - Dimensions are retained in display orientation. EXIF orientations 1–8 are normalized once, including mirrored images; the output does not retain the original EXIF orientation/GPS or other source metadata.
-- AVIF, GIF, SVG, animated PNG/WebP, audio, video and documents are **not supported**. Animated images are rejected rather than silently flattened.
+- GIF, animated PNG/WebP/AVIF, audio, video and documents are **not supported**. Animated images are rejected rather than silently flattened.
 - Browser Canvas uses its native color conversion and an 8-bit RGBA pipeline. This is not an archival, 16-bit/HDR, color-profile-preserving or metadata-preserving converter.
+
+### Extended format boundaries
+
+- **AVIF:** native still-image decode only; missing browser decoders fail analysis. 10/12-bit AVIF is rejected, HDR and original profiles are not preserved. Grids, unequal auxiliary dimensions, crop/rotation/mirror properties and sequences are rejected. BMFF structure and all declared `ispe` dimensions are bounded before native decoding; the decoder must agree. No local AVIF WASM package was present, and no dependency was installed. A bundled WASM encoder remains a future option requiring dependency/license, memory and cancellation verification; there is no CDN or hidden fallback.
+- **BMP:** uncompressed 24/32-bit BI_RGB, top-down/bottom-up, padded rows; BI_RGB's reserved fourth byte is treated as opaque. Standard 32-bit RGBA BI_BITFIELDS with V4/V5 headers is accepted. Other compression, indexed/16-bit pixels and nonstandard masks are rejected. Output is top-down 32-bit BMP V4 with explicit alpha masks and sRGB color space.
+- **ICO:** 1–64 non-overlapping, bounded frames. PNG and uncompressed 24/32-bit BITMAPINFOHEADER DIB frames (including AND masks) are accepted. Every frame is structurally validated; the selected frame is actually decoded. The largest frame is the default and preview; the Source frame selector controls conversion and survives Cancel/Convert Again. Output always contains 16 / 32 / 48 / 256 px PNG frames, generated from the selected source with aspect-preserving transparent letterboxing. Arbitrary palettes/compressed DIB/cursor files are unsupported. Output verifies and re-decodes **all four** frames.
+- **SVG:** input only, UTF-8, **1 MiB / 4 MP**, at most 10,000 XML tags, depth 64 and 64 KiB per tag. Supports basic paths/shapes, groups, local gradients and clipping, presentation attributes, transforms, numeric/px width/height and viewBox aspect ratio. Percent/physical-unit dimensions, text/fonts, CSS/style, images/use, scripts/events, foreignObject, animations, external references, entities, DTDs and comments are deliberately rejected, not silently stripped. This is a safe static subset, not full SVG conformance. Worker validation precedes asynchronous Blob-image rasterization; source SVG is never inserted into DOM or shown as a raw preview. Only the resulting Bitmap returns to the worker. Native SVG image decoding uses the browser's asynchronous image pipeline, not a synchronous main-thread renderer.
 
 ## Run and use
 
@@ -32,7 +43,7 @@ Progress displays actual processing stages. Native image decode/encode APIs do n
 
 ## Browser requirements
 
-Requires module Workers, worker-side `createImageBitmap`, `OffscreenCanvas` with a 2D context, and `convertToBlob`. Local Chromium has been verified; other browser engines/versions need independent testing. Missing worker/decoder support produces an error, never a blocking main-thread fallback. Encoder capability is tested in a worker on file analysis and output MIME/signature and re-decodability are checked for every conversion.
+Requires module Workers, worker-side `createImageBitmap`, `OffscreenCanvas` with a 2D context, and `convertToBlob`. Local Chromium has been verified; other browser engines/versions need independent testing. Missing worker/decoder support produces an error, never a blocking main-thread conversion fallback. SVG uses a cancellable async image-decoding bridge because worker `createImageBitmap(Blob)` does not reliably decode SVG. Encoder capability is tested in a worker on file analysis and output MIME/signature and re-decodability are checked for every conversion.
 
 ## Safety and resource limits
 
@@ -41,7 +52,7 @@ Requires module Workers, worker-side `createImageBitmap`, `OffscreenCanvas` with
 - Estimated working buffers: at most **256 MiB** (`12 × pixels + 2 × input bytes`). Native browser decoder/encoder internals are not a hard OS memory sandbox; real peak process memory can exceed this estimate.
 - One active worker per converter. Each analysis/conversion has a **30-second** deadline. Cancel, replacement, reset, errors and deadlines terminate the worker. Late callbacks are ignored by both the scheduler and state machine.
 - Signatures and bounded structural headers are checked before decoding. Conflicting extensions/MIME, invalid dimensions, truncated structures, malformed EXIF offsets, unsupported animation and native decoding failures are rejected. Empty MIME or `application/octet-stream` and extensionless files are accepted only when contents identify a supported image.
-- Only a validated, worker-generated thumbnail (max 320 × 180) reaches the UI preview. Raw files are never rendered as HTML/SVG or read/parsed synchronously on the main thread.
+- Only a validated, worker-generated thumbnail (max 320 × 180) reaches the UI preview. Raw files are never inserted as HTML/SVG into the document or read/parsed synchronously on the main thread. SVG's validated static subset uses an isolated Blob image during asynchronous rasterization, with abort/deadline URL and image cleanup.
 - Source files are immutable, held in memory and never sent to a server or written to browser storage. The explicit Download action is the only output save. Object URLs, bitmaps and canvases are released on completion/replacement/reset/destruction; terminating a worker releases its job resources.
 
 ## Architecture and extension
@@ -51,7 +62,9 @@ Requires module Workers, worker-side `createImageBitmap`, `OffscreenCanvas` with
 | Format definitions and signature matchers | `src/lib/formats.ts` |
 | Format / conversion registries and planner | `src/lib/registry.ts` |
 | Pre-decode image structure, EXIF and budget checks | `src/lib/image-format.ts` |
-| Lazy native image adapter | `src/lib/adapters/canvas-codec.ts` |
+| Shared worker RGBA/Canvas pipeline and verified capabilities | `src/lib/adapters/canvas-codec.ts` |
+| Lazy format validation / binary codecs | `src/lib/adapters/{avif,bmp,ico,svg}.ts` |
+| Cancellable async SVG bitmap bridge | `src/lib/adapters/{worker-svg,svg-raster}.ts`, `scheduler.ts` |
 | Adapter selection and worker protocol | `src/lib/conversion.worker.ts`, `engine-types.ts` |
 | Scheduling, abort/timeout/worker cleanup | `src/lib/scheduler.ts`, `engine.ts` |
 | State machine and asynchronous lifecycle | `src/lib/machine.ts`, `converter.svelte.ts` |
@@ -94,6 +107,6 @@ npm run test:browser
 
 No browser/package is downloaded automatically. For production verification, build first, start `npm run preview -- --port 4174 --strictPort`, and set `TEST_URL` accordingly.
 
-The browser suite exercises all nine real conversions, downloaded-file bytes and decoding, dimensions/transparency/JPEG background, both quality controls, all eight EXIF orientations, unsupported encoders, validation/errors/retry, high-entropy 16-megapixel cancellation, worker/URL cleanup, input methods, rapid operations, focus, reduced motion, touch emulation, 320px/tablet/resizing and actual frame geometry/timing. Fixtures in `tests/fixtures/` contain opaque, semi-transparent and transparent regions. Controller unit tests compile the real runes module with the existing Svelte/TypeScript toolchain.
+The browser suite exercises the original nine and extended real conversions (including BMP 24-bit input, all ICO output sizes/selected frames, AVIF input and rejected unsafe SVG), downloaded-file bytes and decoding, dimensions/transparency/JPEG background, both quality controls, all eight EXIF orientations, unsupported encoders, validation/errors/retry, high-entropy 16-megapixel cancellation, worker/URL cleanup, input methods, rapid operations, focus, reduced motion, touch emulation, 320px/tablet/resizing and actual frame geometry/timing. Fixtures in `tests/fixtures/` contain opaque, semi-transparent and transparent regions. `swatch.avif` is an 8-bit still with alpha generated locally from the PNG fixture using installed ImageMagick; conversion at runtime never uses that tool. Controller unit tests compile the real runes module with the existing Svelte/TypeScript toolchain.
 
 Screenshots, an actual downloaded JPEG and measured frame intervals are written to ignored `artifacts/phase1/`. Results and unverified environments are recorded in [`docs/QA.md`](docs/QA.md). Physical mobile devices, OS clipboard integration, screen readers, Safari and Firefox still require manual verification.
