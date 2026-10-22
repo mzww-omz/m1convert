@@ -3,7 +3,9 @@ export interface Progress { stage: Stage; percent: number | null }
 export const stageLabels: Record<Stage, string> = {
 	reading: 'Reading image', decoding: 'Decoding image', encoding: 'Encoding image', verifying: 'Checking output'
 };
-export interface ConversionRequest { file: File; format: string; quality: number; frame?: number }
+export interface AudioSettings { sampleRate:number; channels:number }
+export interface ArchiveSettings { compression:'store'|'deflate' }
+export interface ConversionRequest { file: File; format: string; quality: number; frame?: number; audio?:AudioSettings; archive?:ArchiveSettings }
 export interface ConversionResult {
 	blob: Blob;
 	name: string;
@@ -12,7 +14,7 @@ export interface ConversionResult {
 	width?: number;
 	height?: number;
 }
-export interface AssetInfo { format: string; mime: string; width?: number; height?: number; frames?: {width:number;height:number}[]; frame?:number }
+export interface AssetInfo { format: string; mime: string; width?: number; height?: number; frames?: {width:number;height:number}[]; frame?:number; category?:'audio'|'archive'; entries?:number; sampleRate?:number; channels?:number; duration?:number }
 export interface Analysis { info: AssetInfo; outputs: string[]; preview: Blob | null }
 export interface EngineAdapter {
 	inspect(file: File, stage: (stage: Stage) => void): Promise<Analysis>;
