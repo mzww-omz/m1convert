@@ -56,7 +56,7 @@
 
 <svelte:head>
 	<title>Convert — Local file converter</title>
-	<meta name="description" content="Convert PNG, JPEG and WebP images locally. Your files stay in your browser." />
+	<meta name="description" content="Convert PNG, JPEG, WebP, AVIF, BMP, ICO and static SVG images locally. Your files stay in your browser." />
 </svelte:head>
 
 <svelte:window onpaste={paste} ondrop={drop}
@@ -111,8 +111,15 @@
 							{:else}
 								<div class="field format-note">Settings<span>{view.analysis ? 'Lossless' : '—'}</span></div>
 							{/if}
+							{#if view.analysis?.info.frames}
+								<label class="field">Source frame
+									<select value={view.frame} onchange={(event) => converter.send({type:'FRAME',frame:+event.currentTarget.value})}>
+										{#each view.analysis.info.frames as frame, i}<option value={i}>{frame.width} × {frame.height} · {i + 1}</option>{/each}
+									</select>
+								</label>
+							{/if}
 						</div>
-						<p class="engine-note" id="conversion-note" role="status">{view.analysisError || (!view.analysis ? 'Checking image…' : view.format === 'JPEG' ? 'Transparency is filled with white.' : 'Converted locally. Your original stays unchanged.')}</p>
+						<p class="engine-note" id="conversion-note" role="status">{view.analysisError || (!view.analysis ? 'Checking image…' : view.format === 'JPEG' ? 'Transparency is filled with white.' : view.format === 'ICO' ? 'Creates 16, 32, 48 and 256 px icons. Aspect ratio is kept.' : view.analysis.info.format === 'ICO' ? 'Preview shows the largest frame. Converts the selected frame.' : view.analysis.info.format === 'AVIF' ? '8-bit still AVIF only. HDR and color profiles are not preserved.' : 'Converted locally. Your original stays unchanged.')}</p>
 						{#if notice}<p class="notice" role="status">{notice}</p>{/if}
 						<div class="actions">
 							<button class="text-button" onclick={() => input.click()}>Change file</button>

@@ -40,7 +40,7 @@ export class Converter {
 		if (!state.file) return;
 		const controller = this.controller = new AbortController();
 		try {
-			const result = await this.engine.run({ file: state.file, format: state.format, quality: state.quality }, controller.signal,
+			const result = await this.engine.run({ file: state.file, format: state.format, quality: state.quality, ...(state.frame === undefined ? {} : {frame:state.frame}) }, controller.signal,
 				progress => this.send({ type: 'TICK', runId: state.runId, progress: progress.percent, stage: progress.stage }));
 			if (!controller.signal.aborted) this.send({ type: 'DONE', runId: state.runId, result });
 		} catch (error) {

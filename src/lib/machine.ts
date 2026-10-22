@@ -10,6 +10,7 @@ export interface State {
 	analysisError: string;
 	format: string;
 	quality: number;
+	frame?: number;
 	progress: number | null;
 	stage: Stage;
 	runId: number;
@@ -22,6 +23,7 @@ export type Event =
 	| { type: 'ANALYSIS_FAILED'; runId: number; message: string }
 	| { type: 'FORMAT'; format: string }
 	| { type: 'QUALITY'; quality: number }
+	| { type: 'FRAME'; frame: number }
 	| { type: 'START' | 'CANCEL' | 'AGAIN' | 'RESET' | 'RETRY' | 'ANALYZE' }
 	| { type: 'TICK'; runId: number; progress: number | null; stage: Stage }
 	| { type: 'DONE'; runId: number; result: ConversionResult }
@@ -41,7 +43,7 @@ export function transition(state: State, event: Event): State {
 		if (event.type === 'ANALYSIS_FAILED') return { ...state, analysisError: event.message };
 		const outputs = formatsFor(event.analysis.info.format, event.analysis.outputs);
 		if (!outputs.length) return { ...state, analysisError: 'No supported image encoders are available in this browser.' };
-		return { ...state, analysis: { ...event.analysis, outputs }, format: outputs.includes('WEBP') ? 'WEBP' : outputs[0] };
+		return { ...state, analysis: { ...event.analysis, outputs }, frame:event.analysis.info.frame, format: outputs.includes('WEBP') ? 'WEBP' : outputs[0] };
 	}
 	if ('runId' in event && state.phase !== 'progress') return state;
 	switch (event.type) {
@@ -49,6 +51,8 @@ export function transition(state: State, event: Event): State {
 			return state.phase === 'details' && state.file ? { ...state, analysis: null, analysisError: '', format: '', runId: state.runId + 1 } : state;
 		case 'FORMAT':
 			return state.phase === 'details' && state.analysis?.outputs.includes(event.format) ? { ...state, format: event.format } : state;
+		case 'FRAME':
+			return state.phase === 'details' && Number.isInteger(event.frame) && state.analysis?.info.frames?.[event.frame] ? { ...state, frame:event.frame } : state;
 		case 'QUALITY':
 			return state.phase === 'details' && Number.isFinite(event.quality) ? { ...state, quality: Math.max(1, Math.min(100, event.quality)) } : state;
 		case 'START':
