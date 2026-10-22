@@ -1,227 +1,321 @@
 import assert from 'node:assert/strict';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { detectFormat } from '../src/lib/registry.ts';
 
-// Use an existing Playwright installation; this project does not download browsers.
+// Uses an existing Playwright/browser installation; never downloads dependencies.
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH });
-const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
-const errors = [];
-const externalRequests = [];
-page.on('pageerror', error => errors.push(error.message));
-page.on('request', request => { if (/^https?:/.test(request.url()) && new URL(request.url()).hostname !== 'localhost' && new URL(request.url()).hostname !== '127.0.0.1') externalRequests.push(request.url()); });
 const base = process.env.TEST_URL || 'http://localhost:5173';
-const artifacts = 'artifacts';
+const artifacts = 'artifacts/phase1';
 await mkdir(artifacts, { recursive: true });
-const upload = (name = 'notes.txt', mimeType = 'text/plain', buffer = Buffer.from('A local file.')) => page.locator('input[type=file]').setInputFiles({ name, mimeType, buffer });
-const phase = async value => {
+const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+const errors = [], externalRequests = [], uploads = [];
+function observe(p) {
+  p.on('pageerror', error => errors.push(error.message));
+  p.on('request', r => {
+    if (/^https?:/.test(r.url()) && !['localhost', '127.0.0.1'].includes(new URL(r.url()).hostname)) externalRequests.push(r.url());
+    if (r.method() !== 'GET') uploads.push(r.method() + ' ' + r.url());
+  });
+}
+observe(page);
+await page.addInitScript(() => {
+  window.workerStats = { active: 0, maxActive: 0, created: 0, terminated: 0, stages: [] };
+  const NativeWorker = Worker;
+  window.Worker = class extends NativeWorker {
+    ended = false;
+    constructor(...args) {
+      super(...args);
+      const s = window.workerStats;
+      s.created++; s.active++; s.maxActive = Math.max(s.maxActive, s.active);
+      this.addEventListener('message', e => { if (e.data.type === 'stage') s.stages.push(e.data.stage); });
+    }
+    postMessage(message, ...args) {
+      if (message.type === 'convert' && window.failNextConversion) {
+        window.failNextConversion = false;
+        queueMicrotask(() => this.dispatchEvent(new MessageEvent('message', { data: { type: 'error', message: 'Test encoder failure. Try again.' } })));
+      } else super.postMessage(message, ...args);
+    }
+    terminate() {
+      if (!this.ended) { this.ended = true; window.workerStats.active--; window.workerStats.terminated++; }
+      super.terminate();
+    }
+  };
+  window.liveUrls = new Set();
+  const create = URL.createObjectURL.bind(URL), revoke = URL.revokeObjectURL.bind(URL);
+  URL.createObjectURL = blob => { const url = create(blob); window.liveUrls.add(url); return url; };
+  URL.revokeObjectURL = url => { window.liveUrls.delete(url); revoke(url); };
+});
+const fixture = async ext => readFile(new URL(`./fixtures/swatch.${ext}`, import.meta.url));
+const png = await fixture('png'), jpeg = await fixture('jpg'), webp = await fixture('webp');
+const upload = (name = 'swatch.png', mimeType = 'image/png', buffer = png) => page.locator('input[type=file]').setInputFiles({ name, mimeType, buffer });
+const phase = async (value, settle = true) => {
   await page.locator(`[data-phase="${value}"]`).waitFor();
-  await page.waitForTimeout(650);
+  if (settle) await page.waitForTimeout(550);
 };
+const readyDetails = async () => {
+  await phase('details');
+  await page.waitForFunction(() => !!document.querySelector('select:not(:disabled)'));
+  await page.getByRole('button', { name: 'Convert', exact: true }).waitFor();
+};
+const newFile = async () => { await page.getByRole('button', { name: 'New File' }).click(); await phase('upload'); };
+async function download() {
+  const pending = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Download', exact: true }).click();
+  const saved = await pending;
+  const bytes = await readFile(await saved.path());
+  return { name: saved.suggestedFilename(), bytes };
+}
+async function decode(bytes, mime) {
+  return page.evaluate(async ({ bytes, mime }) => {
+    const bitmap = await createImageBitmap(new Blob([new Uint8Array(bytes)], { type: mime }));
+    const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+    const ctx = canvas.getContext('2d'); ctx.drawImage(bitmap, 0, 0);
+    const pixel = (x, y) => [...ctx.getImageData(Math.floor(x), Math.floor(y), 1, 1).data];
+    const result = { width: bitmap.width, height: bitmap.height,
+      corners: [[.25, .25], [.75, .25], [.25, .75], [.75, .75]].map(([x, y]) => pixel(x * bitmap.width, y * bitmap.height)) };
+    bitmap.close(); return result;
+  }, { bytes: [...bytes], mime });
+}
+const choose = async format => page.getByRole('combobox', { name: 'Output format' }).selectOption(format);
+const convert = async () => { await page.getByRole('button', { name: 'Convert', exact: true }).click(); await phase('complete'); };
+const again = async () => { await page.getByRole('button', { name: 'Convert Again' }).click(); await readyDetails(); };
+
 try {
   await page.goto(base);
   await page.locator('[data-ready="true"]').waitFor();
-  await page.getByRole('button', { name: 'Drop file' }).waitFor();
-  await page.screenshot({ path: `${artifacts}/upload.png` });
   await page.locator('[data-surface]').evaluate(el => { window.originalSurface = el; });
-  await upload();
-  await phase('details');
-  await page.getByRole('combobox', { name: 'Output format' }).selectOption('PDF');
-  await page.screenshot({ path: `${artifacts}/details.png` });
-  await page.getByRole('button', { name: 'Convert', exact: true }).click();
-  await phase('progress');
-  await page.screenshot({ path: `${artifacts}/progress.png` });
-  await phase('complete');
-  assert.equal(await page.getByRole('button', { name: 'Download', exact: true }).isDisabled(), true);
-  await page.screenshot({ path: `${artifacts}/complete.png` });
-  await page.getByRole('button', { name: 'Convert Again' }).click();
-  await phase('details');
-  assert.equal(await page.getByRole('combobox', { name: 'Output format' }).inputValue(), 'PDF');
+  await page.screenshot({ path: `${artifacts}/upload.png` });
+  const headerBefore = await page.locator('header').boundingBox();
+
+  // Every input/output pair, including all three same-format re-encodes.
+  for (const [input, ext, bytes] of [['PNG', 'png', png], ['JPEG', 'jpg', jpeg], ['WEBP', 'webp', webp]]) {
+    await upload(`swatch.${ext}`, `image/${input === 'JPEG' ? 'jpeg' : input.toLowerCase()}`, bytes);
+    await readyDetails();
+    assert.deepEqual(await page.locator('select option').allTextContents(), ['PNG', 'JPEG', 'WEBP']);
+    if (input === 'PNG') {
+      assert.ok(Math.abs((await page.locator('header').boundingBox()).y - headerBefore.y) < 2);
+      assert.equal(await page.evaluate(() => window.liveUrls.size), 1);
+      await page.screenshot({ path: `${artifacts}/details.png` });
+    }
+    for (const output of ['PNG', 'JPEG', 'WEBP']) {
+      await choose(output);
+      await convert();
+      const saved = await download();
+      const detected = detectFormat(saved.bytes);
+      assert.equal(detected.id, output);
+      assert.equal(saved.name, `swatch.${output === 'JPEG' ? 'jpg' : output.toLowerCase()}`);
+      const pixels = await decode(saved.bytes, detected.mime);
+      assert.deepEqual([pixels.width, pixels.height], [128, 80]);
+      if (input !== 'JPEG') {
+        const transparent = pixels.corners[3];
+        if (output === 'JPEG') assert.ok(transparent.every(v => v >= 250), 'transparent JPEG background must be white');
+        else {
+          assert.equal(transparent[3], 0, 'PNG/WebP must retain full transparency');
+          assert.ok(Math.abs(pixels.corners[2][3] - 128) <= 1, 'semi-transparency must survive');
+        }
+      }
+      assert.ok(pixels.corners[0][0] > 180, 'red pixels must survive decoding/encoding');
+      assert.equal(await page.evaluate(() => window.liveUrls.size), 2, 'thumbnail plus result URL only');
+      assert.equal(await page.evaluate(() => window.workerStats.active), 0);
+      if (input === 'PNG' && output === 'JPEG') {
+        await writeFile(`${artifacts}/downloaded.jpg`, saved.bytes);
+        await page.screenshot({ path: `${artifacts}/complete.png` });
+      }
+      await again();
+      assert.equal(await page.getByRole('combobox', { name: 'Output format' }).inputValue(), output);
+      assert.equal(await page.evaluate(() => window.liveUrls.size), 1, 'Convert Again releases only the output');
+    }
+  }
   assert.equal(await page.evaluate(() => document.querySelector('[data-surface]') === window.originalSurface), true);
-  await page.getByRole('button', { name: 'Convert', exact: true }).click();
-  await phase('progress');
-  await page.getByRole('button', { name: 'Cancel' }).click();
-  await phase('details');
-  await page.waitForTimeout(2600);
-  assert.equal(await page.locator('[data-surface]').getAttribute('data-phase'), 'details');
-  await page.getByRole('button', { name: 'Remove file' }).click();
-  await phase('upload');
-  await page.getByRole('button', { name: 'Drop file' }).focus();
-  assert.equal(await page.evaluate(() => document.activeElement?.textContent?.trim()), 'Drop file');
-  console.log('PASS core flow, retained DOM, settings, cancellation, disabled demo download');
+  console.log('PASS all 9 real conversion paths, download bytes, MIME, re-decode, dimensions, transparency and JPEG white background');
 
-  // Keyboard file picker and a real native FileChooser handoff.
-  const chooser = page.waitForEvent('filechooser');
-  await page.keyboard.press('Enter');
-  await (await chooser).setFiles({ name: 'keyboard.txt', mimeType: 'text/plain', buffer: Buffer.from('keyboard') });
-  await phase('details');
-  assert.equal(await page.evaluate(() => document.activeElement?.textContent), 'keyboard.txt');
-  await page.getByRole('button', { name: 'Remove file' }).click();
-  await phase('upload');
+  for (const format of ['JPEG', 'WEBP']) {
+    await upload(); await readyDetails(); await choose(format);
+    const setQuality = async key => { await page.getByRole('slider', { name: /Quality/ }).focus(); await page.keyboard.press(key); };
+    await setQuality('Home'); await convert(); const low = await download();
+    await again(); assert.equal(await page.getByRole('slider', { name: /Quality/ }).inputValue(), '1');
+    await setQuality('End'); await convert(); const high = await download();
+    assert.notDeepEqual(low.bytes, high.bytes, `${format} quality must change actual encoded data`);
+    await again(); assert.equal(await page.getByRole('slider', { name: /Quality/ }).inputValue(), '100');
+  }
+  console.log('PASS actual JPEG/WebP quality changes and retained settings');
 
-  // Browser-dispatched file drag/drop and file clipboard events (not OS automation).
-  await page.evaluate(() => {
-    const transfer = new DataTransfer();
-    transfer.items.add(new File(['drop'], 'dropped.txt', { type: 'text/plain' }));
-    window.dispatchEvent(new DragEvent('dragenter', { dataTransfer: transfer, cancelable: true }));
-  });
-  assert.equal(await page.locator('[data-surface]').evaluate(el => el.classList.contains('dragging')), true);
-  await page.evaluate(() => {
-    const transfer = new DataTransfer();
-    transfer.items.add(new File(['drop'], 'dropped.txt', { type: 'text/plain' }));
-    window.dispatchEvent(new DragEvent('drop', { dataTransfer: transfer, cancelable: true }));
-  });
-  await phase('details');
-  assert.equal(await page.locator('h2').textContent(), 'dropped.txt');
-  await page.evaluate(() => {
-    const transfer = new DataTransfer();
-    transfer.items.add(new File(['paste'], 'pasted.txt', { type: 'text/plain' }));
-    window.dispatchEvent(new ClipboardEvent('paste', { clipboardData: transfer, cancelable: true }));
-  });
-  await page.waitForFunction(() => document.querySelector('h2')?.textContent === 'pasted.txt');
-  await page.getByRole('button', { name: 'Change file' }).click().then(async () => {
-    await upload('replacement.txt');
-  });
-  await page.waitForFunction(() => document.querySelector('h2')?.textContent === 'replacement.txt');
-  console.log('PASS keyboard picker, focus, drop, paste, change file');
+  // All eight EXIF transforms: ensure orientation is applied exactly once.
+  const colors = pixel => pixel[0] > 100 && pixel[0] > pixel[1] * 2 ? 'R' : pixel[2] > 100 && pixel[2] > pixel[1] * 2 ? 'B' : pixel[1] > 40 && pixel[1] > pixel[0] * 2 ? 'G' : 'K';
+  const expected = ['RBGK', 'BRKG', 'KGBR', 'GKRB', 'RGBK', 'GRKB', 'KBGR', 'BKRG'];
+  for (let orientation = 1; orientation <= 8; orientation++) {
+    const exif = Buffer.from([255,225,0,34,69,120,105,102,0,0,73,73,42,0,8,0,0,0,1,0,18,1,3,0,1,0,0,0,orientation,0,0,0,0,0,0,0]);
+    await upload('oriented.jpg', 'image/jpeg', Buffer.concat([jpeg.subarray(0, 2), exif, jpeg.subarray(2)]));
+    await readyDetails(); await choose('PNG'); await convert();
+    const saved = await download();
+    const decoded = await decode(saved.bytes, 'image/png');
+    assert.deepEqual([decoded.width, decoded.height], orientation >= 5 ? [80, 128] : [128, 80]);
+    assert.equal(decoded.corners.map(colors).join(''), expected[orientation - 1], `EXIF orientation ${orientation}`);
+    await again();
+  }
+  console.log('PASS all 8 EXIF orientations, display dimensions and stripped orientation metadata');
 
-  // Rapid input replacement and cancellation inside the morph window.
-  await page.getByRole('button', { name: 'Remove file' }).click();
-  await upload('first.txt');
-  await upload('second.txt');
-  await upload('last.txt');
-  await phase('details');
-  assert.equal(await page.locator('h2').textContent(), 'last.txt');
-  await page.getByRole('button', { name: 'Convert', exact: true }).evaluate(el => { el.click(); el.click(); el.click(); });
-  await page.waitForTimeout(130);
-  await page.getByRole('button', { name: 'Cancel' }).evaluate(el => el.click());
-  await phase('details');
-  await page.waitForTimeout(2600);
-  assert.equal(await page.locator('[data-surface]').getAttribute('data-phase'), 'details');
-  console.log('PASS rapid repeated operations and mid-animation cancellation');
-
-  await page.goto(`${base}/?demo=error`);
-  await page.locator('[data-ready="true"]').waitFor();
-  await upload();
-  await phase('details');
-  await page.getByRole('button', { name: 'Convert', exact: true }).click();
-  await phase('error');
+  // Browser-scheduler failure injection lives only in this test, not in application code.
+  await page.evaluate(() => { window.failNextConversion = true; });
+  await page.getByRole('button', { name: 'Convert', exact: true }).click(); await phase('error');
   await page.screenshot({ path: `${artifacts}/error.png` });
-  await page.getByRole('button', { name: 'Try again' }).click();
-  await phase('complete');
-  await page.getByRole('button', { name: 'New File' }).click();
-  await phase('upload');
-  console.log('PASS error, retry, new file');
+  await page.getByRole('button', { name: 'Try again' }).click(); await phase('complete');
+  await newFile();
+  assert.equal(await page.evaluate(() => window.liveUrls.size), 0);
+  console.log('PASS recoverable engine failure, retry, New File and URL cleanup');
 
-  // Native asynchronous preview; quality remains stable through another run.
-  const headerBeforePreview = await page.locator('header').boundingBox();
-  await page.evaluate(() => {
-    window.objectUrlsCreated = 0;
-    const create = URL.createObjectURL.bind(URL);
-    URL.createObjectURL = blob => { window.objectUrlsCreated++; return create(blob); };
+  // Input methods, keyboard focus, rapid replacement, and validation recovery.
+  await page.getByRole('button', { name: 'Drop file' }).focus();
+  const chooser = page.waitForEvent('filechooser'); await page.keyboard.press('Enter');
+  await (await chooser).setFiles({ name: 'keyboard.png', mimeType: 'image/png', buffer: png });
+  await readyDetails();
+  assert.equal(await page.evaluate(() => document.activeElement?.textContent), 'keyboard.png');
+  await page.getByRole('button', { name: 'Remove file' }).click(); await phase('upload');
+  await page.evaluate(bytes => {
+    const t = new DataTransfer(); t.items.add(new File([new Uint8Array(bytes)], 'drop.png', { type: 'image/png' }));
+    window.dispatchEvent(new DragEvent('dragenter', { dataTransfer: t, cancelable: true }));
+  }, [...png]);
+  assert.equal(await page.locator('[data-surface]').evaluate(el => el.classList.contains('dragging')), true);
+  await page.evaluate(bytes => {
+    const t = new DataTransfer(); t.items.add(new File([new Uint8Array(bytes)], 'drop.png', { type: 'image/png' }));
+    window.dispatchEvent(new DragEvent('drop', { dataTransfer: t, cancelable: true }));
+  }, [...png]);
+  await readyDetails();
+  await page.evaluate(bytes => {
+    const t = new DataTransfer(); t.items.add(new File([new Uint8Array(bytes)], 'paste.png', { type: 'image/png' }));
+    window.dispatchEvent(new ClipboardEvent('paste', { clipboardData: t, cancelable: true }));
+  }, [...png]);
+  await readyDetails(); assert.equal(await page.locator('h2').textContent(), 'paste.png');
+  const changePicker = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: 'Change file' }).click();
+  await (await changePicker).setFiles({ name: 'replacement.png', mimeType: 'image/png', buffer: png });
+  await readyDetails();
+  await upload('first.png'); await upload('second.png'); await upload('last.png');
+  await readyDetails(); assert.equal(await page.locator('h2').textContent(), 'last.png');
+  assert.equal(await page.evaluate(() => window.workerStats.maxActive), 1);
+  console.log('PASS keyboard picker/focus, drop, paste, change file and racing analysis responses');
+
+  for (const [name, type, bytes, message] of [
+    ['notes.txt', 'text/plain', Buffer.from('text'), /not supported/],
+    ['fake.jpg', 'image/png', png, /extension/],
+    ['fake.png', 'image/jpeg', png, /MIME/],
+    ['broken.png', 'image/png', png.subarray(0, 40), /corrupt|truncated/],
+    ['broken.jpg', 'image/jpeg', jpeg.subarray(0, jpeg.length - 2), /corrupt|truncated/],
+    ['empty.png', 'image/png', Buffer.alloc(0), /not supported|empty/]
+  ]) {
+    await upload(name, type, bytes); await phase('details');
+    await page.locator('#conversion-note').filter({ hasText: message }).waitFor();
+    assert.equal(await page.getByRole('combobox', { name: 'Output format' }).isDisabled(), true);
+    await page.getByRole('button', { name: 'Try again' }).click();
+    await page.locator('#conversion-note').filter({ hasText: message }).waitFor();
+  }
+  const hugeDimensions = Buffer.from(png); hugeDimensions.writeUInt32BE(9000, 16);
+  await upload('huge.png', 'image/png', hugeDimensions); await page.getByText(/dimensions must/).waitFor();
+  await upload('huge.png', 'image/png', Buffer.concat([png, Buffer.alloc(32 * 1024 ** 2)]));
+  await page.getByText(/32 MiB/).waitFor();
+  await upload('no-extension', '', png); await readyDetails();
+  console.log('PASS unsupported input, spoofing, corruption, empty/oversized files and recovery');
+
+  // A real high-entropy image makes native decoding/encoding expensive enough to cancel.
+  const large = await page.evaluate(async () => {
+    const canvas = new OffscreenCanvas(4000, 4000), ctx = canvas.getContext('2d');
+    const data = ctx.createImageData(4000, 4000);
+    let seed = 123456789;
+    for (let i = 0; i < data.data.length; i += 4) {
+      seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5;
+      data.data[i] = seed & 255; data.data[i + 1] = seed >>> 8 & 255; data.data[i + 2] = seed >>> 16 & 255; data.data[i + 3] = 255;
+    }
+    ctx.putImageData(data, 0, 0);
+    const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: .85 });
+    return [...new Uint8Array(await blob.arrayBuffer())];
   });
-  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=', 'base64');
-  await upload('sample.png', 'image/png', png);
-  await phase('details');
-  await page.getByRole('img', { name: 'Selected file preview' }).waitFor();
-  await page.waitForFunction(() => document.querySelector('img')?.naturalWidth === 1);
-  await page.getByRole('slider', { name: /Quality/ }).focus();
-  await page.keyboard.press('End');
-  await page.keyboard.press('ArrowLeft');
-  assert.equal(await page.evaluate(() => window.objectUrlsCreated), 1, 'settings must not recreate preview resources');
-  const headerAfterPreview = await page.locator('header').boundingBox();
-  assert.ok(Math.abs(headerAfterPreview.y - headerBeforePreview.y) < 2, 'preview must not move the page chrome');
-  await page.screenshot({ path: `${artifacts}/image-details.png` });
+  await upload('large.jpg', 'image/jpeg', Buffer.from(large)); await readyDetails(); await choose('PNG');
+  await page.evaluate(() => { window.workerStats.stages = []; });
+  await page.getByRole('button', { name: 'Convert', exact: true }).evaluate(el => { el.click(); el.click(); el.click(); });
+  await phase('progress', false);
+  await page.getByRole('button', { name: 'Cancel' }).waitFor();
+  assert.equal(await page.getByRole('progressbar').getAttribute('aria-valuenow'), null);
+  assert.equal(await page.locator('.percentage').count(), 0);
+  await page.screenshot({ path: `${artifacts}/progress.png` });
+  await page.getByRole('button', { name: 'Cancel' }).click({ force: true }); await readyDetails();
+  await page.waitForTimeout(1300);
+  assert.equal(await page.locator('[data-surface]').getAttribute('data-phase'), 'details');
+  assert.equal(await page.evaluate(() => window.workerStats.active), 0);
+  assert.ok((await page.evaluate(() => window.workerStats.stages)).includes('decoding'));
+  assert.equal(await page.getByRole('combobox', { name: 'Output format' }).inputValue(), 'PNG');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.getByRole('button', { name: 'Convert', exact: true }).click();
-  await phase('complete');
-  await page.getByRole('button', { name: 'Convert Again' }).click();
-  await phase('details');
-  assert.equal(await page.getByRole('slider', { name: /Quality/ }).inputValue(), '99');
-  assert.equal(await page.evaluate(() => window.objectUrlsCreated), 1, 'progress and re-conversion must reuse the input preview');
-  await upload('broken.png', 'image/png', Buffer.from('not an image'));
-  await page.getByText('Preview unavailable.', { exact: false }).waitFor();
-  await page.getByRole('button', { name: 'Convert', exact: true }).waitFor();
-  console.log('PASS image preview, quality retention, corrupt-image recovery');
+  await page.getByRole('button', { name: 'Cancel' }).click(); await readyDetails();
+  assert.equal(await page.locator('[data-surface]').evaluate(el => getComputedStyle(el).transitionDuration), '0s');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  console.log('PASS real heavy-work cancellation, indeterminate progress, rapid starts, stale-result suppression and reduced-motion');
 
   await page.setViewportSize({ width: 320, height: 640 });
-  await upload('a-very-long-filename-'.repeat(12) + '.txt');
-  await phase('details');
+  await upload('a-very-long-filename-'.repeat(12) + '.png'); await readyDetails();
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   await page.screenshot({ path: `${artifacts}/mobile-details.png`, fullPage: true });
-  await page.getByRole('button', { name: 'Convert', exact: true }).click();
-  await phase('progress');
-  await page.screenshot({ path: `${artifacts}/mobile-progress.png`, fullPage: true });
-  await phase('complete');
+  await choose('JPEG'); await convert();
   await page.screenshot({ path: `${artifacts}/mobile-complete.png`, fullPage: true });
+  await newFile(); await page.screenshot({ path: `${artifacts}/mobile-upload.png`, fullPage: true });
   for (const width of [768, 375, 1024, 320]) {
-    await page.setViewportSize({ width, height: 740 });
-    await page.waitForTimeout(400);
+    await page.setViewportSize({ width, height: 740 }); await page.waitForTimeout(350);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   }
-  await page.getByRole('button', { name: 'New File' }).click();
-  await phase('upload');
-  await page.screenshot({ path: `${artifacts}/mobile-upload.png`, fullPage: true });
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await upload();
-  await page.waitForFunction(() => document.querySelector('[data-surface]')?.dataset.phase === 'details');
-  assert.equal(await page.locator('[data-surface]').evaluate(el => getComputedStyle(el).transitionDuration), '0s');
-  await page.getByRole('button', { name: 'Convert', exact: true }).click();
-  await page.getByRole('button', { name: 'Cancel' }).click();
-  await phase('details');
-  await page.emulateMedia({ reducedMotion: 'no-preference' });
-  console.log('PASS 320px, tablet, resizing, reduced-motion');
-
-  // Represent a 5GB local file without allocating or reading its payload.
-  await page.evaluate(() => {
-    const file = new File([], 'large-video.mp4', { type: 'video/mp4' });
-    Object.defineProperty(file, 'size', { value: 5 * 1024 ** 3 });
-    const transfer = new DataTransfer(); transfer.items.add(file);
-    window.dispatchEvent(new ClipboardEvent('paste', { clipboardData: transfer, cancelable: true }));
-  });
-  await page.getByText('video/mp4', { exact: false }).waitFor();
-  assert.ok((await page.locator('.meta').textContent()).includes('5 GB'));
-  await page.getByRole('button', { name: 'Remove file' }).click();
-  await phase('upload');
-
-  // Observe actual geometry and rAF intervals, not just declared CSS durations.
+  await page.waitForTimeout(400);
   await page.evaluate(() => {
     window.samples = [];
-    const end = performance.now() + 900;
+    const end = performance.now() + 1000;
     const sample = time => {
-      const rect = document.querySelector('[data-surface]').getBoundingClientRect();
-      window.samples.push({ time, width: rect.width, centerX: rect.x + rect.width / 2, centerY: rect.y + rect.height / 2 });
+      const r = document.querySelector('[data-surface]').getBoundingClientRect();
+      window.samples.push({ time, width: r.width, x: r.x + r.width / 2, y: r.y + r.height / 2 });
       if (performance.now() < end) requestAnimationFrame(sample);
-    };
-    requestAnimationFrame(sample);
+    }; requestAnimationFrame(sample);
   });
-  await upload();
-  await phase('details');
-  await page.waitForTimeout(300);
+  await upload(); await readyDetails(); await page.waitForTimeout(500);
   const metrics = await page.evaluate(() => {
-    const samples = window.samples;
-    const intervals = samples.slice(1).map((s, i) => s.time - samples[i].time).sort((a, b) => a - b);
-    return { frames: samples.length, medianMs: intervals[Math.floor(intervals.length / 2)], p95Ms: intervals[Math.floor(intervals.length * .95)], intermediateWidths: new Set(samples.filter(s => s.width > 285 && s.width < 555).map(s => Math.round(s.width))).size, centerDriftX: Math.max(...samples.map(s => s.centerX)) - Math.min(...samples.map(s => s.centerX)), centerDriftY: Math.max(...samples.map(s => s.centerY)) - Math.min(...samples.map(s => s.centerY)) };
+    const s = window.samples, intervals = s.slice(1).map((v, i) => v.time - s[i].time).sort((a, b) => a - b);
+    return { frames: s.length, medianMs: intervals[Math.floor(intervals.length / 2)], p95Ms: intervals[Math.floor(intervals.length * .95)], intermediateWidths: new Set(s.filter(v => v.width > 285 && v.width < 555).map(v => Math.round(v.width))).size, centerDriftX: Math.max(...s.map(v => v.x)) - Math.min(...s.map(v => v.x)), centerDriftY: Math.max(...s.map(v => v.y)) - Math.min(...s.map(v => v.y)) };
   });
-  assert.ok(metrics.intermediateWidths >= 5, 'surface must physically morph, not jump/fade');
-  assert.ok(metrics.centerDriftX < 2 && metrics.centerDriftY < 2, 'desktop center must stay fixed');
-  await import('node:fs/promises').then(fs => fs.writeFile(`${artifacts}/motion-metrics.json`, JSON.stringify(metrics, null, 2)));
+  assert.ok(metrics.intermediateWidths >= 5);
+  assert.ok(metrics.centerDriftX < 2 && metrics.centerDriftY < 2);
+  await writeFile(`${artifacts}/motion-metrics.json`, JSON.stringify(metrics, null, 2));
   console.log('MOTION', JSON.stringify(metrics));
-  const touchPage = await browser.newPage({ viewport: { width: 320, height: 640 }, hasTouch: true, isMobile: true });
-  touchPage.on('pageerror', error => errors.push(error.message));
-  await touchPage.goto(base);
-  await touchPage.locator('[data-ready="true"]').waitFor();
-  const touchChooser = touchPage.waitForEvent('filechooser');
-  await touchPage.getByRole('button', { name: 'Drop file' }).tap();
-  await (await touchChooser).setFiles({ name: 'touch.txt', mimeType: 'text/plain', buffer: Buffer.from('touch') });
-  await touchPage.getByRole('button', { name: 'Convert', exact: true }).tap();
-  await touchPage.getByRole('button', { name: 'Cancel' }).tap();
-  await touchPage.getByRole('button', { name: 'Remove file' }).tap();
-  await touchPage.getByRole('button', { name: 'Drop file' }).waitFor();
-  await touchPage.close();
-  console.log('PASS emulated touch picker, convert, cancel, remove');
-  assert.deepEqual(errors, []);
-  assert.deepEqual(externalRequests, []);
-  console.log('PASS zero page errors and zero external HTTP requests');
-} finally {
-  await browser.close();
-}
+  console.log('PASS 320px, tablet/resizing and unchanged physical surface morph');
+
+  // Actual encoder fallback simulation inside a native worker: WebP must disappear.
+  const limited = await browser.newPage(); observe(limited);
+  await limited.addInitScript(() => {
+    const Native = Worker;
+    window.Worker = class extends Native {
+      constructor(url, options) {
+        const script = `import ${JSON.stringify(String(url))}; const encode = OffscreenCanvas.prototype.convertToBlob; OffscreenCanvas.prototype.convertToBlob = function(options) { return encode.call(this, options?.type === 'image/webp' ? { ...options, type: 'image/png' } : options); };`;
+        const wrapper = URL.createObjectURL(new Blob([script], { type: 'text/javascript' }));
+        super(wrapper, options); URL.revokeObjectURL(wrapper);
+      }
+    };
+  });
+  await limited.goto(base); await limited.locator('[data-ready="true"]').waitFor();
+  await limited.locator('input[type=file]').setInputFiles({ name: 'test.png', mimeType: 'image/png', buffer: png });
+  await limited.waitForFunction(() => !!document.querySelector('select:not(:disabled)'));
+  assert.deepEqual(await limited.locator('select option').allTextContents(), ['PNG', 'JPEG']);
+  await limited.close();
+  console.log('PASS unsupported encoder PNG fallback is detected and unavailable output is hidden');
+
+  const touch = await browser.newPage({ viewport: { width: 320, height: 640 }, hasTouch: true, isMobile: true }); observe(touch);
+  await touch.goto(base); await touch.locator('[data-ready="true"]').waitFor();
+  const picker = touch.waitForEvent('filechooser'); await touch.getByRole('button', { name: 'Drop file' }).tap();
+  await (await picker).setFiles({ name: 'touch.png', mimeType: 'image/png', buffer: png });
+  await touch.waitForFunction(() => !!document.querySelector('select:not(:disabled)'));
+  await touch.getByRole('button', { name: 'Convert', exact: true }).tap();
+  await touch.getByRole('button', { name: 'New File' }).tap();
+  await touch.getByRole('button', { name: 'Drop file' }).waitFor(); await touch.close();
+  assert.equal(await page.evaluate(() => window.workerStats.active), 0);
+  assert.equal(await page.evaluate(() => window.workerStats.created === window.workerStats.terminated), true);
+  assert.deepEqual(errors, []); assert.deepEqual(externalRequests, []); assert.deepEqual(uploads, []);
+  console.log('PASS emulated touch, no worker leaks, no page errors, no external HTTP requests and no uploads');
+} catch (error) {
+  await page.screenshot({ path: `${artifacts}/failure.png`, fullPage: true });
+  console.error('PAGE ERRORS', errors);
+  throw error;
+} finally { await browser.close(); }

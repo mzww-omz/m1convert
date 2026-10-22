@@ -2,31 +2,29 @@
 	import { onMount } from 'svelte';
 	import MorphSurface from '#lib/MorphSurface.svelte';
 	import { Converter } from '#lib/converter.svelte.ts';
-	import { formatBytes, formatsFor, outputName } from '#lib/machine.ts';
+	import { formatBytes } from '#lib/machine.ts';
+	import { formatById } from '#lib/registry.ts';
+	import { stageLabels } from '#lib/engine.ts';
 
 	const converter = new Converter();
-	const selectedFile = $derived(converter.state.file);
+	const thumbnail = $derived(converter.state.analysis?.preview ?? null);
 	let input: HTMLInputElement;
 	let dragDepth = $state(0);
 	let preview = $state('');
 	let previewFailed = $state(false);
-	let dimensions = $state('');
 	let notice = $state('');
 	let ready = $state(false);
 
 	onMount(() => {
-		converter.demoFailure = new URLSearchParams(location.search).get('demo') === 'error';
 		ready = true;
 		return () => converter.destroy();
 	});
 
 	$effect(() => {
-		const file = selectedFile;
+		const image = thumbnail;
 		previewFailed = false;
-		dimensions = '';
-		// Native asynchronous image decoding only; never read an entire file into JS.
-		const url = file && /^image\/(png|jpeg|webp|gif|avif)$/.test(file.type) && file.size <= 20 * 1024 ** 2
-			? URL.createObjectURL(file) : '';
+		// Only display the bounded, worker-decoded thumbnail, never the unvalidated source.
+		const url = image ? URL.createObjectURL(image) : '';
 		preview = url;
 		return () => { if (url) URL.revokeObjectURL(url); };
 	});
@@ -58,7 +56,7 @@
 
 <svelte:head>
 	<title>Convert — Local file converter</title>
-	<meta name="description" content="A quiet, local-first file converter. Phase 0 interaction demo. Your files stay in your browser." />
+	<meta name="description" content="Convert PNG, JPEG and WebP images locally. Your files stay in your browser." />
 </svelte:head>
 
 <svelte:window onpaste={paste} ondrop={drop}
@@ -85,62 +83,65 @@
 						<div class="file-row">
 							<div class="file-information">
 								<h2 class="filename" title={view.file?.name} tabindex="-1" data-focus>{view.file?.name}</h2>
-								<p class="meta">{view.file?.type || 'Unknown type'} <span aria-hidden="true">·</span> {formatBytes(view.file?.size ?? 0)}</p>
+								<p class="meta">{view.analysis?.info.mime || (view.analysisError ? 'Unverified format' : 'Checking format…')} <span aria-hidden="true">·</span> {formatBytes(view.file?.size ?? 0)}</p>
 							</div>
 							<button class="text-button remove" aria-label="Remove file" onclick={() => { notice = ''; converter.send({ type: 'RESET' }); }}>Remove</button>
 						</div>
 
 						{#if preview && !previewFailed}
 							<div class="preview">
-								<img src={preview} alt="Selected file preview" decoding="async"
-									onload={(event) => { const image = event.currentTarget as HTMLImageElement; dimensions = `${image.naturalWidth} × ${image.naturalHeight}`; }}
-									onerror={() => { previewFailed = true; }} />
-								{#if dimensions}<span class="image-size">{dimensions}</span>{/if}
+								<img src={preview} alt="Selected file preview" decoding="async" onerror={() => { previewFailed = true; }} />
+								{#if view.analysis}<span class="image-size">{view.analysis.info.width} × {view.analysis.info.height}</span>{/if}
 							</div>
 						{:else if previewFailed}
-							<p class="preview-note" role="status">Preview unavailable. You can still explore the demo.</p>
+							<p class="preview-note" role="status">Preview unavailable. Your image can still be converted.</p>
 						{/if}
 
 						<div class="settings">
 							<label class="field">Output format
-								<select value={view.format} onchange={(event) => converter.send({ type: 'FORMAT', format: event.currentTarget.value })}>
-									{#each view.file ? formatsFor(view.file) : [] as format}<option value={format}>{format}</option>{/each}
+								<select disabled={!view.analysis} value={view.format} onchange={(event) => converter.send({ type: 'FORMAT', format: event.currentTarget.value })}>
+									{#if !view.analysis}<option value="">{view.analysisError ? 'Unavailable' : 'Checking…'}</option>{/if}
+									{#each view.analysis?.outputs ?? [] as format}<option value={format}>{format}</option>{/each}
 								</select>
 							</label>
-							{#if ['WEBP', 'JPG', 'AVIF', 'MP3', 'MP4', 'WEBM', 'OGG'].includes(view.format)}
+							{#if formatById(view.format)?.quality}
 								<label class="field quality">Quality <span class="quality-value">{view.quality}%</span>
 									<input type="range" min="1" max="100" value={view.quality} oninput={(event) => converter.send({ type: 'QUALITY', quality: +event.currentTarget.value })} />
 								</label>
 							{:else}
-								<div class="field format-note">{view.format === 'ZIP' ? 'Compression' : 'Settings'}<span>{['PNG', 'WAV', 'FLAC', 'ZIP'].includes(view.format) ? 'Lossless' : 'Default'}</span></div>
+								<div class="field format-note">Settings<span>{view.analysis ? 'Lossless' : '—'}</span></div>
 							{/if}
 						</div>
-						<p class="demo-note" id="demo-explanation">Demo mode. No files are converted.</p>
+						<p class="engine-note" id="conversion-note" role="status">{view.analysisError || (!view.analysis ? 'Checking image…' : view.format === 'JPEG' ? 'Transparency is filled with white.' : 'Converted locally. Your original stays unchanged.')}</p>
 						{#if notice}<p class="notice" role="status">{notice}</p>{/if}
 						<div class="actions">
 							<button class="text-button" onclick={() => input.click()}>Change file</button>
-							<button class="primary" aria-describedby="demo-explanation" onclick={() => start()}>Convert <span aria-hidden="true">→</span></button>
+							{#if view.analysisError}
+								<button class="primary" onclick={() => converter.send({ type: 'ANALYZE' })}>Try again</button>
+							{:else}
+								<button class="primary" disabled={!view.analysis} aria-describedby="conversion-note" onclick={() => start()}>Convert <span aria-hidden="true">→</span></button>
+							{/if}
 						</div>
 					</div>
 				{:else if view.phase === 'progress'}
 					<div class="panel progress-panel">
-						<div class="status-row"><h2 tabindex="-1" data-focus>Running demo</h2><span class="percentage" aria-hidden="true">{view.progress}%</span></div>
-						<div class="progress-track" role="progressbar" aria-label="Demo progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow={view.progress}>
-							<div class="progress-fill" style:transform="scaleX({view.progress / 100})"></div>
+						<div class="status-row"><h2 tabindex="-1" data-focus>{stageLabels[view.stage]}</h2>{#if view.progress !== null}<span class="percentage" aria-hidden="true">{view.progress}%</span>{/if}</div>
+						<div class="progress-track" role="progressbar" aria-label="Conversion progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow={view.progress ?? undefined} aria-valuetext={view.progress === null ? stageLabels[view.stage] : undefined}>
+							<div class="progress-fill" class:indeterminate={view.progress === null} style:transform={view.progress === null ? undefined : `scaleX(${view.progress / 100})`}></div>
 						</div>
-						<div class="progress-bottom"><p class="demo-note">Your file stays unchanged.</p><button class="text-button" onclick={() => converter.send({ type: 'CANCEL' })}>Cancel</button></div>
+						<div class="progress-bottom"><p class="engine-note">Your file stays unchanged.</p><button class="text-button" onclick={() => converter.send({ type: 'CANCEL' })}>Cancel</button></div>
 					</div>
 				{:else if view.phase === 'complete'}
 					<div class="panel result-panel">
-						<h2 tabindex="-1" data-focus>Demo complete</h2>
-						<div class="result-file"><p class="filename" title={outputName(view.file?.name ?? '', view.format)}>{outputName(view.file?.name ?? '', view.format)}</p><p class="meta">{view.format} <span aria-hidden="true">·</span> Preview only · Size unavailable</p></div>
-						<button class="primary download" disabled aria-describedby="download-note">Download</button>
-						<p class="demo-note" id="download-note">No output file was created in this demo.</p>
+						<h2 tabindex="-1" data-focus>Complete</h2>
+						<div class="result-file"><p class="filename" title={view.result?.name}>{view.result?.name}</p><p class="meta">{view.result?.mime} <span aria-hidden="true">·</span> {formatBytes(view.result?.blob.size ?? 0)} · {view.result?.width} × {view.result?.height}</p></div>
+						<button class="primary download" onclick={() => converter.download()}>Download</button>
+						<p class="engine-note">Saved without original metadata.</p>
 						<div class="result-actions"><button class="text-button" onclick={() => converter.send({ type: 'AGAIN' })}>Convert Again</button><button class="text-button" onclick={() => { notice = ''; converter.send({ type: 'RESET' }); }}>New File</button></div>
 					</div>
 				{:else}
 					<div class="panel result-panel">
-						<h2 tabindex="-1" data-focus>Demo could not finish</h2>
+						<h2 tabindex="-1" data-focus>Conversion could not finish</h2>
 						<p class="error-message">{view.error}</p>
 						<div class="actions"><button class="text-button" onclick={() => converter.send({ type: 'AGAIN' })}>Back to details</button><button class="primary" onclick={() => start(true)}>Try again</button></div>
 					</div>
@@ -150,5 +151,5 @@
 	</section>
 
 	<footer><p>Local convert <span aria-hidden="true">/</span> v1.0.0</p><a href="https://mzww.net">mzww.net</a></footer>
-	<p class="sr-only" role="status" aria-live="polite">{converter.state.phase === 'progress' ? 'Demo started. No file will be converted.' : converter.state.phase === 'complete' ? 'Demo complete. No output file was created.' : converter.state.phase === 'error' ? converter.state.error : ''}</p>
+	<p class="sr-only" role="status" aria-live="polite">{converter.state.phase === 'progress' ? 'Conversion started. Your original stays unchanged.' : converter.state.phase === 'complete' ? 'Conversion complete. Your file is ready to download.' : converter.state.phase === 'error' ? converter.state.error : ''}</p>
 </main>
