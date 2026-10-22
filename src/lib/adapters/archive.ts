@@ -223,9 +223,14 @@ export const archiveCodec:EngineAdapter={
 		else bytes=await transform(entries.find(e=>!e.directory)!.data,'gzip',false);
 		const def=archiveFormats.find(f=>f.id===format)!, blob=new Blob([bytes.slice()],{type:def.mime});
 		const name=outputName(request.file.name.replace(/\.(tar\.gz|tgz)$/i,'.tar'),format);
-		stage('verifying'); const verified=await read(new File([blob],name,{type:def.mime}),true);
-		const expected=format==='GZIP'?entries.filter(e=>!e.directory):entries;
-		if(verified.entries.length!==expected.length || expected.some((e,i)=>e.data.length!==verified.entries[i].data.length || !e.data.every((v,j)=>v===verified.entries[i].data[j]) || (format!=='GZIP'&&e.name!==verified.entries[i].name))) fail('Archive output verification failed.');
+		stage('verifying');
+		if(format==='GZIP') {
+			const decoded=await transform(bytes,'gzip',true),expected=entries.find(e=>!e.directory)!.data;
+			if(decoded.length!==expected.length || !decoded.every((v,i)=>v===expected[i])) fail('GZIP output verification failed.');
+		} else {
+			const verified=await read(new File([blob],name,{type:def.mime}),true);
+			if(verified.entries.length!==entries.length || entries.some((e,i)=>e.name!==verified.entries[i].name || e.data.length!==verified.entries[i].data.length || !e.data.every((v,j)=>v===verified.entries[i].data[j]))) fail('Archive output verification failed.');
+		}
 		return {blob,name,format,mime:def.mime};
 	}
 };

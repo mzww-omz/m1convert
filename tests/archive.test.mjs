@@ -69,6 +69,11 @@ test('only representable TAR routes are advertised and generated gzip/ZIP never 
     assert.ok(check.outputs.includes('ZIP'));
   }
 });
+test('GZIP output verifies file bytes even when the single payload is itself a TAR archive', async () => {
+  const nested=encodeTar(entries),zip=await encodeZip([{...entries[1],name:'nested.tar',data:nested}],false);
+  const result=await archiveCodec.run({file:new File([zip],'nested.zip'),format:'GZIP',quality:90},noop);
+  assert.deepEqual(await transform(new Uint8Array(await result.blob.arrayBuffer()),'gzip',true),nested);
+});
 test('archive adapter converts real TAR/ZIP/GZIP bytes with validated names and outputs', async () => {
   const tar=encodeTar(entries), file=new File([tar],'sample.tar',{type:'application/x-tar'});
   const analysis=await archiveCodec.inspect(file,noop);
