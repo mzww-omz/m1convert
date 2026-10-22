@@ -1,8 +1,8 @@
-import { formatById } from './registry.ts';
+import { adapters, formatById } from './registry.ts';
 
 export function outputName(name: string, formatId: string): string {
 	const format = formatById(formatId);
-	if (!format) throw new Error('This output format is not supported.');
+	if (!format || !adapters.some(a=>a.outputs.includes(formatId))) throw new Error('This output format is not supported.');
 	const base = (name.split(/[/\\]/).pop() ?? '').replace(/\.[^.]*$/, '').replace(/[\x00-\x1f\x7f<>:"|?*]/g, '_').replace(/^[. ]+|[. ]+$/g, '').slice(0, 180);
 	return `${base || 'converted'}.${format.extension}`;
 }

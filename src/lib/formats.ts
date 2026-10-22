@@ -26,8 +26,13 @@ export const imageFormats: readonly FormatDefinition[] = [
 	{ id: 'ICO', mime: 'image/x-icon', extension: 'ico', extensions: ['ico'], quality: false,
 		matches: b => b.length >= 6 && b[0] === 0 && b[1] === 0 && b[2] === 1 && b[3] === 0 },
 	{ id: 'SVG', mime: 'image/svg+xml', extension: 'svg', extensions: ['svg'], quality: false,
-		matches: b => /^\s*(?:<\?xml\s[^?]*\?>\s*)?(?:<!DOCTYPE\s[^>]*>\s*)?<svg(?:\s|\/?>)/i.test(new TextDecoder().decode(b.subarray(0,4096))) }
+		matches: b => /^\s*(?:<\?xml\s[^?]*\?>\s*)?(?:<!DOCTYPE\s[^>]*>\s*)?<svg(?:\s|\/?>)/i.test(new TextDecoder().decode(b.subarray(0,4096))) },
+	{ id:'GIF', mime:'image/gif', extension:'gif', extensions:['gif'], quality:false,
+		matches:b=>['GIF87a','GIF89a'].includes(ascii(b,0,6)) },
+	{ id:'TIFF', mime:'image/tiff', extension:'tiff', extensions:['tif','tiff'], quality:false,
+		matches:b=>(b[0]===73&&b[1]===73&&b[2]===42&&b[3]===0)||(b[0]===77&&b[1]===77&&b[2]===0&&b[3]===42) }
 ];
+export const imageOutputs=imageFormats.filter(f=>!['SVG','GIF'].includes(f.id));
 
 export function ascii(bytes: Uint8Array, offset: number, length: number): string {
 	return String.fromCharCode(...bytes.subarray(offset, offset + length));

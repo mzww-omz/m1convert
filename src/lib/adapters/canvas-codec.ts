@@ -1,5 +1,5 @@
 import type { EngineAdapter, Stage } from '../engine-types.ts';
-import { imageFormats } from '../formats.ts';
+import { imageFormats, imageOutputs } from '../formats.ts';
 import { inspectFile, verifyOutput, type ImageInfo } from '../image-format.ts';
 import { outputName } from '../results.ts';
 
@@ -22,7 +22,10 @@ async function rgbaBitmap(rgba: {width:number;height:number;data:Uint8ClampedArr
 }
 async function decode(file: Blob, info: ImageInfo, frameIndex = info.frame): Promise<ImageBitmap> {
 	let bitmap: ImageBitmap;
-	if (info.format === 'BMP') {
+	if (info.format === 'TIFF') {
+		const {decodeTiff}=await import('./tiff.ts');
+		bitmap=await rgbaBitmap(decodeTiff(new Uint8Array(await file.arrayBuffer())));
+	} else if (info.format === 'BMP') {
 		const { decodeBmp }=await import('./bmp.ts');
 		bitmap=await rgbaBitmap(decodeBmp(new Uint8Array(await file.arrayBuffer())));
 	} else if (info.format === 'ICO') {
@@ -48,7 +51,11 @@ async function decode(file: Blob, info: ImageInfo, frameIndex = info.frame): Pro
 }
 async function encode(canvas: OffscreenCanvas, id: string, quality: number): Promise<Blob> {
 	const format=imageFormats.find(f => f.id===id);
-	if (!format || id==='SVG') throw new Error('This output format is not supported.');
+	if (!format || !imageOutputs.includes(format)) throw new Error('This output format is not supported.');
+	if (id==='TIFF') {
+		const {encodeTiff}=await import('./tiff.ts');
+		return new Blob([encodeTiff(context(canvas).getImageData(0,0,canvas.width,canvas.height))],{type:format.mime});
+	}
 	if (id==='BMP') {
 		const { encodeBmp }=await import('./bmp.ts');
 		return new Blob([encodeBmp(context(canvas).getImageData(0,0,canvas.width,canvas.height))],{type:format.mime});
@@ -85,7 +92,7 @@ async function availableOutputs(): Promise<string[]> {
 	const canvas = new OffscreenCanvas(2, 2), outputs: string[] = [];
 	try {
 		context(canvas).fillRect(0,0,2,2);
-		for (const format of imageFormats.filter(f=>f.id!=='SVG')) {
+		for (const format of imageOutputs) {
 			try { const blob=await encode(canvas,format.id,90); await verify(blob,format.id,2,2); outputs.push(format.id); }
 			catch { /* Unsupported encoders (including silent PNG fallback) are not advertised. */ }
 		}
@@ -114,7 +121,7 @@ export const canvasCodec: EngineAdapter = {
 		} finally { bitmap.close(); canvas.width = canvas.height = 1; }
 	},
 	async run(request, stage) {
-		if (!imageFormats.some(f=>f.id===request.format && f.id!=='SVG')) throw new Error('This output format is not supported.');
+		if (!imageOutputs.some(f=>f.id===request.format)) throw new Error('This output format is not supported.');
 		if (!Number.isFinite(request.quality) || request.quality < 1 || request.quality > 100) throw new Error('Quality must be between 1 and 100.');
 		const { info, bitmap } = await read(request.file, stage, request.frame);
 		const canvas = new OffscreenCanvas(info.width, info.height);

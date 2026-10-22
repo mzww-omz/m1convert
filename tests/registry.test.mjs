@@ -26,7 +26,8 @@ test('registry retains all nine original paths, including re-encoding', () => {
     for (const output of ['PNG', 'JPEG', 'WEBP']) assert.deepEqual(planConversion(input, output).steps, [{ adapter: 'canvas', input, output }]);
   }
   assert.deepEqual(formatsFor('PNG', ['PNG', 'JPEG']), ['PNG', 'JPEG']);
-  assert.deepEqual(formatsFor('GIF', ['PNG']), []);
+  assert.deepEqual(formatsFor('GIF', ['PNG']), ['PNG']);
+  assert.deepEqual(formatsFor('PNG', ['GIF','SVG']), []);
   assert.throws(() => planConversion('PNG', 'SVG'), /not supported/);
 });
 

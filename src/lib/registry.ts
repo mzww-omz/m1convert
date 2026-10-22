@@ -1,4 +1,4 @@
-import { imageFormats, type FormatDefinition } from './formats.ts';
+import { imageFormats, imageOutputs, type FormatDefinition } from './formats.ts';
 import type { EngineAdapter } from './engine-types.ts';
 import { archiveFormats } from './archive-formats.ts';
 import { audioFormats } from './audio-formats.ts';
@@ -14,7 +14,7 @@ export interface AdapterDefinition {
 // Register descriptors here; codec implementations are imported only inside the worker.
 export const adapters: readonly AdapterDefinition[] = [{
 	id: 'canvas', formats: imageFormats,
-	inputs: imageFormats.map(f => f.id), outputs: imageFormats.filter(f => f.id !== 'SVG').map(f => f.id),
+	inputs: imageFormats.map(f => f.id), outputs: imageOutputs.map(f => f.id),
 	load: async () => (await import('./adapters/canvas-codec.ts')).canvasCodec
 }, {
 	id:'archive', formats:archiveFormats, inputs:archiveFormats.map(f=>f.id), outputs:archiveFormats.map(f=>f.id),

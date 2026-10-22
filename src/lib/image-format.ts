@@ -142,7 +142,7 @@ export async function inspectFile(file: File, output = false): Promise<ImageInfo
 	if (file.size > (output ? LIMITS.maxOutputBytes : LIMITS.maxFileBytes)) throw new Error(output ? 'Output exceeds the 64 MiB limit.' : 'File exceeds the 32 MiB limit.');
 	const bytes = new Uint8Array(await file.arrayBuffer());
 	const format = detectFormat(bytes);
-	if (!format) throw new Error('This file is not supported. Choose a supported still image.');
+	if (!format || !format.mime.startsWith('image/')) throw new Error('This file is not supported. Choose a supported still image.');
 	if (file.type && file.type !== 'application/octet-stream' && file.type !== format.mime && !(format.id === 'ICO' && file.type === 'image/vnd.microsoft.icon') && !(format.id === 'BMP' && file.type === 'image/x-ms-bmp'))
 		throw new Error(`The declared MIME type does not match the ${format.id} file contents.`);
 	const extension = file.name.includes('.') ? file.name.split('.').pop()?.toLowerCase() : '';
@@ -151,6 +151,8 @@ export async function inspectFile(file: File, output = false): Promise<ImageInfo
 	if (format.id === 'PNG') raw = pngInfo(bytes);
 	else if (format.id === 'JPEG') raw = jpegInfo(bytes);
 	else if (format.id === 'WEBP') raw = webpInfo(bytes);
+	else if (format.id === 'GIF') raw = { ...(await import('./adapters/gif.ts')).gifInfo(bytes), orientation:1 };
+	else if (format.id === 'TIFF') raw = { ...(await import('./adapters/tiff.ts')).tiffInfo(bytes), orientation:1 };
 	else if (format.id === 'BMP') raw = { ...(await import('./adapters/bmp.ts')).bmpInfo(bytes), orientation: 1 };
 	else if (format.id === 'AVIF') raw = { ...(await import('./adapters/avif.ts')).avifInfo(bytes), orientation: 1 };
 	else if (format.id === 'SVG') raw = { ...(await import('./adapters/svg.ts')).svgInfo(bytes), orientation: 1 };
