@@ -1,6 +1,6 @@
 # Convert
 
-Minimal appearance, fluid interaction. A fully client-side image, PCM audio and ZIP / TAR / GZIP converter built on Svelte 5, TypeScript, SvelteKit and Vite. Files never leave the browser. No conversion service, CDN, telemetry or added runtime dependency.
+Minimal appearance, fluid interaction. A fully client-side image, PCM audio and ZIP / TAR / GZIP converter built on Svelte 5, TypeScript, SvelteKit and Vite. Files never leave the browser. No conversion service, CDN or telemetry. Audio WASM is pinned, lazily loaded and self-hosted with license notices and corresponding sources.
 
 ## Supported conversions
 
@@ -30,14 +30,15 @@ Same-format re-encoding is supported. Output choices are restricted to encoders 
 
 | Input | Output | Verified format pairs |
 | --- | --- | --- |
-| PCM WAV / uncompressed AIFF | PCM16 WAV | 2 |
+| MP3 / PCM WAV / FLAC / OGG Vorbis / Opus / AAC-LC / M4A (AAC) | WAV / MP3 / FLAC / OGG Vorbis / Opus / AAC / M4A | 49 |
+| Uncompressed AIFF | Same seven audio outputs | 7 |
 | ZIP (store/deflate), POSIX USTAR TAR, TAR.GZ, GZIP | ZIP, TAR, TAR.GZ, single-file GZIP | 16 |
 
-**72 total verified format pairs**: 54 image + 2 audio + 16 archive. Counts exclude presets and batch packaging; routes depend on browser support and actual file structure. GZIP output needs exactly one regular file; TAR destinations require USTAR-representable names and size. No unsupported codec is advertised.
+**126 total verified format pairs in Chromium**: 54 image + 56 audio + 16 archive. All previous 72 paths remain. AAC/M4A require verified native WebCodecs; unsupported browser codecs are hidden. Counts exclude presets and batch packaging; routes depend on browser support and actual file structure. GZIP output needs exactly one regular file; TAR destinations require USTAR-representable names and size. No unsupported codec is advertised.
 
-Audio exposes sample-rate/channel settings and removes metadata. Multiple WAV/AIFF files are converted sequentially with shared settings and downloaded as one real ZIP (32 files / 32 MiB total). ZIP offers Store or Deflate, not fictitious numeric levels. Archives retain bytes, directories and file times where possible; GZIP output drops directory entries and does not store the original filename. No filesystem extraction occurs. All jobs use the existing cancellable worker/deadline lifecycle.
+Audio exposes sample-rate/channel settings, target bitrate and MP3/Vorbis VBR quality. Source metadata (title/artist/cover art/etc.) is removed; newly generated encoder identification and codec delay information may remain. WAV/FLAC output is PCM16, not archival precision preservation. Opus uses 48000 Hz; incompatible explicit MP3/Opus UI settings are adjusted visibly on format changes. Multiple supported audio files are converted sequentially with shared settings and downloaded as one real ZIP (32 files / 32 MiB total). ZIP offers Store or Deflate, not fictitious numeric levels. Archives retain bytes, directories and file times where possible; GZIP output drops directory entries and does not store the original filename. No filesystem extraction occurs. All jobs use the existing cancellable worker/deadline lifecycle.
 
-See **[detailed format limits, safety controls, dependency comparison and deferred support](docs/continuous-development.md)**. Compressed audio encoders (MP3/FLAC/Opus/AAC etc.), 7z/RAR/BZIP2/XZ and larger WASM dependencies are not implemented.
+See **[compressed-audio matrix, licensing, payload sizes and limits](docs/compressed-audio.md)** and [archive/image details](docs/continuous-development.md). Compressed audio is capped at **8 million interleaved decoded samples** (about **83 seconds at 48 kHz stereo**); it is a bounded clip converter, not a long-form streaming transcoder. AAC/M4A are native AAC-LC paths, not a bundled AAC WASM fallback. WMA, ALAC, video/multiple audio streams, fragmented MP4 and 7z/RAR/BZIP2/XZ are not implemented.
 
 ### Extended image format boundaries
 
@@ -55,15 +56,15 @@ See **[detailed format limits, safety controls, dependency comparison and deferr
 npm run dev
 ```
 
-Select, drop or paste a file, choose the output and Convert. Download saves the real encoded Blob with a matching MIME type and extension. Convert Again and Cancel retain the source and settings. New File/Remove clear state and revoke associated Blob URLs. Change file cancels pending analysis. Multiple WAV/AIFF filenames enable audio batch conversion; other multiple-file drops select the first file and say so. During conversion, cancel before replacing the input.
+Select, drop or paste a file, choose the output and Convert. Download saves the real encoded Blob with a matching MIME type and extension. Convert Again and Cancel retain the source and settings. New File/Remove clear state and revoke associated Blob URLs. Change file cancels pending analysis. Multiple supported audio filenames enable audio batch conversion; other multiple-file drops select the first file and say so. During conversion, cancel before replacing the input.
 
 Analysis shows filename/size immediately and fills in validated metadata, a bounded thumbnail and available outputs asynchronously. Invalid files remain in Details with a clear explanation, Try again, Change file and Remove. Conversion failures use the same surface with retry.
 
-Progress displays actual processing stages. Native image decode/encode APIs do not expose measurable progress, so they use an **indeterminate** bar, not fabricated percentages. Very short conversions may finish before a progress transition becomes visible; no artificial delay is added. There is no production demo mode or demo URL parameter.
+Progress displays actual processing stages. Native image decode/encode APIs do not expose measurable progress, so they use an **indeterminate** bar, not fabricated percentages. Audio encoding reports processed PCM frames (coalesced to integer percentages); batch progress counts verified files. Read/decode/verification or codec loading may be indeterminate. Percentages are work counts, not elapsed-time estimates. Very short conversions may finish before a progress transition becomes visible; no artificial delay is added. There is no production demo mode or demo URL parameter.
 
 ## Browser requirements
 
-All categories require module Workers. Images additionally require worker-side `createImageBitmap`, `OffscreenCanvas` with a 2D context, and `convertToBlob`. Archive compression uses runtime-probed `CompressionStream` / `DecompressionStream`; PCM audio needs neither Web Audio nor Canvas. Local Chromium has been verified; other browser engines/versions need independent testing. Missing worker/decoder support produces an error, never a blocking main-thread conversion fallback. SVG uses a cancellable async image-decoding bridge because worker `createImageBitmap(Blob)` does not reliably decode SVG. Encoder capability is tested in a worker on file analysis and output MIME/signature and re-decodability are checked for every conversion.
+All categories require module Workers. Images additionally require worker-side `createImageBitmap`, `OffscreenCanvas` with a 2D context, and `convertToBlob`. Archive compression uses runtime-probed `CompressionStream` / `DecompressionStream`; PCM and WASM audio need neither Web Audio nor Canvas. Native AAC requires working worker-side AudioEncoder/AudioDecoder support, verified by actual encode/mux/decode probes. Baseline WASM needs neither SIMD nor cross-origin isolation/SharedArrayBuffer. Local Chromium has been verified; other browser engines/versions need independent testing. Missing worker/decoder support produces an error, never a blocking main-thread conversion fallback. SVG uses a cancellable async image-decoding bridge because worker `createImageBitmap(Blob)` does not reliably decode SVG. Encoder capability is tested in a worker on file analysis and output MIME/signature and re-decodability are checked for every conversion.
 
 ## Safety and resource limits
 
@@ -85,7 +86,11 @@ All categories require module Workers. Images additionally require worker-side `
 | Shared worker RGBA/Canvas pipeline and verified capabilities | `src/lib/adapters/canvas-codec.ts` |
 | Lazy image validation / binary codecs | `src/lib/adapters/{avif,bmp,ico,svg,gif,tiff}.ts` |
 | Audio/archive descriptors | `src/lib/{audio,archive}-formats.ts` |
-| Lazy PCM decode/resample/WAV encode/batching | `src/lib/adapters/pcm.ts` |
+| Existing PCM decode/resample/WAV encode | `src/lib/adapters/pcm.ts` |
+| Independent compressed audio engine and batch packaging | `src/lib/adapters/audio-codec.ts` |
+| Bounded compressed-container/stream validation | `src/lib/audio-validation.ts` |
+| Lazy LGPL WASM / native AAC bridges | `src/lib/adapters/{wasm-audio,native-aac}.ts` |
+| Self-hosted codec / license and source assets | `static/vendor/`, `static/legal/` |
 | Lazy bounded ZIP/TAR/GZIP engine | `src/lib/adapters/archive.ts` |
 | Cancellable async SVG bitmap bridge | `src/lib/adapters/{worker-svg,svg-raster}.ts`, `scheduler.ts` |
 | Adapter selection and worker protocol | `src/lib/conversion.worker.ts`, `engine-types.ts` |
@@ -118,6 +123,7 @@ With the local server running and an existing Playwright + Chromium installation
 ```sh
 npm run test:browser
 npm run test:categories
+npm run test:audio
 ```
 
 For an installation outside this repository:
@@ -133,6 +139,6 @@ No browser/package is downloaded automatically. For production verification, bui
 
 The browser suite exercises the original nine and extended real conversions (including BMP 24-bit input, all ICO output sizes/selected frames, AVIF input and rejected unsafe SVG), downloaded-file bytes and decoding, dimensions/transparency/JPEG background, both quality controls, all eight EXIF orientations, unsupported encoders, validation/errors/retry, high-entropy 16-megapixel cancellation, worker/URL cleanup, input methods, rapid operations, focus, reduced motion, touch emulation, 320px/tablet/resizing and actual frame geometry/timing. Fixtures in `tests/fixtures/` contain opaque, semi-transparent and transparent regions. `swatch.avif` is an 8-bit still with alpha generated locally from the PNG fixture using installed ImageMagick; conversion at runtime never uses that tool. Controller unit tests compile the real runes module with the existing Svelte/TypeScript toolchain.
 
-The category browser suite additionally checks all 16 archive pairs, two audio routes with three settings each, batch ZIP contents, actual archive/audio cancellation, errors, 320px/desktop layouts, persistent DOM and zero workers/URLs/uploads/external requests after cleanup. Node tests cover archive attacks, expansion bounds, absent compression APIs, extensible PCM, long names and nested payloads.
+The category browser suite additionally checks all 16 archive pairs, the legacy PCM routes/settings, batch ZIP contents, actual archive/audio cancellation, errors, 320px/desktop layouts, persistent DOM and zero workers/URLs/uploads/external requests after cleanup. `test:audio` uses the existing local FFmpeg/ffprobe executables to independently decode all 56 real audio downloads, check samples/duration/channels/metadata/SNR, verify MP3 bitrate and actual quality changes, and test mixed batches, Cancel, blocked WASM and missing native AAC. Node tests cover archive attacks, expansion bounds, absent compression APIs, extensible PCM, long names and nested payloads.
 
-Screenshots, downloaded files and measured frame intervals are written to ignored `artifacts/phase1/` and `artifacts/continuous/`. Results and unverified environments are recorded in [`docs/QA.md`](docs/QA.md). Physical mobile devices, OS clipboard integration, screen readers, Safari and Firefox still require manual verification.
+Screenshots, downloaded files and measured frame intervals are written to ignored `artifacts/phase1/`, `artifacts/continuous/` and `artifacts/audio/`. Codec notices/source downloads are linked from the footer and `static/legal/NOTICE.txt`; see deployment/replacement obligations in `docs/compressed-audio.md`. Results and unverified environments are recorded in [`docs/QA.md`](docs/QA.md). Physical mobile devices, OS clipboard integration, screen readers, Safari and Firefox still require manual verification.

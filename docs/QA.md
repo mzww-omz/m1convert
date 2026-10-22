@@ -1,6 +1,6 @@
 # Verification history
 
-Latest results: [Continuous development verification](#continuous-development-verification). The Phase 2 record below is historical; its format exclusions/counts describe that earlier commit.
+Latest results: [Compressed audio verification](#compressed-audio-verification). Earlier Phase 2 / continuous-development records are historical; their exclusions/counts describe those earlier commits.
 
 # Phase 2 verification — extended image formats
 
@@ -127,3 +127,43 @@ Verified 2026-10-22 on Node **26.0.0**, existing Chromium **156.0.8078.4**, macO
 - The hard expanded-byte/output cap bounds JS buffers; browser codec internals and peak process memory remain unmeasured. The 30-second deadline may reject legitimate large files/batches. Native stage progress is indeterminate.
 - General compressed audio and broader archive/image support require approval of exact pinned WASM packages/builds, license obligations, payload size, virtual-filesystem copies, browser/cross-origin constraints, cancellation and pre-allocation extraction limits. See [comparison and implemented limits](continuous-development.md). No major dependency was silently introduced.
 - Optional LSP diagnostics returned unavailable default server routes. Svelte/TypeScript verification used the successful `npm run check`; enabling additional LSP checks requires installing/configuring a desired server in `pi-lsp.json`.
+
+## Compressed audio verification
+
+2026-10-22, Node **26.0.0**, Chromium **156.0.8078.4**, macOS ARM64, independent local FFmpeg/ffprobe **8.1.1**. Production build/preview (`127.0.0.1:4177`), not a demo/transcoding service. Existing MorphSurface and layout stylesheet are unchanged; native AAC remains conditional, not a hidden WASM/GPL fallback.
+
+| Gate | Result |
+| --- | --- |
+| `npm test` | **67 tests passed**, including all original 55 cases |
+| `npm run check` | 0 errors / 0 warnings |
+| `npm run build` | Passed; expected adapter-auto deployment-target notice only |
+| `npm run test:browser` | Original nine + all extended image pairs; validation, orientations, quality, actual heavy Cancel, frame motion and layout regression passed |
+| `npm run test:categories` | All 16 archive pairs and legacy audio settings/batch/Cancel passed |
+| `npm run test:audio` | **56 audio pairs** with independent FFmpeg decode/sample/duration/channel/SNR/metadata checks; bitrate/quality controls; mixed batches; lifecycle/fallback tests passed |
+| Design detector / snapshots | No findings; desktop and 320px settings inspected, one bounded spacing/label adjustment; primary action remains visible |
+| Optional LSP | Default server routes unavailable; actual compiler/type verification is the successful Svelte check |
+
+### Paths and real outputs
+
+- Requested seven audio inputs × seven outputs = **49 pairs**; existing AIFF input × seven = **7 pairs**. Includes same-format re-encoding. With 54 image and 16 archive pairs, **126 unique format pairs** were verified in Chromium; all prior 72 are retained. Presets, codec variants and ZIP batch packaging are not extra pairs.
+- MP3/Vorbis/Opus/FLAC use a pinned single-thread LGPL libav WASM build. WAV output and the existing WAV/AIFF→WAV planner still use the native TypeScript PCM path. AAC/ADTS and M4A are **actual native AAC-LC** paths in this Chromium environment. Removing native AudioEncoder/AudioDecoder hides those destinations and rejects unsupported AAC input without breaking WASM output routes.
+- Every matrix download is read by external FFmpeg/ffprobe, not only by the producing library. Codec name, rate, channel count, decoded sample duration and source-tag absence are asserted. Lossy outputs on the supplied two-second multi-frequency stereo signal had aligned SNR ≥22.1 dB even after lossy-input re-encoding. PCM16→WAV/FLAC fixtures match samples exactly; a regression additionally checks high positive full-scale integer values to prevent one-LSB attenuation. Tests assert sample counts/duration with explicit codec-padding tolerances; this is not a general perceptual benchmark.
+- MP3 at 128/320 kbps is independently checked against the requested actual bitrate; 129 kbps is rejected rather than rounded. Both MP3/Vorbis VBR quality extremes change encoded bytes and measured output SNR in the expected direction. Mono/44.1 kHz settings produce actual mono/44.1 kHz MP3. Native AAC bitrates are targets and can produce VBR below the nominal target, explicitly labeled.
+- ADTS has no reliable container duration field. FFprobe's bitrate-derived duration differed from actual decoded duration on a generated VBR file; verification uses decoded sample counts, not that estimate. M4A's wholly negative priming samples are closed/skipped before copy, avoiding zero-length copy offsets. Source tags/artwork are removed; generated encoder IDs/delay metadata may remain.
+
+### Safety, Cancel and resource checks
+
+- Complete MP3 frame chains, Ogg page CRC/sequence/EOS, FLAC STREAMINFO/count budgets and strict decoder CRC/explode mode, bounded ADTS frame headers, MIME/extensions and actual stream codec are checked. A corrupted terminal FLAC CRC is rejected. Malformed/forged MP4 child ranges, sample counts/sizes/offsets and non-AAC sample entries are rejected before native library parsing. ALAC-in-M4A is a negative browser fixture, not misadvertised as AAC.
+- WAV/FLAC input expansion and resampling remain under 8,000,000 interleaved samples; no decoded buffers accumulate without checking the budget. Uploads/batches remain 32 MiB, output 64 MiB, 32 files, 30-second deadline. This is approximately **83 seconds of stereo 48 kHz**, not long-form streaming support. Peak native/process memory and immediate OS reclamation are not measured or claimed.
+- Browser route control blocks the real self-hosted WASM initialization request, then Cancel must terminate the worker, retain the source/settings and ignore stale results. A separate **60-second noise FLAC→MP3** job is cancelled after measured encoding progress is between 5% and 90%; the actual active worker is terminated and no delayed Download appears.
+- Blocking WASM still permits original PCM→WAV and hides unavailable WASM encoders. Removing native AAC APIs leaves MP3/Opus WASM destinations available and hides AAC/M4A. These are capability simulations, **not** Firefox/Safari test runs.
+- MP3/FLAC/M4A mixed batches produce a real ZIP with three independently decoded Opus files. All successful/error/cancel jobs end with no active workers and no retained URLs after reset; no page errors, conversion uploads or external requests occur. Source/encoder contexts, virtual files, native AudioSamples and input/output objects are freed/closed normally; worker termination is the abort/deadline backstop.
+- Progress is actual encoded-frame fractions coalesced to integer percentages; batch progress counts completed verified files. Loading/decode can be indeterminate. Percent is not an elapsed-time prediction. No artificial processing delay was added.
+
+### Payload, licensing and compatibility
+
+- WASM **2,368,147 bytes** (2.26 MiB); wrapper+glue+WASM **2,686,113 bytes** (2.56 MiB), locally gzip-compressed **1,018,519 bytes** (~0.97 MiB). Lazy Mediabunny worker chunk: 483,349 bytes / 122,511 gzip. These are artifact/compression measurements, not guaranteed wire transfer sizes. Initial upload-screen requests contain no audio WASM assets.
+- Optional same-origin corresponding-source archives total **31,442,400 bytes**, not requested during conversion. GPL `@ffmpeg/core` was evaluated but **not installed**. LGPL library notices/sources/replacement instructions and MPL source/license access are provided in `static/legal/NOTICE.txt` and linked from the footer. Any future deployment must preserve these alongside `static/vendor/`. No push/deploy was performed.
+- The recorded 56-path run had click→Download-visible latency 208–1539 ms, median 664 ms, on two-second audio. This includes morph/startup overhead and is not a codec-only or universal throughput claim. Result JSON and downloaded fixtures are in ignored `artifacts/audio/`.
+- Firefox 1553 and WebKit 2368 executable paths are still absent; no browser was installed. Actual Safari/Firefox, physical devices, wider music/speech/profile corpora and peak memory remain unverified. One FFmpeg experimental-native-Vorbis fixture exposed a right-channel discrepancy between that decoder and libvorbis; the quality fixture instead uses standard libvorbis output independently verified by FFmpeg. This experimental-encoder interoperability case is unresolved, not hidden as a claimed fix.
+- Full matrix, limits, source provenance and dependency comparison: [`compressed-audio.md`](compressed-audio.md).

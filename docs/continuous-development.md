@@ -1,5 +1,7 @@
 # Continuous converter development
 
+> Historical first expansion (72 routes). The later [compressed-audio implementation](compressed-audio.md) supersedes this document's no-dependency/audio deferrals and raises the Chromium-verified total to 126. Its safety limits remain unless explicitly changed there.
+
 ## Constraints and implementation plan
 
 Preserve MorphSurface and its persistent DOM, all existing image routes, local-only files, one cancellable worker per job, 32 MiB uploads, 64 MiB outputs and 30-second deadlines. No push/deploy, runtime downloads, or dependency installation. Implement inline with test-first checks and small commits; unsupported formats never appear as output choices.
