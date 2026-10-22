@@ -7,9 +7,10 @@ import {outputName} from '../results.ts';
 export const compressedOutputs=['MP3','FLAC','OGG','OPUS','AAC','M4A'];
 const qualityFormats=['MP3','OGG'];
 let outputs:Promise<string[]>|undefined;
-export async function readAudio(file:File,output=false) {
+export async function readAudio(file:File,output=false,onDecode?:()=>void) {
 	if(!file.size||file.size>(output?64:32)*1024**2)throw new Error('Audio input is empty or exceeds the size limit.');
 	const bytes=new Uint8Array(await file.arrayBuffer()),header=inspectAudioBytes(file,bytes);let pcm:Pcm;
+	onDecode?.();
 	if(['WAV','AIFF'].includes(header.format))pcm=decodePcm(bytes,header.format);
 	else if(['AAC','M4A'].includes(header.format))pcm=await (await import('./native-aac.ts')).decodeAac(file);
 	else pcm=await decodeWasm(bytes,header.format);
@@ -38,7 +39,7 @@ export function availableAudioOutputs() {
 	})();return outputs;
 }
 async function single(request:ConversionRequest,stage:StageReporter) {
-	stage('reading');const {pcm}=await readAudio(request.file);stage('decoding');
+	stage('reading');const {pcm}=await readAudio(request.file,false,()=>stage('decoding'));stage('decoding');
 	const settings=request.audio??{sampleRate:0,channels:0},format=request.format;
 	if(!['WAV',...compressedOutputs].includes(format))throw new Error('Unsupported audio output format.');
 	const bitrate=settings.bitrate??192,mode=settings.mode??'bitrate';
@@ -47,7 +48,8 @@ async function single(request:ConversionRequest,stage:StageReporter) {
 	let rate=settings.sampleRate||pcm.sampleRate;
 	if(format==='OPUS') {if(settings.sampleRate&&settings.sampleRate!==48000)throw new Error('Ogg Opus output uses 48000 Hz.');rate=48000;}
 	if(format==='MP3'&&!mp3Rates.includes(rate)) {if(settings.sampleRate)throw new Error('MP3 does not support this sample rate.');rate=48000;}
-	if(format==='MP3'&&mode==='bitrate'&&(bitrate<8||bitrate>320||(rate<32000&&bitrate>160)))throw new Error('MP3 bitrate is incompatible with the sample rate.');
+	const mp3Bitrates=rate<32000?[8,16,24,32,40,48,56,64,80,96,112,128,144,160]:[32,40,48,56,64,80,96,112,128,160,192,224,256,320];
+	if(format==='MP3'&&mode==='bitrate'&&!mp3Bitrates.includes(bitrate))throw new Error('MP3 bitrate is incompatible with the sample rate.');
 	const converted=convertPcm(pcm,{...settings,sampleRate:rate});stage('encoding',0);let bytes:Uint8Array;
 	if(format==='WAV')bytes=encodeWav(converted);
 	else if(['AAC','M4A'].includes(format))bytes=await (await import('./native-aac.ts')).encodeAac(converted,format,bitrate,p=>stage('encoding',Math.min(95,p*95)));
@@ -61,7 +63,7 @@ async function single(request:ConversionRequest,stage:StageReporter) {
 }
 export const audioCodec:EngineAdapter={
 	async inspect(file,stage) {
-		stage('reading');const {pcm,format}=await readAudio(file);stage('verifying');const def=audioFormats.find(f=>f.id===format)!;
+		stage('reading');const {pcm,format}=await readAudio(file,false,()=>stage('decoding'));stage('verifying');const def=audioFormats.find(f=>f.id===format)!;
 		return {info:{format,mime:def.mime,category:'audio',sampleRate:pcm.sampleRate,channels:pcm.channels,duration:pcm.samples.length/pcm.channels/pcm.sampleRate,codec:format==='M4A'?'AAC':format==='OGG'?'Vorbis':format},outputs:await availableAudioOutputs(),preview:null};
 	},
 	async run(request,stage) {

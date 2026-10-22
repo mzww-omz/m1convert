@@ -37,6 +37,15 @@ test('WASM MP3 FLAC Vorbis and Opus inputs decode to bounded real WAV samples',a
   assert.equal(pcm.channels,2);assert.ok(pcm.samples.some(v=>Math.abs(v)>.1));assert.ok(Math.abs(pcm.samples.length/2/48000-2)<.08);
  }
 });
+test('a corrupt FLAC frame checksum is rejected instead of silently treating damaged audio as valid',async()=>{
+ const f=await fixture('flac'),bytes=new Uint8Array(await f.arrayBuffer());bytes[bytes.length-1]^=1;
+ await assert.rejects(audioCodec.inspect(new File([bytes],f.name),noop),/corrupt|decode|invalid|checksum/i);
+});
+test('MP3 rejects a bitrate the encoder would silently round and invalid audio settings',async()=>{
+ const file=await fixture('wav');
+ for(const audio of [{sampleRate:48000,channels:2,bitrate:129,mode:'bitrate'},{sampleRate:48000,channels:3},{sampleRate:48000,channels:2,mode:'fake'}])
+  await assert.rejects(audioCodec.run({file,format:'MP3',quality:90,audio},noop),/bitrate|channel|mode/i);
+});
 test('every WASM output is genuine, re-decodable audio and uses requested channels/rate',async()=>{
  const file=await fixture('wav');
  for(const format of ['MP3','FLAC','OGG','OPUS']) {

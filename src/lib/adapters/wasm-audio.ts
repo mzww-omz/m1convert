@@ -36,6 +36,7 @@ export async function decodeWasm(bytes:Uint8Array,expected:string):Promise<Pcm> 
 		if(!required[expected]?.includes(codec))throw new Error('The actual audio codec does not match the selected container.');
 		const par=await lib.ff_copyout_codecpar(stream.codecpar);audioBounds(par.sample_rate!,par.channels!,0);
 		[,c,pkt,frame]=await lib.ff_init_decoder(stream.codec_id,stream.codecpar);
+		if(await lib.av_opt_set(c,'err_detect','crccheck+explode',0)<0)throw new Error('Strict audio decoder validation is unavailable.');
 		const chunks:Float32Array[]=[];let total=0,rate=0,channels=0;
 		for(;;) {
 			const [code,packets]=await lib.ff_read_frame_multi(demux,pkt,{limit:16384});
