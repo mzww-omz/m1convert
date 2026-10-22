@@ -1,16 +1,19 @@
 import { imageFormats, type FormatDefinition } from './formats.ts';
+import type { EngineAdapter } from './engine-types.ts';
 
 export interface AdapterDefinition {
 	id: string;
 	formats: readonly FormatDefinition[];
 	inputs: readonly string[];
 	outputs: readonly string[];
+	load: () => Promise<EngineAdapter>;
 }
 
 // Register descriptors here; codec implementations are imported only inside the worker.
 export const adapters: readonly AdapterDefinition[] = [{
 	id: 'canvas', formats: imageFormats,
-	inputs: imageFormats.map(f => f.id), outputs: imageFormats.map(f => f.id)
+	inputs: imageFormats.map(f => f.id), outputs: imageFormats.map(f => f.id),
+	load: async () => (await import('./adapters/canvas-codec.ts')).canvasCodec
 }];
 export const formats = [...new Map(adapters.flatMap(a => a.formats).map(f => [f.id, f])).values()];
 export const formatById = (id: string) => formats.find(f => f.id === id);
