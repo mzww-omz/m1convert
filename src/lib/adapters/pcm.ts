@@ -93,16 +93,17 @@ export function convertPcm(pcm:Pcm,settings:AudioSettings):Pcm {
 	}
 	return {sampleRate:rate,channels,samples:out};
 }
+export function quantizePcm16(value:number):number {
+	if(!Number.isFinite(value))fail('Invalid audio sample.');
+	return Math.max(-32768,Math.min(32767,Math.round(value*32768)));
+}
 export function encodeWav(pcm:Pcm):Uint8Array {
 	bounds(pcm.sampleRate,pcm.channels,pcm.samples.length/pcm.channels);
 	const b=new Uint8Array(44+pcm.samples.length*2),v=new DataView(b.buffer);
 	const str=(p:number,s:string)=>b.set(new TextEncoder().encode(s),p);
 	str(0,'RIFF'); v.setUint32(4,b.length-8,true); str(8,'WAVE'); str(12,'fmt '); v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,pcm.channels,true);
 	v.setUint32(24,pcm.sampleRate,true); v.setUint32(28,pcm.sampleRate*pcm.channels*2,true); v.setUint16(32,pcm.channels*2,true); v.setUint16(34,16,true); str(36,'data'); v.setUint32(40,pcm.samples.length*2,true);
-	for(let i=0;i<pcm.samples.length;i++) {
-		const n=pcm.samples[i]; if(!Number.isFinite(n)) fail('Invalid audio sample.');
-		v.setInt16(44+i*2,Math.round(Math.max(-1,Math.min(1,n))*(n<0?32768:32767)),true);
-	}
+	for(let i=0;i<pcm.samples.length;i++) v.setInt16(44+i*2,quantizePcm16(pcm.samples[i]),true);
 	return b;
 }
 async function read(file:File) {

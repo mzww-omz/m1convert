@@ -1,6 +1,6 @@
 import type LibAV from '@libav.js/types';
 import {audioBounds} from '../audio-validation.ts';
-import type {Pcm} from './pcm.ts';
+import {quantizePcm16,type Pcm} from './pcm.ts';
 let loading:Promise<LibAV.LibAV> | undefined;
 export function loadAudioWasm():Promise<LibAV.LibAV> {
 	if(!loading) loading=(async()=>{
@@ -74,7 +74,7 @@ export async function encodeWasm(pcm:Pcm,format:string,bitrate:number,quality?:n
 		for(let start=0;start<frames;start+=size) {
 			const count=Math.min(size,frames-start);let data:Float32Array|Int16Array|Float32Array[];
 			if(sample_fmt===lib.AV_SAMPLE_FMT_FLTP)data=Array.from({length:pcm.channels},(_,ch)=>Float32Array.from({length:count},(_,i)=>pcm.samples[(start+i)*pcm.channels+ch]));
-			else if(sample_fmt===lib.AV_SAMPLE_FMT_S16)data=Int16Array.from(pcm.samples.subarray(start*pcm.channels,(start+count)*pcm.channels),v=>Math.round(Math.max(-1,Math.min(1,v))*(v<0?32768:32767)));
+			else if(sample_fmt===lib.AV_SAMPLE_FMT_S16)data=Int16Array.from(pcm.samples.subarray(start*pcm.channels,(start+count)*pcm.channels),quantizePcm16);
 			else data=pcm.samples.slice(start*pcm.channels,(start+count)*pcm.channels);
 			const packets=await lib.ff_encode_multi(c,frame,pkt,[{data,format:sample_fmt,sample_rate:pcm.sampleRate,channels:pcm.channels,channel_layout,nb_samples:count,pts:start}]);
 			await lib.ff_write_multi(oc,pkt,packets);onProgress?.((start+count)/frames);

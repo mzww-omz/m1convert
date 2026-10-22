@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {inspectAudioBytes} from '../src/lib/audio-validation.ts';
 import {audioCodec} from '../src/lib/adapters/audio-codec.ts';
-import {decodePcm} from '../src/lib/adapters/pcm.ts';
+import {decodePcm,encodeWav} from '../src/lib/adapters/pcm.ts';
 const noop=()=>{};
 export const fixture=async ext=>new File([await readFile(new URL('./fixtures/audio/music.'+ext,import.meta.url))],'music.'+ext);
 test('compressed contents and stream codec determine format, not filenames or MIME',async()=>{
@@ -40,6 +40,12 @@ test('WASM MP3 FLAC Vorbis and Opus inputs decode to bounded real WAV samples',a
 test('a corrupt FLAC frame checksum is rejected instead of silently treating damaged audio as valid',async()=>{
  const f=await fixture('flac'),bytes=new Uint8Array(await f.arrayBuffer());bytes[bytes.length-1]^=1;
  await assert.rejects(audioCodec.inspect(new File([bytes],f.name),noop),/corrupt|decode|invalid|checksum/i);
+});
+test('PCM16 and FLAC preserve all 16-bit positive full-scale values, not one-LSB attenuated samples',async()=>{
+ const values=[32767,30000,20000,16384,0,-16384,-32768],samples=Float32Array.from(values,n=>n/32768),pcm={sampleRate:48000,channels:1,samples};
+ const bytes=encodeWav(pcm),view=new DataView(bytes.buffer);assert.deepEqual(values.map((_,i)=>view.getInt16(44+i*2,true)),values);
+ const {encodeWasm,decodeWasm}=await import('../src/lib/adapters/wasm-audio.ts');
+ const decoded=await decodeWasm(await encodeWasm(pcm,'FLAC',192),'FLAC');assert.deepEqual(decoded.samples,samples);
 });
 test('MP3 rejects a bitrate the encoder would silently round and invalid audio settings',async()=>{
  const file=await fixture('wav');
