@@ -69,9 +69,6 @@
 
 <main class="app" data-ready={ready}>
 	<header class="brand">
-		<svg class="logo" width="34" height="34" viewBox="0 0 34 34" fill="none" aria-hidden="true">
-			<path d="M7 11h20l-5-5M27 23H7l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" />
-		</svg>
 		<h1>Convert</h1>
 	</header>
 
