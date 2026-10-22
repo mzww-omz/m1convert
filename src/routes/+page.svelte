@@ -33,7 +33,7 @@
 	function accept(files: FileList | File[] | null) {
 		if (!files?.length) return;
 		if (converter.state.phase === 'progress') return;
-		const batch=files.length>1 && Array.from(files).every(f=>/\.(wav|wave|aif|aiff)$/i.test(f.name));
+		const batch=files.length>1 && Array.from(files).every(f=>/\.(wav|wave|aif|aiff|mp3|flac|ogg|oga|opus|aac|adts|m4a|mp4)$/i.test(f.name));
 		notice = batch ? `${files.length} audio files. Converted one at a time; download all as ZIP.` : files.length > 1 ? 'One file at a time. The first file was selected.' : '';
 		converter.send({ type: 'LOAD', file: files[0], ...(batch?{files:Array.from(files)}:{}) });
 	}
@@ -58,7 +58,7 @@
 
 <svelte:head>
 	<title>Convert — Local file converter</title>
-	<meta name="description" content="Convert images, PCM audio and ZIP, TAR or GZIP archives locally. Your files stay in your browser." />
+	<meta name="description" content="Convert images, audio and ZIP, TAR or GZIP archives locally. Your files stay in your browser." />
 </svelte:head>
 
 <svelte:window onpaste={paste} ondrop={drop}
@@ -75,7 +75,7 @@
 	<input bind:this={input} class="file-input" type="file" multiple tabindex="-1" aria-label="Choose file"
 		onchange={() => { accept(input.files); input.value = ''; }} />
 
-	<section class="workspace" aria-label="File converter">
+	<section class="workspace" aria-label="File converter" style:margin-block={converter.state.analysis?.info.category === 'audio' ? '24px' : undefined}>
 		<MorphSurface state={converter.state} dragging={dragDepth > 0 && converter.state.phase !== 'progress'}>
 			{#snippet children(view)}
 				{#if view.phase === 'upload'}
@@ -103,14 +103,14 @@
 							<label class="field">Output format
 								<select disabled={!view.analysis} value={view.format} onchange={(event) => converter.send({ type: 'FORMAT', format: event.currentTarget.value })}>
 									{#if !view.analysis}<option value="">{view.analysisError ? 'Unavailable' : 'Checking…'}</option>{/if}
-									{#each view.analysis?.outputs ?? [] as format}<option value={format}>{format}</option>{/each}
+									{#each view.analysis?.outputs ?? [] as format}<option value={format}>{format === 'OGG' ? 'OGG Vorbis' : format === 'M4A' ? 'M4A (AAC)' : format}</option>{/each}
 								</select>
 							</label>
 							{#if view.analysis?.info.category === 'audio'}
 								<label class="field">Sample rate
 									<select value={view.audio.sampleRate} onchange={(event)=>converter.send({type:'AUDIO',sampleRate:+event.currentTarget.value})}>
-										<option value={0}>Original</option>
-										{#each sampleRates as rate}<option value={rate}>{rate} Hz</option>{/each}
+										<option value={0}>{view.format === 'OPUS' ? '48000 Hz (Opus)' : view.format === 'MP3' ? 'Original / compatible' : 'Original'}</option>
+										{#each sampleRates.filter(rate=>view.format === 'OPUS' ? rate===48000 : view.format === 'MP3' ? rate<=48000 : true) as rate}<option value={rate}>{rate} Hz</option>{/each}
 									</select>
 								</label>
 								<label class="field">Channels
@@ -118,7 +118,24 @@
 										<option value={0}>Original</option><option value={1}>Mono</option><option value={2}>Stereo</option>
 									</select>
 								</label>
-								<div class="field format-note">Encoding<span>16-bit PCM</span></div>
+								{#if ['MP3','OGG'].includes(view.format)}
+									<label class="field">Encoding mode
+										<select value={view.audio.mode ?? 'bitrate'} onchange={(event)=>converter.send({type:'AUDIO',mode:event.currentTarget.value as 'bitrate'|'quality'})}>
+											<option value="bitrate">Bitrate</option><option value="quality">Quality (VBR)</option>
+										</select>
+									</label>
+								{/if}
+								{#if ['MP3','OGG'].includes(view.format) && view.audio.mode === 'quality'}
+									<label class="field quality">Quality <span class="quality-value">{view.quality}%</span>
+										<input type="range" min="1" max="100" value={view.quality} oninput={(event)=>converter.send({type:'QUALITY',quality:+event.currentTarget.value})} />
+									</label>
+								{:else if !['WAV','FLAC'].includes(view.format)}
+									<label class="field">Bitrate
+										<select value={view.audio.bitrate ?? 192} onchange={(event)=>converter.send({type:'AUDIO',bitrate:+event.currentTarget.value})}>
+											{#each [32,48,64,96,128,160,192,256,320].filter(n=>view.format!=='MP3'||(view.audio.sampleRate||view.analysis?.info.sampleRate||48000)>=32000||n<=160) as bitrate}<option value={bitrate}>{bitrate} kbps</option>{/each}
+										</select>
+									</label>
+								{:else}<div class="field format-note">Encoding<span>{view.format === 'FLAC' ? '16-bit FLAC' : '16-bit PCM'}</span></div>{/if}
 							{:else if view.analysis?.info.category === 'archive'}
 								{#if view.format === 'ZIP'}
 									<label class="field">Compression
@@ -142,7 +159,7 @@
 								</label>
 							{/if}
 						</div>
-						<p class="engine-note" id="conversion-note" role="status">{view.analysisError || (!view.analysis ? 'Checking file…' : view.analysis.info.category === 'audio' ? 'PCM WAV output. Metadata is removed; changing sample rate can affect quality.' : view.analysis.info.category === 'archive' ? view.format === 'GZIP' ? 'Compresses the single file only. Folders and original filename are not stored.' : 'Paths and file times are kept where possible. Links and unsafe archives are rejected.' : view.analysis.info.format === 'TIFF' ? 'Single-page uncompressed 8-bit RGB/RGBA only. Metadata is removed.' : view.format === 'JPEG' ? 'Transparency is filled with white.' : view.format === 'ICO' ? 'Creates 16, 32, 48 and 256 px icons. Aspect ratio is kept.' : view.analysis.info.format === 'ICO' ? 'Preview shows the largest frame. Converts the selected frame.' : view.analysis.info.format === 'AVIF' ? '8-bit still AVIF only. HDR and color profiles are not preserved.' : 'Converted locally. Your original stays unchanged.')}</p>
+						<p class="engine-note" id="conversion-note" role="status">{view.analysisError || (!view.analysis ? 'Checking file…' : view.analysis.info.category === 'audio' ? view.format === 'OPUS' ? 'Ogg Opus uses 48000 Hz. Metadata is removed.' : ['AAC','M4A'].includes(view.format) ? 'AAC-LC via this browser. Metadata is removed; encoder padding may affect duration.' : ['WAV','FLAC'].includes(view.format) ? '16-bit output. Metadata is removed; resampling can affect quality.' : 'Converted locally. Metadata is removed. Bitrate is a target; lossy encoding can affect quality.' : view.analysis.info.category === 'archive' ? view.format === 'GZIP' ? 'Compresses the single file only. Folders and original filename are not stored.' : 'Paths and file times are kept where possible. Links and unsafe archives are rejected.' : view.analysis.info.format === 'TIFF' ? 'Single-page uncompressed 8-bit RGB/RGBA only. Metadata is removed.' : view.format === 'JPEG' ? 'Transparency is filled with white.' : view.format === 'ICO' ? 'Creates 16, 32, 48 and 256 px icons. Aspect ratio is kept.' : view.analysis.info.format === 'ICO' ? 'Preview shows the largest frame. Converts the selected frame.' : view.analysis.info.format === 'AVIF' ? '8-bit still AVIF only. HDR and color profiles are not preserved.' : 'Converted locally. Your original stays unchanged.')}</p>
 						{#if notice}<p class="notice" role="status">{notice}</p>{/if}
 						<div class="actions">
 							<button class="text-button" onclick={() => input.click()}>Change file</button>
@@ -180,6 +197,6 @@
 		</MorphSurface>
 	</section>
 
-	<footer><p>Local convert <span aria-hidden="true">/</span> v1.0.0</p><a href="https://mzww.net">mzww.net</a></footer>
+	<footer><p>Local convert <span aria-hidden="true">/</span> v1.0.0</p><a href="https://mzww.net">mzww.net</a> <a href={`${import.meta.env.BASE_URL}legal/NOTICE.txt`}>Codecs &amp; licenses</a></footer>
 	<p class="sr-only" role="status" aria-live="polite">{converter.state.phase === 'progress' ? 'Conversion started. Your original stays unchanged.' : converter.state.phase === 'complete' ? 'Conversion complete. Your file is ready to download.' : converter.state.phase === 'error' ? converter.state.error : ''}</p>
 </main>

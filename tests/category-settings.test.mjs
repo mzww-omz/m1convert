@@ -24,6 +24,22 @@ test('category settings are validated, retained on cancel and reset on replaceme
   assert.equal(transition(archive,{type:'ARCHIVE',compression:'fake'}),archive);
   assert.equal(transition(state,{type:'ARCHIVE',compression:'store'}),state);
 });
+test('audio bitrate and quality mode update independently, validate bounds and survive cancel',()=>{
+ let state=ready();state=transition(state,{type:'AUDIO',bitrate:128});state=transition(state,{type:'AUDIO',mode:'quality'});
+ assert.deepEqual(state.audio,{sampleRate:0,channels:0,bitrate:128,mode:'quality'});
+ for(const event of [{type:'AUDIO',bitrate:NaN},{type:'AUDIO',bitrate:10000},{type:'AUDIO',mode:'fake'}])assert.equal(transition(state,event),state);
+ state=transition(state,{type:'AUDIO',channels:1});assert.equal(state.audio.bitrate,128);assert.equal(state.audio.mode,'quality');
+ const cancelled=transition(transition(state,{type:'START'}),{type:'CANCEL'});assert.deepEqual(cancelled.audio,state.audio);
+});
+
+test('changing audio format keeps visible settings compatible instead of showing a blank select',()=>{
+ let state=ready();state={...state,analysis:{...state.analysis,outputs:['WAV','MP3','OPUS']}};
+ state=transition(state,{type:'AUDIO',sampleRate:96000,bitrate:320});state=transition(state,{type:'FORMAT',format:'MP3'});
+ assert.equal(state.audio.sampleRate,0);assert.equal(state.audio.bitrate,320);
+ state=transition(state,{type:'AUDIO',sampleRate:16000});assert.equal(state.audio.bitrate,128);
+ state=transition(state,{type:'FORMAT',format:'OPUS'});assert.equal(state.audio.sampleRate,48000);
+});
+
 test('audio batches retain their files across cancel but new load/reset clears them',()=>{
   const file=new File(['test'],'first.wav'),files=[file,new File(['test'],'second.aiff')];
   const state=transition(initialState,{type:'LOAD',file,files});

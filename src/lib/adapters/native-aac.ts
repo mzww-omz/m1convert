@@ -18,7 +18,8 @@ export async function decodeAac(file:File):Promise<Pcm> {
 				if(sample.sampleRate!==rate||sample.numberOfChannels!==channels)throw new Error('Changing AAC stream parameters are not supported.');
 				const start=Math.min(sample.numberOfFrames,Math.max(0,Math.round(-sample.timestamp*rate)));
 				const end=Number.isFinite(duration)?Math.min(sample.numberOfFrames,Math.round((duration-sample.timestamp)*rate)):sample.numberOfFrames;
-				const count=Math.max(0,end-start);audioBounds(rate,channels,total+count*channels);
+				const count=Math.max(0,end-start);if(!count)continue;
+				audioBounds(rate,channels,total+count*channels);
 				const data=new Float32Array(count*channels);sample.copyTo(data,{format:'f32',planeIndex:0,frameOffset:start,frameCount:count});
 				if(data.some(v=>!Number.isFinite(v)))throw new Error('Invalid decoded AAC samples.');chunks.push(data);total+=data.length;
 			}finally{sample.close();}

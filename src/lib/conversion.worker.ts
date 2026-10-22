@@ -6,7 +6,13 @@ const port = self as unknown as {
 	onmessage: ((event: MessageEvent<WorkerRequest>) => void) | null;
 	postMessage: (reply: WorkerReply) => void;
 };
-const stage = (value: Stage, percent?:number) => port.postMessage({ type: 'stage', stage: value, ...(percent===undefined?{}:{percent}) });
+let lastStage:Stage|undefined,lastPercent:number|undefined;
+const stage = (value: Stage, percent?:number) => {
+	const measured=percent===undefined?undefined:Math.floor(percent);
+	if(value===lastStage&&measured===lastPercent)return;
+	lastStage=value;lastPercent=measured;
+	port.postMessage({ type: 'stage', stage: value, ...(measured===undefined?{}:{percent:measured}) });
+};
 
 port.onmessage = async ({ data }) => {
 	if (data.type !== 'inspect' && data.type !== 'convert') return;

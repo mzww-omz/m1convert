@@ -71,15 +71,46 @@ function adts(b:Uint8Array) {
 	if(!frames) corrupt('AAC');audioBounds(rate,channels,frames*1024*channels);return {format:'AAC',rate,channels};
 }
 function mp4(b:Uint8Array) {
-	const v=new DataView(b.buffer,b.byteOffset,b.length);let p=0,moov=0,mdat=0,boxes=0;
+	const v=new DataView(b.buffer,b.byteOffset,b.length);let p=0,moov=0,mdat=0,boxes=0,tracks=0,descriptions=0;
+	function children(start:number,end:number,depth:number) {
+		if(depth>16)corrupt('MP4 nesting');
+		for(let p=start;p<end;) {
+			if(++boxes>10000||p+8>end)corrupt('MP4');const size=v.getUint32(p),type=ascii(b,p+4,4),data=p+8,stop=p+size;
+			if(size<8||stop>end)corrupt('MP4 child box');
+			if(type==='trak'&&++tracks>1)throw new Error('Only single-track AAC audio is supported in M4A.');
+			if(['trak','mdia','minf','stbl','edts','dinf'].includes(type))children(data,stop,depth+1);
+			if(type==='stsd') {
+				if(++descriptions>1||data+16>stop||v.getUint32(data+4)!==1)corrupt('MP4 sample description');
+				const entry=data+8,entrySize=v.getUint32(entry);if(entrySize<36||entry+entrySize!==stop)corrupt('MP4 audio sample entry');
+				if(ascii(b,entry+4,4)!=='mp4a')throw new Error('Only the AAC audio codec is supported in M4A.');
+				if(v.getUint16(entry+16)!==0)corrupt('QuickTime audio');audioBounds(v.getUint32(entry+32)>>>16,v.getUint16(entry+24),0);
+			}
+			const widths:Record<string,number>={stts:8,ctts:8,stsc:12,stco:4,co64:8,stss:4};
+			if(widths[type]) {
+				if(data+8>stop)corrupt('MP4 sample table');const count=v.getUint32(data+4);if(count>100000||data+8+count*widths[type]!==stop)corrupt('MP4 sample table count');
+				if(type==='stco'||type==='co64')for(let j=0;j<count;j++) {
+					const at=data+8+j*widths[type];if(type==='co64'&&v.getUint32(at))corrupt('MP4 chunk offset');
+					if(v.getUint32(at+(type==='co64'?4:0))>=b.length)corrupt('MP4 chunk offset');
+				}
+			}
+			if(type==='stsz') {
+				if(data+12>stop)corrupt('MP4 sample size table');const fixed=v.getUint32(data+4),count=v.getUint32(data+8);
+				if(count>100000||data+12+(fixed?0:count*4)!==stop)corrupt('MP4 sample size table count');
+				let bytes=fixed*count;if(!fixed)for(let j=0;j<count;j++)bytes+=v.getUint32(data+12+j*4);
+				if(bytes>b.length)corrupt('MP4 sample sizes');
+			}
+			if(type==='stz2')throw new Error('Compact MP4 sample tables are not supported.');
+			p=stop;
+		}
+	}
 	while(p<b.length) {
 		if(++boxes>10000||p+8>b.length) corrupt('MP4');const type=ascii(b,p+4,4);let length=v.getUint32(p);
 		if(length===1){if(p+16>b.length||v.getUint32(p+8))corrupt('MP4');length=v.getUint32(p+12);if(length<16)corrupt('MP4');}
 		if(length===0)length=b.length-p;if(length<8||p+length>b.length)corrupt('MP4');
 		if(type==='moof'||type==='sidx')throw new Error('Fragmented M4A is not supported.');
-		if(type==='moov')moov++;if(type==='mdat')mdat++;p+=length;
+		if(type==='moov'){moov++;children(p+8,p+length,0);}if(type==='mdat')mdat++;p+=length;
 	}
-	if(moov!==1||!mdat)corrupt('MP4');return {format:'M4A'};
+	if(moov!==1||!mdat||tracks!==1||descriptions!==1)corrupt('MP4');return {format:'M4A'};
 }
 export function inspectAudioBytes(file:File,b:Uint8Array) {
 	if(!b.length||b.length>64*1024**2)throw new Error('Audio is empty or exceeds the size limit.');

@@ -22,6 +22,12 @@ test('complete compressed structures reject truncation, checksum corruption and 
  const f=await fixture('flac'),b=new Uint8Array(await f.arrayBuffer());b[18]=255;b[19]=255;
  assert.throws(()=>inspectAudioBytes(f,b),/rate|channel|sample|FLAC|limit/i);
 });
+test('M4A sample tables are bounded before native library parsing and non-AAC sample entries are rejected',async()=>{
+ const f=await fixture('m4a'),source=Buffer.from(await f.arrayBuffer()),i=source.indexOf('stsz');assert.ok(i>0);
+ const bad=Buffer.from(source);bad.writeUInt32BE(0xffffffff,i+12);assert.throws(()=>inspectAudioBytes(f,bad),/table|count|limit|MP4/i);
+ const huge=Buffer.from(source);huge.writeUInt32BE(0xffffffff,i+8);assert.throws(()=>inspectAudioBytes(f,huge),/size|table|MP4/i);
+ const codec=Buffer.from(source);codec.write('alac',codec.indexOf('mp4a'));assert.throws(()=>inspectAudioBytes(f,codec),/AAC|codec/i);
+});
 test('WASM MP3 FLAC Vorbis and Opus inputs decode to bounded real WAV samples',async()=>{
  for(const ext of ['mp3','flac','ogg','opus']) {
   const file=await fixture(ext),analysis=await audioCodec.inspect(file,noop);

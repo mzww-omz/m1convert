@@ -1,5 +1,5 @@
 import type {EngineAdapter,StageReporter,ConversionRequest} from '../engine-types.ts';
-import {audioFormats} from '../audio-formats.ts';
+import {audioFormats,mp3Rates} from '../audio-formats.ts';
 import {inspectAudioBytes,audioBounds} from '../audio-validation.ts';
 import {decodePcm,convertPcm,encodeWav,type Pcm} from './pcm.ts';
 import {decodeWasm,encodeWasm} from './wasm-audio.ts';
@@ -44,7 +44,6 @@ async function single(request:ConversionRequest,stage:StageReporter) {
 	const bitrate=settings.bitrate??192,mode=settings.mode??'bitrate';
 	if(!Number.isInteger(bitrate)||bitrate<6||bitrate>510||!['bitrate','quality'].includes(mode))throw new Error('Invalid audio bitrate or quality mode.');
 	if(!Number.isFinite(request.quality)||request.quality<1||request.quality>100)throw new Error('Audio quality must be 1–100.');
-	const mp3Rates=[8000,11025,12000,16000,22050,24000,32000,44100,48000];
 	let rate=settings.sampleRate||pcm.sampleRate;
 	if(format==='OPUS') {if(settings.sampleRate&&settings.sampleRate!==48000)throw new Error('Ogg Opus output uses 48000 Hz.');rate=48000;}
 	if(format==='MP3'&&!mp3Rates.includes(rate)) {if(settings.sampleRate)throw new Error('MP3 does not support this sample rate.');rate=48000;}

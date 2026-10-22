@@ -41,7 +41,7 @@ try {
     }
   }
   for(const name of ['tone.wav','tone.aiff']) {
-    await upload(await fixture(name));assert.deepEqual(await output().locator('option').allTextContents(),['WAV']);
+    await upload(await fixture(name));assert.ok((await output().locator('option').allTextContents()).includes('WAV'));
     assert.equal(await page.getByRole('combobox',{name:'Compression',exact:true}).count(),0);
     for(const [rate,channels] of [['0','0'],['16000','1'],['44100','2']]) {
       await page.getByRole('combobox',{name:'Sample rate',exact:true}).selectOption(rate);await page.getByRole('combobox',{name:'Channels',exact:true}).selectOption(channels);

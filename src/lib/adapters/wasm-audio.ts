@@ -8,7 +8,9 @@ export function loadAudioWasm():Promise<LibAV.LibAV> {
 		const name='libav-6.10.9.0-obsolete.mjs';
 		const base=typeof location==='undefined'?new URL(['..','..','..','static','vendor','libav-6.10.9.0',''].join('/'),import.meta.url).href:new URL(`${import.meta.env.BASE_URL}vendor/libav-6.10.9.0/`,location.origin).href;
 		const {default:wrapper}=await import(/* @vite-ignore */ base+name) as {default:LibAV.LibAVWrapper};
-		return wrapper.LibAV({base,noworker:true,nothreads:true});
+		const lib=await wrapper.LibAV({base:base.replace(/\/$/,''),noworker:true,nothreads:true});
+		await lib.av_log_set_level(lib.AV_LOG_ERROR);
+		return lib;
 	})();
 	return loading;
 }

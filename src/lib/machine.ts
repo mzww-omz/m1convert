@@ -1,5 +1,5 @@
 import { formatsFor } from './registry.ts';
-import { sampleRates } from './audio-formats.ts';
+import { sampleRates, compatibleAudioSettings } from './audio-formats.ts';
 import type { AudioSettings, ArchiveSettings, Analysis, ConversionResult, Stage } from './engine-types.ts';
 export { outputName } from './results.ts';
 
@@ -27,7 +27,7 @@ export type Event =
 	| { type: 'ANALYSIS_FAILED'; runId: number; message: string }
 	| { type: 'FORMAT'; format: string }
 	| { type: 'QUALITY'; quality: number }
-	| { type:'AUDIO'; sampleRate?:number; channels?:number }
+	| ({type:'AUDIO'} & Partial<AudioSettings>)
 	| { type:'ARCHIVE'; compression:'store'|'deflate' }
 	| { type: 'FRAME'; frame: number }
 	| { type: 'START' | 'CANCEL' | 'AGAIN' | 'RESET' | 'RETRY' | 'ANALYZE' }
@@ -57,13 +57,14 @@ export function transition(state: State, event: Event): State {
 		case 'ANALYZE':
 			return state.phase === 'details' && state.file ? { ...state, analysis: null, analysisError: '', format: '', runId: state.runId + 1 } : state;
 		case 'FORMAT':
-			return state.phase === 'details' && state.analysis?.outputs.includes(event.format) ? { ...state, format: event.format } : state;
+			return state.phase === 'details' && state.analysis?.outputs.includes(event.format) ? { ...state, format: event.format, ...(state.analysis.info.category==='audio'?{audio:compatibleAudioSettings(state.audio,event.format,state.analysis.info.sampleRate)}:{}) } : state;
 		case 'FRAME':
 			return state.phase === 'details' && Number.isInteger(event.frame) && state.analysis?.info.frames?.[event.frame] ? { ...state, frame:event.frame } : state;
 		case 'AUDIO': {
-			const sampleRate=event.sampleRate??state.audio.sampleRate, channels=event.channels??state.audio.channels;
-			return state.phase==='details' && state.analysis?.info.category==='audio' && [0,...sampleRates].includes(sampleRate) && [0,1,2].includes(channels)
-				? {...state,audio:{sampleRate,channels}} : state;
+			const {type,...patch}=event, audio={...state.audio,...patch};
+			return state.phase==='details' && state.analysis?.info.category==='audio' && [0,...sampleRates].includes(audio.sampleRate) && [0,1,2].includes(audio.channels)
+				&& (audio.bitrate===undefined||Number.isInteger(audio.bitrate)&&audio.bitrate>=6&&audio.bitrate<=510) && (audio.mode===undefined||['bitrate','quality'].includes(audio.mode))
+				? {...state,audio:compatibleAudioSettings(audio,state.format,state.analysis.info.sampleRate)} : state;
 		}
 		case 'ARCHIVE':
 			return state.phase==='details' && state.analysis?.info.category==='archive' && ['store','deflate'].includes(event.compression)

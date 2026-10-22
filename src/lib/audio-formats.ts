@@ -1,4 +1,5 @@
 import { ascii, type FormatDefinition } from './formats.ts';
+import type {AudioSettings} from './engine-types.ts';
 export const audioFormats:readonly FormatDefinition[]=[
 	{id:'WAV',mime:'audio/wav',extension:'wav',extensions:['wav','wave'],quality:false,
 		matches:b=>ascii(b,0,4)==='RIFF'&&ascii(b,8,4)==='WAVE'},
@@ -16,4 +17,14 @@ export const audioFormats:readonly FormatDefinition[]=[
 	{id:'M4A',mime:'audio/mp4',extension:'m4a',extensions:['m4a','mp4'],quality:false,
 		matches:b=>ascii(b,4,4)==='ftyp'&&!['avif','avis'].includes(ascii(b,8,4))}
 ];
+export const mp3Rates=[8000,11025,12000,16000,22050,24000,32000,44100,48000];
+export function compatibleAudioSettings(settings:AudioSettings,format:string,sourceRate=48000):AudioSettings {
+	let audio=settings;
+	if(format==='OPUS'&&audio.sampleRate&&audio.sampleRate!==48000)audio={...audio,sampleRate:48000};
+	if(format==='MP3') {
+		if(audio.sampleRate&&!mp3Rates.includes(audio.sampleRate))audio={...audio,sampleRate:0};
+		if((audio.sampleRate||sourceRate)<32000&&(audio.bitrate??192)>160)audio={...audio,bitrate:128};
+	}
+	return audio;
+}
 export const sampleRates=[8000,11025,12000,16000,22050,24000,32000,44100,48000,64000,88200,96000,192000] as const;

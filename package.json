@@ -8,6 +8,8 @@
 		"test": "node --test tests/*.test.mjs",
 		"test:browser": "node tests/browser.mjs",
 		"test:categories": "node tests/categories-browser.mjs",
+		"test:audio": "node tests/audio-browser.mjs",
+		"sync:audio-assets": "node scripts/sync-audio-assets.mjs",
 		"build": "vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
