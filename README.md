@@ -1,28 +1,48 @@
 # Convert
 
-Minimal appearance, fluid interaction. A fully client-side PNG / JPEG / WebP / AVIF / BMP / ICO / static SVG converter built on Svelte 5, TypeScript, SvelteKit and Vite. Files never leave the browser. No conversion service, CDN, telemetry or added runtime dependency.
+Minimal appearance, fluid interaction. A fully client-side image, PCM audio and ZIP / TAR / GZIP converter built on Svelte 5, TypeScript, SvelteKit and Vite. Files never leave the browser. No conversion service, CDN, telemetry or added runtime dependency.
 
 ## Supported conversions
 
-| Input → Output | PNG | JPEG | WebP | BMP | ICO | AVIF | SVG |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| PNG / JPEG / WebP | Yes | Yes | Yes | Yes | Yes | Conditional | No |
-| BMP (24/32-bit) | Yes | Yes | Yes | Yes | Yes | Conditional | No |
-| ICO (PNG or 24/32-bit DIB) | Yes | Yes | Yes | Yes | Yes | Conditional | No |
-| AVIF (8-bit still, native decode) | Yes | Yes | Yes | Yes | Yes | Conditional | No |
-| SVG (safe static subset, input only) | Yes | Yes | Yes | Yes | Yes | Conditional | No |
+### Images
 
-Every Yes also requires successful runtime codec probes. Chromium verified **35 input/output pairs** (7 inputs × 5 outputs). AVIF is **input-only in the tested environment**: native Canvas falls back to PNG for AVIF encoding. AVIF output is exposed only if a genuine native encoder passes signature, structure, re-decode and dimension checks. No output-only format is registered; SVG output, raster-to-vector tracing and embedded-raster pseudo-SVG are unsupported.
+| Input → Output | PNG | JPEG | WebP | BMP | ICO | TIFF | AVIF |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| PNG / JPEG / WebP | Yes | Yes | Yes | Yes | Yes | Yes | Conditional |
+| BMP (24/32-bit) | Yes | Yes | Yes | Yes | Yes | Yes | Conditional |
+| ICO (PNG or 24/32-bit DIB) | Yes | Yes | Yes | Yes | Yes | Yes | Conditional |
+| AVIF (8-bit still, native decode) | Yes | Yes | Yes | Yes | Yes | Yes | Conditional |
+| SVG (safe static subset, input only) | Yes | Yes | Yes | Yes | Yes | Yes | Conditional |
+| GIF (single frame, input only) | Yes | Yes | Yes | Yes | Yes | Yes | Conditional |
+| TIFF (baseline subset below) | Yes | Yes | Yes | Yes | Yes | Yes | Conditional |
+
+Every Yes also requires successful runtime codec probes. Chromium verified **54 image pairs** (9 inputs × 6 outputs), retaining the original 35. AVIF is **input-only in the tested environment**: native Canvas falls back to PNG for AVIF encoding. AVIF output is exposed only if a genuine native encoder passes signature, structure, re-decode and dimension checks. SVG/GIF output, raster-to-vector tracing and embedded-raster pseudo-SVG are unsupported.
 
 Same-format re-encoding is supported. Output choices are restricted to encoders actually verified in the current browser: an encoder silently falling back to PNG is not treated as support.
 
 - PNG, WebP, BMP V4 and ICO retain transparency. JPEG composites transparency onto **white**.
 - JPEG / WebP and a verified AVIF encoder expose quality from 1–100.
 - Dimensions are retained in display orientation. EXIF orientations 1–8 are normalized once, including mirrored images; the output does not retain the original EXIF orientation/GPS or other source metadata.
-- GIF, animated PNG/WebP/AVIF, audio, video and documents are **not supported**. Animated images are rejected rather than silently flattened.
+- Animated GIF/PNG/WebP/AVIF, video and documents are **not supported**. Animated images are rejected rather than silently flattened.
 - Browser Canvas uses its native color conversion and an 8-bit RGBA pipeline. This is not an archival, 16-bit/HDR, color-profile-preserving or metadata-preserving converter.
 
-### Extended format boundaries
+### Audio and archives
+
+| Input | Output | Verified format pairs |
+| --- | --- | --- |
+| PCM WAV / uncompressed AIFF | PCM16 WAV | 2 |
+| ZIP (store/deflate), POSIX USTAR TAR, TAR.GZ, GZIP | ZIP, TAR, TAR.GZ, single-file GZIP | 16 |
+
+**72 total verified format pairs**: 54 image + 2 audio + 16 archive. Counts exclude presets and batch packaging; routes depend on browser support and actual file structure. GZIP output needs exactly one regular file; TAR destinations require USTAR-representable names and size. No unsupported codec is advertised.
+
+Audio exposes sample-rate/channel settings and removes metadata. Multiple WAV/AIFF files are converted sequentially with shared settings and downloaded as one real ZIP (32 files / 32 MiB total). ZIP offers Store or Deflate, not fictitious numeric levels. Archives retain bytes, directories and file times where possible; GZIP output drops directory entries and does not store the original filename. No filesystem extraction occurs. All jobs use the existing cancellable worker/deadline lifecycle.
+
+See **[detailed format limits, safety controls, dependency comparison and deferred support](docs/continuous-development.md)**. Compressed audio encoders (MP3/FLAC/Opus/AAC etc.), 7z/RAR/BZIP2/XZ and larger WASM dependencies are not implemented.
+
+### Extended image format boundaries
+
+- **GIF:** bounded single-frame GIF87a/GIF89a with native decoding. Multiple frames/looping extensions are rejected; there is no GIF encoder or silent flattening.
+- **TIFF:** classic little/big-endian, single-page, chunky uncompressed 8-bit RGB/unassociated-alpha RGBA, orientation 1 only. Checks strip sizes/offsets, directory fields and overlap before allocation. ICC profiles/transfer functions are rejected, not silently ignored. No compressed, grayscale/palette, BigTIFF, associated-alpha, HDR or multi-page input. Output is real uncompressed RGBA TIFF with metadata removed.
 
 - **AVIF:** native still-image decode only; missing browser decoders fail analysis. 10/12-bit AVIF is rejected, HDR and original profiles are not preserved. Grids, unequal auxiliary dimensions, crop/rotation/mirror properties and sequences are rejected. BMFF structure and all declared `ispe` dimensions are bounded before native decoding; the decoder must agree. No local AVIF WASM package was present, and no dependency was installed. A bundled WASM encoder remains a future option requiring dependency/license, memory and cancellation verification; there is no CDN or hidden fallback.
 - **BMP:** uncompressed 24/32-bit BI_RGB, top-down/bottom-up, padded rows; BI_RGB's reserved fourth byte is treated as opaque. Standard 32-bit RGBA BI_BITFIELDS with V4/V5 headers is accepted. Other compression, indexed/16-bit pixels and nonstandard masks are rejected. Output is top-down 32-bit BMP V4 with explicit alpha masks and sRGB color space.
@@ -35,7 +55,7 @@ Same-format re-encoding is supported. Output choices are restricted to encoders 
 npm run dev
 ```
 
-Select, drop or paste one image, choose the output and Convert. Download saves the real encoded Blob with a matching MIME type and extension. Convert Again and Cancel retain the source and settings. New File/Remove clear state and revoke associated Blob URLs. Change file cancels pending analysis. Multiple-file drops select the first file and say so; during conversion, cancel before replacing the input.
+Select, drop or paste a file, choose the output and Convert. Download saves the real encoded Blob with a matching MIME type and extension. Convert Again and Cancel retain the source and settings. New File/Remove clear state and revoke associated Blob URLs. Change file cancels pending analysis. Multiple WAV/AIFF filenames enable audio batch conversion; other multiple-file drops select the first file and say so. During conversion, cancel before replacing the input.
 
 Analysis shows filename/size immediately and fills in validated metadata, a bounded thumbnail and available outputs asynchronously. Invalid files remain in Details with a clear explanation, Try again, Change file and Remove. Conversion failures use the same surface with retry.
 
@@ -43,7 +63,7 @@ Progress displays actual processing stages. Native image decode/encode APIs do n
 
 ## Browser requirements
 
-Requires module Workers, worker-side `createImageBitmap`, `OffscreenCanvas` with a 2D context, and `convertToBlob`. Local Chromium has been verified; other browser engines/versions need independent testing. Missing worker/decoder support produces an error, never a blocking main-thread conversion fallback. SVG uses a cancellable async image-decoding bridge because worker `createImageBitmap(Blob)` does not reliably decode SVG. Encoder capability is tested in a worker on file analysis and output MIME/signature and re-decodability are checked for every conversion.
+All categories require module Workers. Images additionally require worker-side `createImageBitmap`, `OffscreenCanvas` with a 2D context, and `convertToBlob`. Archive compression uses runtime-probed `CompressionStream` / `DecompressionStream`; PCM audio needs neither Web Audio nor Canvas. Local Chromium has been verified; other browser engines/versions need independent testing. Missing worker/decoder support produces an error, never a blocking main-thread conversion fallback. SVG uses a cancellable async image-decoding bridge because worker `createImageBitmap(Blob)` does not reliably decode SVG. Encoder capability is tested in a worker on file analysis and output MIME/signature and re-decodability are checked for every conversion.
 
 ## Safety and resource limits
 
@@ -51,7 +71,7 @@ Requires module Workers, worker-side `createImageBitmap`, `OffscreenCanvas` with
 - Dimensions: **8192 pixels per side**, at most **16 million pixels**.
 - Estimated working buffers: at most **256 MiB** (`12 × pixels + 2 × input bytes`). Native browser decoder/encoder internals are not a hard OS memory sandbox; real peak process memory can exceed this estimate.
 - One active worker per converter. Each analysis/conversion has a **30-second** deadline. Cancel, replacement, reset, errors and deadlines terminate the worker. Late callbacks are ignored by both the scheduler and state machine.
-- Signatures and bounded structural headers are checked before decoding. Conflicting extensions/MIME, invalid dimensions, truncated structures, malformed EXIF offsets, unsupported animation and native decoding failures are rejected. Empty MIME or `application/octet-stream` and extensionless files are accepted only when contents identify a supported image.
+- Signatures and bounded structural headers are checked before decoding. Conflicting extensions/MIME, invalid dimensions, truncated structures, malformed EXIF offsets, unsupported animation and native decoding failures are rejected. Empty MIME or `application/octet-stream` and extensionless files are accepted only when contents identify a supported format.
 - Only a validated, worker-generated thumbnail (max 320 × 180) reaches the UI preview. Raw files are never inserted as HTML/SVG into the document or read/parsed synchronously on the main thread. SVG's validated static subset uses an isolated Blob image during asynchronous rasterization, with abort/deadline URL and image cleanup.
 - Source files are immutable, held in memory and never sent to a server or written to browser storage. The explicit Download action is the only output save. Object URLs, bitmaps and canvases are released on completion/replacement/reset/destruction; terminating a worker releases its job resources.
 
@@ -63,7 +83,10 @@ Requires module Workers, worker-side `createImageBitmap`, `OffscreenCanvas` with
 | Format / conversion registries and planner | `src/lib/registry.ts` |
 | Pre-decode image structure, EXIF and budget checks | `src/lib/image-format.ts` |
 | Shared worker RGBA/Canvas pipeline and verified capabilities | `src/lib/adapters/canvas-codec.ts` |
-| Lazy format validation / binary codecs | `src/lib/adapters/{avif,bmp,ico,svg}.ts` |
+| Lazy image validation / binary codecs | `src/lib/adapters/{avif,bmp,ico,svg,gif,tiff}.ts` |
+| Audio/archive descriptors | `src/lib/{audio,archive}-formats.ts` |
+| Lazy PCM decode/resample/WAV encode/batching | `src/lib/adapters/pcm.ts` |
+| Lazy bounded ZIP/TAR/GZIP engine | `src/lib/adapters/archive.ts` |
 | Cancellable async SVG bitmap bridge | `src/lib/adapters/{worker-svg,svg-raster}.ts`, `scheduler.ts` |
 | Adapter selection and worker protocol | `src/lib/conversion.worker.ts`, `engine-types.ts` |
 | Scheduling, abort/timeout/worker cleanup | `src/lib/scheduler.ts`, `engine.ts` |
@@ -78,7 +101,7 @@ To add an engine:
 3. The format list and direct routes derive from those registrations automatically. The worker chooses the adapter and imports its implementation only when needed. Vite's ES-module worker output preserves lazy codec chunks. Do not import heavy codec implementations in the page.
 4. Add real fixtures and positive/negative/cancellation tests before advertising the new routes. Add UI settings only when that format requires them.
 
-The planner currently returns one direct step. Its steps-list contract allows later multi-hop planning, but no unimplemented intermediary route or codec is advertised or executed. A queue/framework/plugin loader is intentionally not introduced for a single-file tool.
+The planner currently returns one direct step. Its steps-list contract allows later multi-hop planning, but no unimplemented intermediary route or codec is advertised or executed. A queue/framework/plugin loader is intentionally not introduced for this local converter.
 
 ## Verification
 
@@ -94,6 +117,7 @@ With the local server running and an existing Playwright + Chromium installation
 
 ```sh
 npm run test:browser
+npm run test:categories
 ```
 
 For an installation outside this repository:
@@ -109,4 +133,6 @@ No browser/package is downloaded automatically. For production verification, bui
 
 The browser suite exercises the original nine and extended real conversions (including BMP 24-bit input, all ICO output sizes/selected frames, AVIF input and rejected unsafe SVG), downloaded-file bytes and decoding, dimensions/transparency/JPEG background, both quality controls, all eight EXIF orientations, unsupported encoders, validation/errors/retry, high-entropy 16-megapixel cancellation, worker/URL cleanup, input methods, rapid operations, focus, reduced motion, touch emulation, 320px/tablet/resizing and actual frame geometry/timing. Fixtures in `tests/fixtures/` contain opaque, semi-transparent and transparent regions. `swatch.avif` is an 8-bit still with alpha generated locally from the PNG fixture using installed ImageMagick; conversion at runtime never uses that tool. Controller unit tests compile the real runes module with the existing Svelte/TypeScript toolchain.
 
-Screenshots, an actual downloaded JPEG and measured frame intervals are written to ignored `artifacts/phase1/`. Results and unverified environments are recorded in [`docs/QA.md`](docs/QA.md). Physical mobile devices, OS clipboard integration, screen readers, Safari and Firefox still require manual verification.
+The category browser suite additionally checks all 16 archive pairs, two audio routes with three settings each, batch ZIP contents, actual archive/audio cancellation, errors, 320px/desktop layouts, persistent DOM and zero workers/URLs/uploads/external requests after cleanup. Node tests cover archive attacks, expansion bounds, absent compression APIs, extensible PCM, long names and nested payloads.
+
+Screenshots, downloaded files and measured frame intervals are written to ignored `artifacts/phase1/` and `artifacts/continuous/`. Results and unverified environments are recorded in [`docs/QA.md`](docs/QA.md). Physical mobile devices, OS clipboard integration, screen readers, Safari and Firefox still require manual verification.

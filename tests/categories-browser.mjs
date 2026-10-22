@@ -11,7 +11,7 @@ page.on('pageerror',e=>errors.push(e.message));
 page.on('request',r=>{if(/^https?:/.test(r.url())&&!['localhost','127.0.0.1'].includes(new URL(r.url()).hostname))external.push(r.url());if(r.method()!=='GET')uploads.push(r.url());});
 await page.addInitScript(()=>{
   const W=Worker; window.activeWorkers=0;
-  window.Worker=class extends W { ended=false;constructor(...args){super(...args);window.activeWorkers++;}terminate(){if(!this.ended){this.ended=true;window.activeWorkers--;}super.terminate();} };
+  window.Worker=class extends W { ended=false;constructor(...args){super(...args);window.activeWorkers++;window.workerStage='';this.addEventListener('message',e=>{if(e.data.type==='stage')window.workerStage=e.data.stage;});}terminate(){if(!this.ended){this.ended=true;window.activeWorkers--;}super.terminate();} };
   window.liveUrls=new Set();const create=URL.createObjectURL.bind(URL),revoke=URL.revokeObjectURL.bind(URL);
   URL.createObjectURL=b=>{const u=create(b);window.liveUrls.add(u);return u;}; URL.revokeObjectURL=u=>{window.liveUrls.delete(u);revoke(u);};
 });
@@ -20,7 +20,7 @@ const upload=async value=>{await page.locator('input[type=file]').setInputFiles(
 const output=()=>page.getByRole('combobox',{name:'Output format'});
 const convert=async()=>{await page.getByRole('button',{name:'Convert',exact:true}).click();await Promise.race([page.getByRole('button',{name:'Download',exact:true}).waitFor(),page.locator('.error-message').waitFor().then(async()=>{throw new Error(await page.locator('.error-message').innerText());})]);};
 const download=async()=>{const pending=page.waitForEvent('download');await page.getByRole('button',{name:'Download',exact:true}).click();const d=await pending;return {name:d.suggestedFilename(),bytes:await readFile(await d.path())};};
-const again=async()=>{await page.getByRole('button',{name:'Convert Again'}).click();await output().waitFor();await page.waitForFunction(()=>document.querySelector('[data-phase=details]')&&!document.querySelector('.surface-content.hidden'));};
+const again=async()=>{await page.getByRole('button',{name:'Convert Again'}).click();await output().waitFor();await page.waitForFunction(()=>document.querySelector('[data-phase=details]')&&!document.querySelector('.surface-content.hidden')&&getComputedStyle(document.querySelector('.surface-content')).opacity==='1');};
 const paths=new Set();await mkdir('artifacts/continuous',{recursive:true});
 try {
   await page.goto(process.env.TEST_URL||'http://localhost:5173');await page.locator('[data-ready=true]').waitFor();
@@ -66,13 +66,14 @@ try {
   for(let i=0;i<random.length;i++){seed^=seed<<13;seed^=seed>>>17;seed^=seed<<5;random[i]=seed&255;}
   await upload({name:'large.tar',mimeType:'application/x-tar',buffer:Buffer.from(encodeTar([{name:'random.bin',data:random,directory:false,mtime:0}]))});
   await output().selectOption('ZIP');await page.getByRole('button',{name:'Convert',exact:true}).click();
+  await page.waitForFunction(()=>window.workerStage==='encoding'&&window.activeWorkers===1);
   await page.getByRole('button',{name:'Cancel',exact:true}).click();await output().waitFor();
   assert.equal(await page.evaluate(()=>window.activeWorkers),0);assert.equal(await page.evaluate(()=>window.liveUrls.size),0);
   // Large actual resampling job gives Cancel real work to terminate, not a mocked delay.
   const big=encodeWav({sampleRate:48000,channels:1,samples:Float32Array.from({length:1000000},(_,i)=>Math.sin(i*.1))});
   await upload({name:'large.wav',mimeType:'audio/wav',buffer:Buffer.from(big)});
   await page.getByRole('combobox',{name:'Sample rate',exact:true}).selectOption('96000');
-  await page.getByRole('button',{name:'Convert',exact:true}).click();await page.getByRole('button',{name:'Cancel',exact:true}).click();
+  await page.getByRole('button',{name:'Convert',exact:true}).click();await page.waitForFunction(()=>window.workerStage==='decoding'&&window.activeWorkers===1);await page.getByRole('button',{name:'Cancel',exact:true}).click();
   await output().waitFor();assert.equal(await page.getByRole('combobox',{name:'Sample rate',exact:true}).inputValue(),'96000');
   assert.equal(await page.evaluate(()=>window.activeWorkers),0);assert.equal(await page.evaluate(()=>window.liveUrls.size),0);
   for(const [name,buffer,message] of [
