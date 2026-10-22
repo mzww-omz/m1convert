@@ -41,7 +41,7 @@ export function createWorkerEngine(
 						catch { bitmap.close(); finish(new Error('SVG bitmap could not be transferred.')); }
 					}, () => finish(new Error('SVG could not be rasterized in this browser.')));
 				}
-				else if (reply.type === 'stage') onProgress({ stage: reply.stage, percent: null });
+				else if (reply.type === 'stage') onProgress({ stage: reply.stage, percent: reply.percent===undefined||!Number.isFinite(reply.percent)?null:Math.max(0,Math.min(99,reply.percent)) });
 				else if (reply.type === 'error') finish(new Error(reply.message));
 				else if ((request.type === 'inspect' && reply.type === 'analyzed') || (request.type === 'convert' && reply.type === 'converted')) finish(undefined, reply);
 				else finish(new Error('The conversion worker returned an unexpected response.'));

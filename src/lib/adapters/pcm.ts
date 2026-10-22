@@ -107,7 +107,7 @@ export function encodeWav(pcm:Pcm):Uint8Array {
 }
 async function read(file:File) {
 	if(!file.size||file.size>MAX_BYTES) fail('Audio input is empty or exceeds the 32 MiB limit.');
-	const b=new Uint8Array(await file.arrayBuffer()),format=audioFormats.find(f=>f.matches(b)); if(!format) fail('Unsupported audio contents.');
+	const b=new Uint8Array(await file.arrayBuffer()),format=audioFormats.find(f=>['WAV','AIFF'].includes(f.id)&&f.matches(b)); if(!format) fail('Unsupported audio contents.');
 	const ext=file.name.includes('.')?file.name.split('.').pop()!.toLowerCase():'';
 	if(ext&&!format.extensions.includes(ext)) fail('Audio extension does not match its contents.');
 	const aliases=format.id==='WAV'?['audio/x-wav','audio/wave','audio/vnd.wave']:['audio/x-aiff'];
@@ -117,22 +117,12 @@ async function read(file:File) {
 export const pcmCodec:EngineAdapter={
 	async inspect(file,stage) {
 		stage('reading'); const {pcm,format}=await read(file); stage('verifying');
-		return {info:{format:format.id,mime:format.mime,category:'audio',sampleRate:pcm.sampleRate,channels:pcm.channels,duration:pcm.samples.length/pcm.channels/pcm.sampleRate},outputs:['WAV'],preview:null};
+		const {availableAudioOutputs}=await import('./audio-codec.ts');
+		return {info:{format:format.id,mime:format.mime,category:'audio',sampleRate:pcm.sampleRate,channels:pcm.channels,duration:pcm.samples.length/pcm.channels/pcm.sampleRate},outputs:await availableAudioOutputs(),preview:null};
 	},
 	async run(request,stage) {
 		if(request.format!=='WAV') fail('This audio output format is not supported.');
-		if(request.files && request.files.length>1) {
-			if(request.files.length>32 || request.files[0].name!==request.file.name || request.files.reduce((n,f)=>n+f.size,0)>MAX_BYTES) fail('Audio batch exceeds 32 files or 32 MiB total.');
-			const {encodeZip,decodeZip}=await import('./archive.ts');
-			const entries=[];
-			for(let i=0;i<request.files.length;i++) {
-				const result=await pcmCodec.run({...request,file:request.files[i],files:undefined},stage);
-				entries.push({name:`${i+1}-${result.name}`,data:new Uint8Array(await result.blob.arrayBuffer()),directory:false,mtime:0});
-			}
-			stage('encoding'); const bytes=await encodeZip(entries,false); stage('verifying');
-			await decodeZip(bytes);
-			return {blob:new Blob([bytes.slice()],{type:'application/zip'}),name:'converted-audio.zip',format:'ZIP',mime:'application/zip'};
-		}
+		if(request.files && request.files.length>1) return (await import('./audio-codec.ts')).audioCodec.run(request,stage);
 		stage('reading'); const {pcm}=await read(request.file); stage('decoding');
 		const converted=convertPcm(pcm,request.audio??{sampleRate:0,channels:0}); stage('encoding');
 		const bytes=encodeWav(converted); stage('verifying'); const verified=decodePcm(bytes,'WAV');

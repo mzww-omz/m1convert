@@ -6,7 +6,7 @@ const port = self as unknown as {
 	onmessage: ((event: MessageEvent<WorkerRequest>) => void) | null;
 	postMessage: (reply: WorkerReply) => void;
 };
-const stage = (value: Stage) => port.postMessage({ type: 'stage', stage: value });
+const stage = (value: Stage, percent?:number) => port.postMessage({ type: 'stage', stage: value, ...(percent===undefined?{}:{percent}) });
 
 port.onmessage = async ({ data }) => {
 	if (data.type !== 'inspect' && data.type !== 'convert') return;

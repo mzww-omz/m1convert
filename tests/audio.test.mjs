@@ -32,7 +32,7 @@ test('independent WAV and AIFF fixtures convert to WAV with rate/channel options
   for(const [name,mime] of [['tone.wav','audio/wav'],['tone.aiff','audio/aiff']]) {
     const file=new File([await readFile(new URL('./fixtures/'+name,import.meta.url))],name,{type:mime});
     const info=await pcmCodec.inspect(file,noop);
-    assert.deepEqual(info.outputs,['WAV']); assert.equal(info.info.channels,2); assert.equal(info.info.sampleRate,48000);
+    assert.ok(info.outputs.includes('WAV')); assert.equal(info.info.channels,2); assert.equal(info.info.sampleRate,48000);
     for(const audio of [{sampleRate:0,channels:0},{sampleRate:16000,channels:1},{sampleRate:44100,channels:2}]) {
       const result=await pcmCodec.run({file,format:'WAV',quality:90,audio},noop);
       const decoded=decodePcm(new Uint8Array(await result.blob.arrayBuffer()),'WAV');

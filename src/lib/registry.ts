@@ -20,8 +20,11 @@ export const adapters: readonly AdapterDefinition[] = [{
 	id:'archive', formats:archiveFormats, inputs:archiveFormats.map(f=>f.id), outputs:archiveFormats.map(f=>f.id),
 	load:async ()=>(await import('./adapters/archive.ts')).archiveCodec
 }, {
-	id:'pcm', formats:audioFormats, inputs:audioFormats.map(f=>f.id), outputs:['WAV'],
+	id:'pcm', formats:audioFormats.slice(0,2), inputs:['WAV','AIFF'], outputs:['WAV'],
 	load:async ()=>(await import('./adapters/pcm.ts')).pcmCodec
+}, {
+	id:'audio',formats:audioFormats,inputs:audioFormats.map(f=>f.id),outputs:['WAV','MP3','FLAC','OGG','OPUS','AAC','M4A'],
+	load:async ()=>(await import('./adapters/audio-codec.ts')).audioCodec
 }];
 export const formats = [...new Map(adapters.flatMap(a => a.formats).map(f => [f.id, f])).values()];
 export const formatById = (id: string) => formats.find(f => f.id === id);

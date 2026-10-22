@@ -27,6 +27,15 @@ test('scheduler resolves the actual worker result and cleans up the worker', asy
   assert.equal(worker.terminated, true);
 });
 
+test('measured audio frame progress crosses the worker boundary; invalid percentages stay indeterminate',async()=>{
+ const engine=createWorkerEngine(()=>new WorkerPort((_,port)=>queueMicrotask(()=>{
+  for(const percent of [25,95,Infinity,NaN,200])port.emit({type:'stage',stage:'encoding',percent});
+  port.emit({type:'converted',result:{}});
+ })));
+ const stages=[];await engine.run(request,new AbortController().signal,p=>stages.push(p));
+ assert.deepEqual(stages.map(p=>p.percent),[25,95,null,null,99]);
+});
+
 test('abort terminates real work, rejects promptly, and ignores late replies', async () => {
   let worker;
   const controller = new AbortController();
