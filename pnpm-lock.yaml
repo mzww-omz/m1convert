@@ -7,7 +7,17 @@ settings:
 importers:
 
   .:
+    dependencies:
+      '@libav.js/variant-obsolete':
+        specifier: 6.10.9
+        version: 6.10.9
+      mediabunny:
+        specifier: 1.62.0
+        version: 1.62.0
     devDependencies:
+      '@libav.js/types':
+        specifier: 6.10.9
+        version: 6.10.9
       '@sveltejs/adapter-auto':
         specifier: ^8.0.0
         version: 8.0.0(@sveltejs/kit@3.1.0(@sveltejs/vite-plugin-svelte@7.3.1(svelte@5.57.2)(vite@8.3.4(jiti@2.7.0)))(svelte@5.57.2)(typescript@6.0.3)(vite@8.3.4(jiti@2.7.0)))
@@ -53,6 +63,12 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
+
+  '@libav.js/types@6.10.9':
+    resolution: {integrity: sha512-AdngxD/VO8OI6/w7wlJC77kuFcsSvCUuo2RuC6gGeSW2DEvbzgBo2JtFLV6UWZp/tRNZhKm6jS0Tv8gwCKBHLg==}
+
+  '@libav.js/variant-obsolete@6.10.9':
+    resolution: {integrity: sha512-nqYD2XV5uXzf9Q8I6xMyzDr+pPpVhwpzvDDOdKMaBYWc3tS4hhJsi+/PsJec/dCrPAQjSKYvUAlGIhc4mNb7sw==}
 
   '@oxc-project/types@0.154.0':
     resolution: {integrity: sha512-KYOUGQFlLWR+s4QMV2Q9ko38TZm7EdO87Qm7rvZLqk/webse/cDjtyxKhg/47l0byCbs/k46LT8qc4PKjAikzA==}
@@ -293,6 +309,12 @@ packages:
     peerDependencies:
       vite: ^5.2.0 || ^6 || ^7 || ^8
 
+  '@types/dom-mediacapture-transform@0.1.12':
+    resolution: {integrity: sha512-d7/QsLRwF864A5mgIM/YrfiglHoYn7zgCcAoJgW404r+2DwnNr7EBbLnCWpmOMgH8y0te73L1AV6H1bmauaWFw==}
+
+  '@types/dom-webcodecs@0.1.13':
+    resolution: {integrity: sha512-O5hkiFIcjjszPIYyUSyvScyvrBoV3NOEEZx/pMlsu44TKzWNkLVBBxnxJz42in5n3QIolYOcBYFCPZZ0h8SkwQ==}
+
   '@types/estree@1.0.9':
     resolution: {integrity: sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg==}
 
@@ -528,6 +550,9 @@ packages:
   magic-string@1.4.3:
     resolution: {integrity: sha512-z12OxmaPGE0F4xlpGdjuAUckipLpQlTAuAmyGhNoD7ODpYUzvDfvtxUbjM/jwznyP178oju/KDdyi220wNJ0RQ==}
 
+  mediabunny@1.62.0:
+    resolution: {integrity: sha512-D8E8BDxjCyqyrGj074jLRQNgilDW5izJu8o9pg7THMYMIZBL1Fao5hOtdDPDfA+nSnk68tMa8IaCJmz8hSpJpw==}
+
   mri@1.2.0:
     resolution: {integrity: sha512-tzzskb3bG8LvYGFF/mDTpq3jpI6Q9wc3LEmBaghu+DdCssd1FakN7Bc0hVNmEyGq1bq3RgfkCb3cmQLpNPOroA==}
     engines: {node: '>=4'}
@@ -683,6 +708,10 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.6.0
+
+  '@libav.js/types@6.10.9': {}
+
+  '@libav.js/variant-obsolete@6.10.9': {}
 
   '@oxc-project/types@0.154.0': {}
 
@@ -840,6 +869,12 @@ snapshots:
       tailwindcss: 4.3.3
       vite: 8.3.4(jiti@2.7.0)
 
+  '@types/dom-mediacapture-transform@0.1.12':
+    dependencies:
+      '@types/dom-webcodecs': 0.1.13
+
+  '@types/dom-webcodecs@0.1.13': {}
+
   '@types/estree@1.0.9': {}
 
   acorn@8.19.0: {}
@@ -995,6 +1030,11 @@ snapshots:
   magic-string@1.4.3:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.6.0
+
+  mediabunny@1.62.0:
+    dependencies:
+      '@types/dom-mediacapture-transform': 0.1.12
+      '@types/dom-webcodecs': 0.1.13
 
   mri@1.2.0: {}
 

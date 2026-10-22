@@ -1,0 +1,14 @@
+{
+  "libav-6.10.9.0-obsolete.mjs": {
+    "bytes": 28363,
+    "sha256": "9c84181f05a36c461e310dec51e5b9cf0a9fc5c4f0da97513ff4cc6f3bf54a8e"
+  },
+  "libav-6.10.9.0-obsolete.wasm.mjs": {
+    "bytes": 289603,
+    "sha256": "42fd69e7b0efa1fd286fe32a0744e267fd4bf0fcd847e60e67ff19d7e7833582"
+  },
+  "libav-6.10.9.0-obsolete.wasm.wasm": {
+    "bytes": 2368147,
+    "sha256": "6a5debf75ee2507a069a2fa7edd664d33789987a7da31254a34cf7743e6878cc"
+  }
+}

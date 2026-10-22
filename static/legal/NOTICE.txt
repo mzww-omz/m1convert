@@ -1,0 +1,34 @@
+Convert audio codecs — third-party notices and corresponding sources
+
+This application uses unmodified libav.js 6.10.9.0 (obsolete variant).
+Wrapper/build project: https://github.com/Yahweasel/libav.js/tree/v6.10.9.0
+Libraries: FFmpeg (LGPL-2.1-or-later configuration, no --enable-gpl or --enable-nonfree), LAME MP3 encoder (LGPL), libopus/libvorbis/libogg (BSD-style).
+LAME acknowledgment: https://lame.sourceforge.io/
+Complete selected-build notices: /legal/libav-6.10.9.0/combined-license.txt
+LGPL text: /legal/libav-6.10.9.0/ffmpeg-9.0-COPYING.LGPLv2.1
+
+Exact corresponding source archives, provided at the same origin as the binaries:
+/legal/libav-6.10.9.0/libav.js.tar.xz
+/legal/libav-6.10.9.0/ffmpeg-9.0.tar.xz
+/legal/libav-6.10.9.0/opus-1.6.1.tar.gz
+/legal/libav-6.10.9.0/libvorbis-1.3.7.tar.xz
+/legal/libav-6.10.9.0/libogg-1.3.6.tar.xz
+/legal/libav-6.10.9.0/lame-3.100.tar.gz
+/legal/libav-6.10.9.0/zlib-1.3.2.tar.gz
+
+These archives are unmodified from the upstream v6.10.9.0 release:
+https://github.com/Yahweasel/libav.js/releases/tag/v6.10.9.0
+Release ZIP SHA256: ec718371836fdfe00b455c8a34c826cfbcf9b72e35cc75b0bc5c739900ad3f01
+
+You may replace/relink the LGPL libraries with your own compatible build:
+extract libav.js.tar.xz and dependencies, follow its README/Makefile (make build-obsolete), and replace the three libav-6.10.9.0-obsolete ES module/glue/WASM files in /vendor/libav-6.10.9.0/. The application imports this library dynamically rather than incorporating its code into application modules. No signing/check prevents modification. For local development the asset sync script copies the pinned npm distribution; do not run it after replacing a custom build unless overwriting it is intended. Reverse engineering for debugging modifications of these libraries is not restricted by this project. The libraries are provided WITHOUT WARRANTY; see full notices for terms.
+
+Mediabunny 1.62.0: Mozilla Public License 2.0, unmodified.
+License: /legal/MEDIABUNNY-LICENSE
+Sources distributed in the npm package and upstream:
+https://github.com/Vanilagy/mediabunny/tree/v1.62.0
+https://registry.npmjs.org/mediabunny/-/mediabunny-1.62.0.tgz
+MPL applies to the library's covered files, not automatically to this application's own files.
+
+Source/license archives are offered as downloads, not fetched during conversion.
+AAC encoding/decoding, where exposed, is provided by runtime-verified native browser codecs. No GPL FFmpeg core or additional AAC WASM is bundled. Platform/patent obligations depend on distribution jurisdiction; this notice is technical provenance, not legal advice.
