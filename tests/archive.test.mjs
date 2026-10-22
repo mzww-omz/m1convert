@@ -74,6 +74,18 @@ test('GZIP output verifies file bytes even when the single payload is itself a T
   const result=await archiveCodec.run({file:new File([zip],'nested.zip'),format:'GZIP',quality:90},noop);
   assert.deepEqual(await transform(new Uint8Array(await result.blob.arrayBuffer()),'gzip',true),nested);
 });
+test('missing native compression support hides gzip routes and ZIP falls back to real stored records', async () => {
+  const bytes=await encodeZip(entries,false),compressed=await encodeZip(entries,true),file=new File([bytes],'stored.zip');
+  const C=globalThis.CompressionStream,D=globalThis.DecompressionStream;
+  try {
+    globalThis.DecompressionStream=undefined;
+    const analysis=await archiveCodec.inspect(file,noop);
+    assert.deepEqual(analysis.outputs,['ZIP','TAR']);
+    const result=await archiveCodec.run({file,format:'ZIP',quality:90},noop);
+    assert.deepEqual((await decodeZip(new Uint8Array(await result.blob.arrayBuffer()))).map(e=>e.name),entries.map(e=>e.name));
+    await assert.rejects(archiveCodec.inspect(new File([compressed],'compressed.zip'),noop),/support.*decompression/i);
+  } finally {globalThis.CompressionStream=C;globalThis.DecompressionStream=D;}
+});
 test('archive adapter converts real TAR/ZIP/GZIP bytes with validated names and outputs', async () => {
   const tar=encodeTar(entries), file=new File([tar],'sample.tar',{type:'application/x-tar'});
   const analysis=await archiveCodec.inspect(file,noop);

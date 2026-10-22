@@ -11,6 +11,7 @@ function parse(b:Uint8Array) {
 	const needed=[256,257,258,259,262,273,274,277,278,279,284,338,339];
 	for(let i=0,p=offset+2;i<count;i++,p+=12) {
 		const tag=v.getUint16(p,little),type=v.getUint16(p+2,little),n=v.getUint32(p+4,little),size=sizes[type];
+		if(tag===34675 || tag===301) throw new Error('TIFF ICC profiles and transfer functions are not supported. Use an sRGB TIFF without a profile.');
 		if(!size||!n||n>4*1024**2||tags.has(tag)) return fail();
 		const length=n*size,start=length<=4?p+8:v.getUint32(p+8,little);
 		if(start+length>b.length || (length>4&&start<8)) return fail();

@@ -14,6 +14,8 @@ test('baseline TIFF round trips exact RGBA and rejects compression, multiple pag
     (b,v)=>{ for(let p=10;p<10+13*12;p+=12) if(v.getUint16(p,true)===273) v.setUint32(p+8,0xffffffff,true); }
   ]) { const bad=b.slice(); mutate(bad,new DataView(bad.buffer)); assert.throws(()=>tiffInfo(bad)); }
   assert.throws(()=>decodeTiff(b.subarray(0,-1)));
+  const profiled=b.slice();new DataView(profiled.buffer).setUint16(10+12*12,34675,true);
+  assert.throws(()=>tiffInfo(profiled),/ICC|profile/i);
 });
 test('independent RGB TIFF and single-frame GIF fixtures pass structure and dimensions', async () => {
   for(const ext of ['tiff','gif']) {

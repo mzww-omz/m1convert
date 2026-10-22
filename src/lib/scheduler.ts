@@ -4,7 +4,7 @@ type WorkerPort = Pick<Worker, 'postMessage' | 'terminate' | 'onmessage' | 'oner
 
 export function createWorkerEngine(
 	createWorker: () => WorkerPort = () => {
-		if (typeof Worker === 'undefined') throw new Error('This browser cannot run image workers. Use a current browser.');
+		if (typeof Worker === 'undefined') throw new Error('This browser cannot run file conversion workers. Use a current browser.');
 		return new Worker(new URL('./conversion.worker.ts', import.meta.url), { type: 'module' });
 	}, timeoutMs = 30_000,
 	rasterize = async (svg: string, signal: AbortSignal) => (await import('./adapters/svg-raster.ts')).rasterizeSvg(svg,signal)
@@ -27,7 +27,7 @@ export function createWorkerEngine(
 				if (error) reject(error); else if (reply) resolve(reply);
 			};
 			const abort = () => finish(new DOMException('Cancelled', 'AbortError'));
-			const timer = setTimeout(() => finish(new Error('Image processing timed out. Try a smaller image.')), timeoutMs);
+			const timer = setTimeout(() => finish(new Error('File processing timed out. Try a smaller file or batch.')), timeoutMs);
 			signal.addEventListener('abort', abort, { once: true });
 			worker.onmessage = event => {
 				if (settled) return;
@@ -44,11 +44,11 @@ export function createWorkerEngine(
 				else if (reply.type === 'stage') onProgress({ stage: reply.stage, percent: null });
 				else if (reply.type === 'error') finish(new Error(reply.message));
 				else if ((request.type === 'inspect' && reply.type === 'analyzed') || (request.type === 'convert' && reply.type === 'converted')) finish(undefined, reply);
-				else finish(new Error('The image worker returned an unexpected response.'));
+				else finish(new Error('The conversion worker returned an unexpected response.'));
 			};
-			worker.onerror = event => { event.preventDefault(); finish(new Error('The image worker could not finish. Try again or use a current browser.')); };
-			worker.onmessageerror = () => finish(new Error('The image worker response could not be read. Try again.'));
-			try { worker.postMessage(request); } catch { finish(new Error('The file could not be sent to the local image worker.')); }
+			worker.onerror = event => { event.preventDefault(); finish(new Error('The conversion worker could not finish. Try again or use a current browser.')); };
+			worker.onmessageerror = () => finish(new Error('The conversion worker response could not be read. Try again.'));
+			try { worker.postMessage(request); } catch { finish(new Error('The file could not be sent to the local conversion worker.')); }
 		});
 	}
 

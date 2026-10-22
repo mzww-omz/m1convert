@@ -209,7 +209,7 @@ try {
   for (const output of ['BMP','ICO','TIFF']) for (const [ext,mime,bytes] of [['png','image/png',png],['jpg','image/jpeg',jpeg],['webp','image/webp',webp]]) {
     await upload(`original.${ext}`,mime,bytes); await readyDetails(); await choose(output); await convert();
     const saved=await download(); assert.equal(detectFormat(saved.bytes)?.id,output);
-    if(output==='TIFF') { const decoded=await decode(saved.bytes,'image/tiff'); assert.deepEqual([decoded.width,decoded.height],[128,80]); }
+    if(output==='TIFF') { const decoded=await decode(saved.bytes,'image/tiff'); assert.deepEqual([decoded.width,decoded.height],[128,80]); if(ext==='png') await writeFile(`${artifacts}/downloaded.tiff`,saved.bytes); }
     await again();
   }
   for (const body of ['<script>alert(1)</script>','<foreignObject/>','<image href="https://example.invalid/leak"/>','<rect fill="url(https://example.invalid/leak)"/>','<style>@import "https://example.invalid/leak";</style>']) {

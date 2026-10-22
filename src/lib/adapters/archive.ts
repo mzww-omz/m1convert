@@ -205,7 +205,7 @@ async function read(file:File, output=false) {
 }
 function outputs(entries:Entry[]) {
 	const tar=tarSize(entries)<=MAX && entries.every(e=>tarName(e.name));
-	return ['ZIP',...(tar?['TAR']:[]),...(supported('gzip')?[...(tar?['TAR.GZ']:[]),...(entries.filter(e=>!e.directory).length===1?['GZIP']:[])]:[])];
+	return ['ZIP',...(tar?['TAR']:[]),...(supported('gzip')&&supported('gzip',true)?[...(tar?['TAR.GZ']:[]),...(entries.filter(e=>!e.directory).length===1?['GZIP']:[])]:[])];
 }
 export const archiveCodec:EngineAdapter={
 	async inspect(file,stage) {
@@ -217,7 +217,7 @@ export const archiveCodec:EngineAdapter={
 		if(!outputs(entries).includes(format)) fail('This archive output needs one file or is unsupported by this browser.');
 		if(request.archive && !['store','deflate'].includes(request.archive.compression)) fail('Invalid ZIP compression setting.');
 		stage('encoding'); let bytes:Uint8Array;
-		if(format==='ZIP') bytes=await encodeZip(entries,request.archive?.compression!=='store'&&supported('deflate-raw'));
+		if(format==='ZIP') bytes=await encodeZip(entries,request.archive?.compression!=='store'&&supported('deflate-raw')&&supported('deflate-raw',true));
 		else if(format==='TAR') bytes=encodeTar(entries);
 		else if(format==='TAR.GZ') bytes=await transform(encodeTar(entries),'gzip',false);
 		else bytes=await transform(entries.find(e=>!e.directory)!.data,'gzip',false);

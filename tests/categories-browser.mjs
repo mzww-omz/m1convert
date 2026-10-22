@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {readFile,mkdir,writeFile} from 'node:fs/promises';
-import {archiveCodec,decodeZip} from '../src/lib/adapters/archive.ts';
+import {archiveCodec,decodeZip,encodeTar} from '../src/lib/adapters/archive.ts';
 import {decodePcm,encodeWav} from '../src/lib/adapters/pcm.ts';
 import {detectFormat} from '../src/lib/registry.ts';
 const {chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
@@ -61,6 +61,13 @@ try {
   assert.equal(batch.name,'converted-audio.zip');const entries=await decodeZip(batch.bytes);assert.equal(entries.length,2);
   for(const e of entries) assert.equal(decodePcm(e.data,'WAV').sampleRate,16000);
   await again();
+  // Cancel actual native compression work, not a mocked timer or a queued UI transition.
+  const random=new Uint8Array(24*1024**2);let seed=123456789;
+  for(let i=0;i<random.length;i++){seed^=seed<<13;seed^=seed>>>17;seed^=seed<<5;random[i]=seed&255;}
+  await upload({name:'large.tar',mimeType:'application/x-tar',buffer:Buffer.from(encodeTar([{name:'random.bin',data:random,directory:false,mtime:0}]))});
+  await output().selectOption('ZIP');await page.getByRole('button',{name:'Convert',exact:true}).click();
+  await page.getByRole('button',{name:'Cancel',exact:true}).click();await output().waitFor();
+  assert.equal(await page.evaluate(()=>window.activeWorkers),0);assert.equal(await page.evaluate(()=>window.liveUrls.size),0);
   // Large actual resampling job gives Cancel real work to terminate, not a mocked delay.
   const big=encodeWav({sampleRate:48000,channels:1,samples:Float32Array.from({length:1000000},(_,i)=>Math.sin(i*.1))});
   await upload({name:'large.wav',mimeType:'audio/wav',buffer:Buffer.from(big)});
