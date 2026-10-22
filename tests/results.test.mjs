@@ -8,7 +8,8 @@ test('output names use real encoder extensions and discard path/control characte
   assert.equal(outputName('README', 'PNG'), 'README.png');
   assert.equal(outputName('../bad\\photo\u0000.png', 'PNG'), 'photo_.png');
   assert.equal(outputName('.png', 'PNG'), 'converted.png');
-  assert.throws(() => outputName('input.png', 'AVIF'), /supported/);
+  for (const format of ['BMP','ICO','AVIF']) assert.equal(outputName('input.png', format), `input.${format.toLowerCase()}`);
+  assert.throws(() => outputName('input.png', 'GIF'), /supported/);
 });
 
 test('result replacement and clear release Blob URLs; clearing twice is safe', async () => {

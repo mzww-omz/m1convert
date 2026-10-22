@@ -15,18 +15,18 @@ test('content signatures, not claimed MIME or names, identify PNG/JPEG/WebP', as
     assert.equal(info.width, 128);
     assert.equal(info.height, 80);
   }
-  assert.equal(detectFormat(new TextEncoder().encode('<svg></svg>')), undefined);
+  assert.equal(detectFormat(new TextEncoder().encode('<svg></svg>'))?.id, 'SVG');
 });
 
-test('registry plans all nine implemented paths, including re-encoding; nothing else', () => {
-  assert.deepEqual(formats.map(f => f.id), ['PNG', 'JPEG', 'WEBP']);
+test('registry retains all nine original paths, including re-encoding', () => {
+  assert.deepEqual(formats.map(f => f.id), ['PNG', 'JPEG', 'WEBP', 'AVIF', 'BMP', 'ICO', 'SVG']);
   for (const input of ['PNG', 'JPEG', 'WEBP']) {
     assert.deepEqual(formatsFor(input, ['PNG', 'JPEG', 'WEBP']), ['PNG', 'JPEG', 'WEBP']);
     for (const output of ['PNG', 'JPEG', 'WEBP']) assert.deepEqual(planConversion(input, output).steps, [{ adapter: 'canvas', input, output }]);
   }
   assert.deepEqual(formatsFor('PNG', ['PNG', 'JPEG']), ['PNG', 'JPEG']);
   assert.deepEqual(formatsFor('GIF', ['PNG']), []);
-  assert.throws(() => planConversion('PNG', 'AVIF'), /not supported/);
+  assert.throws(() => planConversion('PNG', 'SVG'), /not supported/);
 });
 
 test('conflicting extensions/MIME and unsupported or truncated files are rejected', async () => {

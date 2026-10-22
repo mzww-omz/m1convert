@@ -17,10 +17,12 @@ export interface ImageInfo {
 	width: number;
 	height: number;
 	orientation: number;
+	frames?: { width: number; height: number }[];
+	frame?: number;
 }
 
 function corrupt(): never { throw new Error('The image is corrupt or truncated. Choose another file.'); }
-function animated(): never { throw new Error('Animated images are not supported yet. Choose a still PNG, JPEG or WebP.'); }
+function animated(): never { throw new Error('Animated images are not supported yet. Choose a still image.'); }
 
 export function checkDimensions(width: number, height: number, encodedBytes: number) {
 	if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1 || width > LIMITS.maxDimension || height > LIMITS.maxDimension)
@@ -140,18 +142,37 @@ export async function inspectFile(file: File): Promise<ImageInfo> {
 	if (file.size > LIMITS.maxFileBytes) throw new Error('File exceeds the 32 MiB limit.');
 	const bytes = new Uint8Array(await file.arrayBuffer());
 	const format = detectFormat(bytes);
-	if (!format) throw new Error('This file is not supported. Choose a PNG, JPEG or WebP image.');
-	if (file.type && file.type !== 'application/octet-stream' && file.type !== format.mime)
+	if (!format) throw new Error('This file is not supported. Choose a supported still image.');
+	if (file.type && file.type !== 'application/octet-stream' && file.type !== format.mime && !(format.id === 'ICO' && file.type === 'image/vnd.microsoft.icon') && !(format.id === 'BMP' && file.type === 'image/x-ms-bmp'))
 		throw new Error(`The declared MIME type does not match the ${format.id} file contents.`);
 	const extension = file.name.includes('.') ? file.name.split('.').pop()?.toLowerCase() : '';
 	if (extension && !format.extensions.includes(extension)) throw new Error(`The file extension does not match its ${format.id} contents.`);
-	const raw = format.id === 'PNG' ? pngInfo(bytes) : format.id === 'JPEG' ? jpegInfo(bytes) : webpInfo(bytes);
+	let raw: { width: number; height: number; orientation: number; frames?: {width:number;height:number}[]; frame?:number };
+	if (format.id === 'PNG') raw = pngInfo(bytes);
+	else if (format.id === 'JPEG') raw = jpegInfo(bytes);
+	else if (format.id === 'WEBP') raw = webpInfo(bytes);
+	else if (format.id === 'BMP') raw = { ...(await import('./adapters/bmp.ts')).bmpInfo(bytes), orientation: 1 };
+	else if (format.id === 'AVIF') raw = { ...(await import('./adapters/avif.ts')).avifInfo(bytes), orientation: 1 };
+	else if (format.id === 'SVG') raw = { ...(await import('./adapters/svg.ts')).svgInfo(bytes), orientation: 1 };
+	else {
+		const { icoFrames, decodeIconDib } = await import('./adapters/ico.ts');
+		const frames = icoFrames(bytes);
+		for (const frame of frames) {
+			const payload = bytes.subarray(frame.offset, frame.offset+frame.length);
+			if (detectFormat(payload)?.id === 'PNG') {
+				const png = pngInfo(payload);
+				if (png.width !== frame.width || png.height !== frame.height || png.orientation !== 1) throw new Error('ICO frame dimensions do not match its directory.');
+			} else decodeIconDib(payload,frame);
+		}
+		const frame = frames.reduce((best,f,i) => f.width*f.height > frames[best].width*frames[best].height ? i : best,0);
+		raw = { ...frames[frame], frames: frames.map(({width,height}) => ({width,height})), frame, orientation:1 };
+	}
 	checkDimensions(raw.width, raw.height, file.size);
 	return {
 		format: format.id, mime: format.mime, encodedWidth: raw.width, encodedHeight: raw.height,
 		width: raw.orientation >= 5 ? raw.height : raw.width,
 		height: raw.orientation >= 5 ? raw.width : raw.height,
-		orientation: raw.orientation
+		orientation: raw.orientation, ...(raw.frames ? { frames:raw.frames, frame:raw.frame } : {})
 	};
 }
 

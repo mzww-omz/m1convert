@@ -12,7 +12,7 @@ export interface AdapterDefinition {
 // Register descriptors here; codec implementations are imported only inside the worker.
 export const adapters: readonly AdapterDefinition[] = [{
 	id: 'canvas', formats: imageFormats,
-	inputs: imageFormats.map(f => f.id), outputs: imageFormats.map(f => f.id),
+	inputs: imageFormats.map(f => f.id), outputs: imageFormats.filter(f => f.id !== 'SVG').map(f => f.id),
 	load: async () => (await import('./adapters/canvas-codec.ts')).canvasCodec
 }];
 export const formats = [...new Map(adapters.flatMap(a => a.formats).map(f => [f.id, f])).values()];
