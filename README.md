@@ -14,7 +14,7 @@ Minimal appearance, fluid interaction. A fully client-side image, PCM audio and 
 | AVIF (8-bit still, native decode) | Yes | Yes | Yes | Yes | Yes | Yes | Conditional |
 | SVG (safe static subset, input only) | Yes | Yes | Yes | Yes | Yes | Yes | Conditional |
 | GIF (single frame, input only) | Yes | Yes | Yes | Yes | Yes | Yes | Conditional |
-| TIFF (baseline subset below) | Yes | Yes | Yes | Yes | Yes | Yes | Conditional |
+| TIFF (supported subset below) | Yes | Yes | Yes | Yes | Yes | Yes | Conditional |
 
 Every Yes also requires successful runtime codec probes. Chromium verified **54 image pairs** (9 inputs × 6 outputs), retaining the original 35. AVIF is **input-only in the tested environment**: native Canvas falls back to PNG for AVIF encoding. AVIF output is exposed only if a genuine native encoder passes signature, structure, re-decode and dimension checks. SVG/GIF output, raster-to-vector tracing and embedded-raster pseudo-SVG are unsupported.
 
@@ -30,20 +30,20 @@ Same-format re-encoding is supported. Output choices are restricted to encoders 
 
 | Input | Output | Verified format pairs |
 | --- | --- | --- |
-| MP3 / PCM WAV / FLAC / OGG Vorbis / Opus / AAC-LC / M4A (AAC) | WAV / MP3 / FLAC / OGG Vorbis / Opus / AAC / M4A | 49 |
-| Uncompressed AIFF | Same seven audio outputs | 7 |
+| MP3 / PCM WAV / FLAC / OGG Vorbis / Opus / AAC-LC / M4A (AAC) | WAV / AIFF / MP3 / FLAC / OGG Vorbis / Opus / AAC / M4A | 56 |
+| Uncompressed AIFF | Same eight audio outputs | 8 |
 | ZIP (store/deflate), POSIX USTAR TAR, TAR.GZ, GZIP | ZIP, TAR, TAR.GZ, single-file GZIP | 16 |
 
-**126 total verified format pairs in Chromium**: 54 image + 56 audio + 16 archive. All previous 72 paths remain. AAC/M4A require verified native WebCodecs; unsupported browser codecs are hidden. Counts exclude presets and batch packaging; routes depend on browser support and actual file structure. GZIP output needs exactly one regular file; TAR destinations require USTAR-representable names and size. No unsupported codec is advertised.
+**134 total verified format pairs in Chromium**: 54 image + 64 audio + 16 archive. Phase 6 adds eight AIFF output pairs and expands the accepted TIFF subset; TIFF variants are not counted as new format pairs. All previous 72 paths remain. AAC/M4A require verified native WebCodecs; unsupported browser codecs are hidden. Counts exclude presets and batch packaging; routes depend on browser support and actual file structure. GZIP output needs exactly one regular file; TAR destinations require USTAR-representable names and size. No unsupported codec is advertised.
 
-Audio exposes sample-rate/channel settings, target bitrate and MP3/Vorbis VBR quality. Source metadata (title/artist/cover art/etc.) is removed; newly generated encoder identification and codec delay information may remain. WAV/FLAC output is PCM16, not archival precision preservation. Opus uses 48000 Hz; incompatible explicit MP3/Opus UI settings are adjusted visibly on format changes. Multiple supported audio files are converted sequentially with shared settings and downloaded as one real ZIP (32 files / 32 MiB total). ZIP offers Store or Deflate, not fictitious numeric levels. Archives retain bytes, directories and file times where possible; GZIP output drops directory entries and does not store the original filename. No filesystem extraction occurs. All jobs use the existing cancellable worker/deadline lifecycle.
+Audio exposes sample-rate/channel settings, target bitrate and MP3/Vorbis VBR quality. Source metadata (title/artist/cover art/etc.) is removed; newly generated encoder identification and codec delay information may remain. WAV/AIFF/FLAC output is PCM16, not archival precision preservation. Opus uses 48000 Hz; incompatible explicit MP3/Opus UI settings are adjusted visibly on format changes. Multiple supported audio files are converted sequentially with shared settings and downloaded as one real ZIP (32 files / 32 MiB total). ZIP offers Store or Deflate, not fictitious numeric levels. Archives retain bytes, directories and file times where possible; GZIP output drops directory entries and does not store the original filename. No filesystem extraction occurs. All jobs use the existing cancellable worker/deadline lifecycle.
 
 See **[compressed-audio matrix, licensing, payload sizes and limits](docs/compressed-audio.md)** and [archive/image details](docs/continuous-development.md). Compressed audio is capped at **8 million interleaved decoded samples** (about **83 seconds at 48 kHz stereo**); it is a bounded clip converter, not a long-form streaming transcoder. AAC/M4A are native AAC-LC paths, not a bundled AAC WASM fallback. WMA, ALAC, video/multiple audio streams, fragmented MP4 and 7z/RAR/BZIP2/XZ are not implemented.
 
 ### Extended image format boundaries
 
 - **GIF:** bounded single-frame GIF87a/GIF89a with native decoding. Multiple frames/looping extensions are rejected; there is no GIF encoder or silent flattening.
-- **TIFF:** classic little/big-endian, single-page, chunky uncompressed 8-bit RGB/unassociated-alpha RGBA, orientation 1 only. Checks strip sizes/offsets, directory fields and overlap before allocation. ICC profiles/transfer functions are rejected, not silently ignored. No compressed, grayscale/palette, BigTIFF, associated-alpha, HDR or multi-page input. Output is real uncompressed RGBA TIFF with metadata removed.
+- **TIFF:** classic little/big-endian, single-page, chunky unsigned 8/16-bit RGB/unassociated-alpha RGBA or WhiteIsZero/BlackIsZero grayscale; uncompressed or PackBits, orientation 1 only. Checks strip sizes/offsets, bounded PackBits runs, directory fields and overlap before pixel allocation. ICC profiles/transfer functions, predictors and reversed fill order are rejected. **16-bit input is rounded to RGBA8**, not preserved or HDR tone-mapped. No LZW/Deflate/JPEG compression, palette, BigTIFF, associated-alpha or multi-page input. Output is real uncompressed RGBA8 TIFF with metadata removed.
 
 - **AVIF:** native still-image decode only; missing browser decoders fail analysis. 10/12-bit AVIF is rejected, HDR and original profiles are not preserved. Grids, unequal auxiliary dimensions, crop/rotation/mirror properties and sequences are rejected. BMFF structure and all declared `ispe` dimensions are bounded before native decoding; the decoder must agree. No local AVIF WASM package was present, and no dependency was installed. A bundled WASM encoder remains a future option requiring dependency/license, memory and cancellation verification; there is no CDN or hidden fallback.
 - **BMP:** uncompressed 24/32-bit BI_RGB, top-down/bottom-up, padded rows; BI_RGB's reserved fourth byte is treated as opaque. Standard 32-bit RGBA BI_BITFIELDS with V4/V5 headers is accepted. Other compression, indexed/16-bit pixels and nonstandard masks are rejected. Output is top-down 32-bit BMP V4 with explicit alpha masks and sRGB color space.
@@ -92,7 +92,7 @@ See the **[Phase 4 constraint audit](docs/phase-4-constraints.md)** for every re
 | Shared worker RGBA/Canvas pipeline and verified capabilities | `src/lib/adapters/canvas-codec.ts` |
 | Lazy image validation / binary codecs | `src/lib/adapters/{avif,bmp,ico,svg,gif,tiff}.ts` |
 | Audio/archive descriptors | `src/lib/{audio,archive}-formats.ts` |
-| Existing PCM decode/resample/WAV encode | `src/lib/adapters/pcm.ts` |
+| PCM decode/resample/WAV/AIFF encode | `src/lib/adapters/pcm.ts` |
 | Independent compressed audio engine and batch packaging | `src/lib/adapters/audio-codec.ts` |
 | Bounded compressed-container/stream validation | `src/lib/audio-validation.ts` |
 | Lazy LGPL WASM / native AAC bridges | `src/lib/adapters/{wasm-audio,native-aac}.ts` |
@@ -104,6 +104,8 @@ See the **[Phase 4 constraint audit](docs/phase-4-constraints.md)** for every re
 | State machine and asynchronous lifecycle | `src/lib/machine.ts`, `converter.svelte.ts` |
 | Result Blob URLs, filenames and downloads | `src/lib/results.ts` |
 | Existing persistent animated frame | `src/lib/MorphSurface.svelte` (unchanged) |
+
+**Phase 6 (incremental):** verified AIFF output from all eight audio inputs, PackBits TIFF and 16-bit/grayscale TIFF decoding. No new dependency, binary or initial WASM load. See **[implemented routes, candidate/license/size research, verification and deferred formats](docs/phase-6.md)**. `npm run test:phase6` checks new image/audio conversions and real cancellation.
 
 **Phase 5:** image encoding and audio decode/encode use a shared `CodecEngine<Input, Output, Options>` registry. Native Canvas is preferred; PNG has a real single-thread jSquash WASM fallback. WebCodecs AAC and existing libav WASM use the same selection/context API. Capabilities are exposed in analysis and via `engineCapabilities`; results include the selected engine IDs. Only typed compatibility/availability failures retry, and every candidate must pass output verification. UI, MorphSurface and Worker scheduling are unchanged.
 
