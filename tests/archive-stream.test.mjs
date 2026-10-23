@@ -36,6 +36,9 @@ test('large TAR metadata no longer inherits full-buffer codec input limits',asyn
  const block=new Blob([new Uint8Array(1024**2)]),file=new RangeOnlyFile([header,...Array(65).fill(block),new Uint8Array(1024)],'large.tar');
  const info=await archiveCodec.inspect(file,noop);assert.equal(info.info.entries,1);assert.ok(info.outputs.includes('TAR'));
  await assert.rejects(archiveCodec.run({file,format:'TAR',quality:90},noop),/disk-backed|Blob memory/i);
+ const gzip=await archiveCodec.run({file,format:'GZIP',quality:90},noop);assert.ok(gzip.blob.size<100000);
+ let decoded=0;for await(const chunk of gzip.blob.stream().pipeThrough(new DecompressionStream('gzip')))decoded+=chunk.length;
+ assert.equal(decoded,size,'large compressible input needs no whole verification buffer');
 });
 test('stream readers reject corrupt headers, CRC, unsafe paths, cancellation and trailing garbage',async()=>{
  const file=new RangeOnlyFile([encodeTar(entries)],'a.tar');

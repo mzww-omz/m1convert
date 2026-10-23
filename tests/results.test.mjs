@@ -12,6 +12,19 @@ test('output names use real encoder extensions and discard path/control characte
   assert.throws(() => outputName('input.png', 'GIF'), /supported/);
 });
 
+test('disk outputs are removed on clear and on URL allocation failure',async()=>{
+ const descriptor=Object.getOwnPropertyDescriptor(navigator,'storage'),files=new Set(['convert-a','convert-b']);
+ Object.defineProperty(navigator,'storage',{configurable:true,value:{getDirectory:async()=>({getDirectoryHandle:async()=>({removeEntry:async name=>files.delete(name)})})}});
+ const create=URL.createObjectURL;
+ try {
+  const manager=new ResultManager();manager.set({blob:new Blob(['disk']),name:'a.zip',temporaryFile:'convert-a'});manager.clear();
+  await new Promise(resolve=>setImmediate(resolve));assert.ok(!files.has('convert-a'));
+  URL.createObjectURL=()=>{throw new RangeError('simulated URL allocation failure');};
+  assert.throws(()=>manager.set({blob:new Blob(['disk']),name:'b.zip',temporaryFile:'convert-b'}),RangeError);
+  await new Promise(resolve=>setImmediate(resolve));assert.equal(files.size,0);
+ } finally {URL.createObjectURL=create;if(descriptor)Object.defineProperty(navigator,'storage',descriptor);else delete navigator.storage;}
+});
+
 test('result replacement and clear release Blob URLs; clearing twice is safe', async () => {
   const manager = new ResultManager();
   const first = new Blob(['first']);

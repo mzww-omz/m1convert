@@ -1,14 +1,33 @@
 import type {EngineContext} from './codec-registry.ts';
 export const STREAM_LIMIT=2*1024**3, BLOB_LIMIT=64*1024**2;
 export const TEMP_DIRECTORY='convert-temporary';
+let swept=false;
+const leases=new Map<string,()=>void>();
+const leaseKey=(name:string)=>`${TEMP_DIRECTORY}/${name}`;
 export interface StoredOutput {blob:Blob;temporaryFile?:string}
 export async function prepareTemporary(name:string):Promise<void> {
 	if(!/^convert-[\da-f-]+$/.test(name))throw new Error('Invalid temporary output name.');
 	const root=await navigator.storage.getDirectory(),directory=await root.getDirectoryHandle(TEMP_DIRECTORY,{create:true});
+	if(!swept&&navigator.locks) {
+		swept=true;
+		// Cross-tab leases protect both active jobs and completed downloads.
+		for await(const [old,entry] of directory as FileSystemDirectoryHandle & AsyncIterable<[string,FileSystemHandle]>) {
+			if(entry.kind==='file'&&/^convert-[\da-f-]+$/.test(old))try {
+				const file=await(await directory.getFileHandle(old)).getFile();
+				if(file.lastModified<Date.now()-86400_000)await navigator.locks.request(leaseKey(old),{ifAvailable:true},async lock=>{if(lock)await directory.removeEntry(old);});
+			} catch {/* Abandoned-file recovery must not remove locked files or block a new job. */}
+		}
+	}
+	if(navigator.locks)await new Promise<void>((resolve,reject)=>{
+		void navigator.locks.request(leaseKey(name),async()=>{
+			const held=new Promise<void>(release=>leases.set(name,release));resolve();await held;
+		}).catch(reject);
+	});
 	await directory.getFileHandle(name,{create:true});
 }
 export async function releaseTemporary(name:string):Promise<void> {
 	if(!/^convert-[\da-f-]+$/.test(name))throw new Error('Invalid temporary output name.');
+	leases.get(name)?.();leases.delete(name);
 	for(let attempt=0;;attempt++)try {
 		const root=await navigator.storage.getDirectory(),directory=await root.getDirectoryHandle(TEMP_DIRECTORY);
 		await directory.removeEntry(name);return;

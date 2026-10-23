@@ -48,7 +48,10 @@ export function createWorkerEngine(
 					if(!/^convert-[\da-f-]+$/.test(reply.name))return finish(new Error('Invalid temporary output name.'));
 					temporary.add(reply.name);
 					const pending=prepareTemporary(reply.name);opening.push(pending.catch(()=>{}));
-					void pending.then(()=>{if(!settled)worker.postMessage({type:'temporary-ready',name:reply.name});},()=>finish(new Error('Temporary disk output could not open. Free browser storage and retry.')));
+					void pending.then(()=>{
+						if(!settled)try {worker.postMessage({type:'temporary-ready',name:reply.name});}
+						catch {finish(new Error('Temporary storage could not be connected to the worker.'));}
+					},()=>finish(new Error('Temporary disk output could not open. Free browser storage and retry.')));
 				} else if(reply.type==='activity') {
 					if(streaming&&Number.isFinite(reply.bytes)&&reply.bytes>0)alive();
 				} else if(reply.type==='streaming') {

@@ -19,7 +19,8 @@ export class ResultManager {
 
 	set(result: { blob: Blob; name: string; temporaryFile?:string }) {
 		this.clear();
-		this.url = URL.createObjectURL(result.blob);
+		try {this.url = URL.createObjectURL(result.blob);}
+		catch(error){discardResult(result);throw error;}
 		this.name = result.name;
 		this.temporaryFile=result.temporaryFile;
 	}

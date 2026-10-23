@@ -166,7 +166,9 @@ export const streamArchiveCodec:EngineAdapter={
 	async inspect(file,stage,_verified,context) {
 		const job=context??{signal:new AbortController().signal,stage};stage('reading');const {entries,format,mime}=await readArchive(file,file.name,job);
 		let processed=0;const total=entries.reduce((n,e)=>n+e.size,0);
-		for(const entry of entries)for await(const b of chunks(entry.open(),job)){processed+=b.length;stage('verifying',total?processed/total*95:95);}
+		// TAR payloads have no checksums; headers/padding suffice. Gzip CRC was checked while spooling.
+		if(format==='ZIP')for(const entry of entries)for await(const b of chunks(entry.open(),job)){processed+=b.length;stage('verifying',total?processed/total*95:95);}
+		else stage('verifying');
 		return {info:{format,mime,category:'archive',entries:entries.length},outputs:outputs(entries),preview:null,warnings:entries.some(e=>utf8.encode(e.name).length>255)?['Compatibility warning: long archive paths may not extract on every operating system. ZIP preserves the original paths.']:[]};
 	},
 	async run(request,stage,context) {
@@ -186,7 +188,7 @@ export const streamArchiveCodec:EngineAdapter={
 			const output=await sink.finish();stage('verifying',85);processed=0;
 			const onVerified=(n:number)=>{processed+=n;stage('verifying',85+(total?processed/total*14:14));};
 			if(format==='GZIP') {
-				const expanded=await unGzip(output.blob,job);await equalStreams(blobStream(expanded,job),entries.find(e=>!e.directory)!.open(),job,onVerified);
+				await equalStreams(blobStream(output.blob,job).pipeThrough(new DecompressionStream('gzip')),entries.find(e=>!e.directory)!.open(),job,onVerified);
 			} else {
 				const verified=await readArchive(output.blob,name,job);
 				if(verified.entries.length!==entries.length)fail('Archive output verification entry count mismatch.');

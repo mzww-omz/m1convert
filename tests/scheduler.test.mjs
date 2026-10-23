@@ -95,6 +95,15 @@ test('genuinely streaming jobs outlive the short buffered-codec deadline',async(
  assert.equal(await result.blob.text(),'ok');assert.equal(worker.terminated,true);
 });
 
+test('stalled streaming work terminates instead of extending its deadline forever',async()=>{
+ const timeout=globalThis.setTimeout;let worker;
+ globalThis.setTimeout=(fn,ms,...args)=>timeout(fn,ms===120000?10:ms,...args);
+ try {
+  const engine=createWorkerEngine(()=>worker=new WorkerPort((_,p)=>p.emit({type:'streaming'})),1000);
+  await assert.rejects(engine.run(request,new AbortController().signal,()=>{}),/Streaming stalled/);assert.equal(worker.terminated,true);
+ } finally {globalThis.setTimeout=timeout;}
+});
+
 test('output MIME and magic bytes must both agree; PNG fallback cannot masquerade as WebP', async () => {
   const png = await readFile(new URL('./fixtures/swatch.png', import.meta.url));
   await verifyOutput(new Blob([png], { type: 'image/png' }), 'PNG');
