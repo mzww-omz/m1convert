@@ -29,7 +29,7 @@ export async function decodeAac(file:File):Promise<Pcm> {
 	}finally{input.dispose();}
 }
 export async function encodeAac(pcm:Pcm,format:string,bitrate:number,onProgress?:(fraction:number)=>void):Promise<Uint8Array> {
-	if(!(await nativeAacAvailable(pcm.sampleRate,pcm.channels,bitrate)))throw new Error('Native AAC encoding/decoding is unavailable for these audio settings.');
+	if(!(await nativeAacAvailable(pcm.sampleRate,pcm.channels,bitrate)))throw new Error(`Native AAC encoding/decoding is unavailable for ${pcm.sampleRate} Hz, ${pcm.channels} channels and ${bitrate} kbps. Try 48000 Hz, a lower bitrate, or WAV.`);
 	const target=new BufferTarget(),output=new Output({format:format==='M4A'?new Mp4OutputFormat({fastStart:'in-memory'}):new AdtsOutputFormat(),target});
 	const source=new AudioSampleSource({codec:'aac',bitrate:bitrate*1000});output.addAudioTrack(source);
 	let complete=false;

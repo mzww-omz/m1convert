@@ -52,6 +52,14 @@ test('MP3 rejects a bitrate the encoder would silently round and invalid audio s
  for(const audio of [{sampleRate:48000,channels:2,bitrate:129,mode:'bitrate'},{sampleRate:48000,channels:3},{sampleRate:48000,channels:2,mode:'fake'}])
   await assert.rejects(audioCodec.run({file,format:'MP3',quality:90,audio},noop),/bitrate|channel|mode/i);
 });
+test('codec-specific boundary settings use the real encoders and unsupported combinations explain recovery',async()=>{
+ const file=await fixture('wav');
+ for(const [format,bitrate,sampleRate] of [['MP3',8,22050],['OPUS',6,48000],['OPUS',510,48000],['OGG',500,48000]]) {
+  const result=await audioCodec.run({file,format,quality:90,audio:{sampleRate,channels:2,bitrate}},noop);
+  assert.ok(result.blob.size>0);
+ }
+ await assert.rejects(audioCodec.run({file,format:'OGG',quality:90,audio:{sampleRate:48000,channels:2,bitrate:512}},noop),/OGG.*48000.*512.*lower bitrate/i);
+});
 test('every WASM output is genuine, re-decodable audio and uses requested channels/rate',async()=>{
  const file=await fixture('wav');
  for(const format of ['MP3','FLAC','OGG','OPUS']) {

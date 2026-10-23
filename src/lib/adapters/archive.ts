@@ -3,22 +3,26 @@ import { archiveFormats } from '../archive-formats.ts';
 import { ascii } from '../formats.ts';
 import { outputName } from '../results.ts';
 
-const MAX = 64 * 1024 ** 2, COUNT = 1000;
+const MAX = 64 * 1024 ** 2, COUNT = 1000, NAME_BYTES = 1024 ** 2;
 const utf8 = new TextEncoder(), decoder = new TextDecoder('utf-8', {fatal:true});
 export interface Entry { name:string; data:Uint8Array; directory:boolean; mtime:number }
 function fail(message:string):never { throw new Error(message); }
 function view(b:Uint8Array) { return new DataView(b.buffer,b.byteOffset,b.length); }
 function path(name:string, directory:boolean) {
 	const parts=name.replace(/\/$/,'').split('/');
-	if (!name || name.length>240 || name.includes('\\') || /[\x00-\x1f\x7f:]/.test(name) || name.startsWith('/') || (!directory && name.endsWith('/')) ||
-		parts.some(p=>!p || p==='.' || p==='..' || /[. ]$/.test(p) || /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(p)) || utf8.encode(name).length>255)
+	if(parts.length>128) fail('Safety limit: archive path depth exceeds 128 components. Shorten the paths.');
+	if(utf8.encode(name).length>65535) fail('Archive filename exceeds the ZIP format capacity of 65535 UTF-8 bytes. Shorten the path.');
+	if (!name || name.includes('\\') || /[\x00-\x1f\x7f:]/.test(name) || name.startsWith('/') || (!directory && name.endsWith('/')) ||
+		parts.some(p=>!p || p==='.' || p==='..' || /[. ]$/.test(p) || /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(p)))
 		fail('Unsafe archive path or filename.');
 }
 export function validateEntries(entries:readonly Entry[]) {
 	if (entries.length>COUNT) fail('Archive exceeds the 1000 entries limit.');
-	let total=0; const names=new Map<string,boolean>();
+	let total=0, nameBytes=0; const names=new Map<string,boolean>();
 	for (const e of entries) {
 		path(e.name,e.directory);
+		nameBytes+=utf8.encode(e.name).length;
+		if(nameBytes>NAME_BYTES) fail('Safety limit: archive filename metadata exceeds the 1 MiB memory budget. Split the archive or shorten paths.');
 		if (e.directory && e.data.length) fail('Directory entries cannot contain file data.');
 		const key=e.name.replace(/\/$/,'').normalize('NFC').toLowerCase();
 		if (names.has(key)) fail('Duplicate archive path or filename collision.');
@@ -122,22 +126,24 @@ export async function decodeZip(b:Uint8Array):Promise<Entry[]> {
 	if(v.getUint16(end+4,true)||v.getUint16(end+6,true)||v.getUint16(end+8,true)!==count || count===65535 || central+length!==end) fail('Split/ZIP64 archives are not supported or ZIP is corrupt.');
 	if(count>COUNT) fail('Archive exceeds the 1000 entries limit.');
 	const entries:Entry[]=[], records:{start:number;offset:number;packed:number;size:number;crc:number;method:number;end:number}[]=[];
-	let p=central,total=0;
+	let p=central,total=0,nameBytes=0;
 	for(let i=0;i<count;i++) {
 		if(p+46>end || v.getUint32(p,true)!==0x02014b50) fail('Corrupt ZIP central directory.');
 		const flags=v.getUint16(p+8,true), method=v.getUint16(p+10,true), crc=v.getUint32(p+16,true), packed=v.getUint32(p+20,true), size=v.getUint32(p+24,true);
 		const n=v.getUint16(p+28,true), extra=v.getUint16(p+30,true), comment=v.getUint16(p+32,true), offset=v.getUint32(p+42,true), attrs=v.getUint32(p+38,true);
 		if(flags&~0x808 || ![0,8].includes(method) || v.getUint16(p+34,true) || [packed,size,offset].includes(0xffffffff)) fail('Encrypted, split, ZIP64 or unsupported ZIP compression.');
 		if(p+46+n+extra+comment>end || offset+30>central) fail('Corrupt ZIP offsets.');
-		const nameBytes=b.subarray(p+46,p+46+n);
-		if(!(flags&0x800) && nameBytes.some(v=>v>127)) fail('ZIP filenames must use UTF-8 or ASCII.');
-		const name=decoder.decode(nameBytes), directory=name.endsWith('/'), mode=attrs>>>16, kind=mode&0xf000;
+		nameBytes+=n;
+		if(nameBytes>NAME_BYTES) fail('Safety limit: archive filename metadata exceeds the 1 MiB memory budget. Split the archive or shorten paths.');
+		const nameBytesView=b.subarray(p+46,p+46+n);
+		if(!(flags&0x800) && nameBytesView.some(v=>v>127)) fail('ZIP filenames must use UTF-8 or ASCII.');
+		const name=decoder.decode(nameBytesView), directory=name.endsWith('/'), mode=attrs>>>16, kind=mode&0xf000;
 		if(kind && kind!==(directory?0x4000:0x8000)) fail('ZIP links/devices are not allowed.');
 		path(name,directory); total+=size;
 		if(total>MAX || (directory&&size)) fail('Archive expansion size exceeds the limit or directory has data.');
 		if(v.getUint32(offset,true)!==0x04034b50 || v.getUint16(offset+6,true)!==flags || v.getUint16(offset+8,true)!==method) fail('Corrupt ZIP local header.');
 		const localN=v.getUint16(offset+26,true), localExtra=v.getUint16(offset+28,true), data=offset+30+localN+localExtra;
-		if(data+packed>central || localN!==n || !nameBytes.every((c,j)=>b[offset+30+j]===c)) fail('ZIP local filename/size mismatch.');
+		if(data+packed>central || localN!==n || !nameBytesView.every((c,j)=>b[offset+30+j]===c)) fail('ZIP local filename/size mismatch.');
 		if(!(flags&8) && (v.getUint32(offset+14,true)!==crc || v.getUint32(offset+18,true)!==packed || v.getUint32(offset+22,true)!==size)) fail('ZIP local size/checksum mismatch.');
 		let recordEnd=data+packed;
 		if(flags&8) {
@@ -207,7 +213,8 @@ function outputs(entries:Entry[]) {
 export const archiveCodec:EngineAdapter={
 	async inspect(file,stage) {
 		stage('reading'); const {entries,format,mime}=await read(file); stage('verifying');
-		return {info:{format,mime,category:'archive',entries:entries.length},outputs:outputs(entries),preview:null};
+		return {info:{format,mime,category:'archive',entries:entries.length},outputs:outputs(entries),preview:null,
+			warnings:entries.some(e=>utf8.encode(e.name).length>255)?['Compatibility warning: long archive paths may not extract on every operating system. ZIP preserves the original paths.']:[]};
 	},
 	async run(request,stage) {
 		stage('reading'); const {entries}=await read(request.file); const format=request.format;

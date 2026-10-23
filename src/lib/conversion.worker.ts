@@ -30,7 +30,7 @@ port.onmessage = async ({ data }) => {
 		if (data.type === 'inspect') {
 			const category=input.mime.startsWith('image/')?'image':input.mime.startsWith('audio/')?'audio':undefined;
 			const analysis=await adapter.inspect(file,stage,category?data.verifiedOutputs?.[category]:undefined);
-			port.postMessage({ type:'analyzed', analysis:{...analysis,warnings:compatibilityWarnings(file,analysis.info.format)} });
+			port.postMessage({ type:'analyzed', analysis:{...analysis,warnings:[...(analysis.warnings??[]),...compatibilityWarnings(file,analysis.info.format)]} });
 		}
 		else port.postMessage({ type: 'converted', result: await adapter.run(data.request, stage) });
 	} catch (error) {

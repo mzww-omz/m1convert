@@ -67,7 +67,9 @@ export async function encodeWasm(pcm:Pcm,format:string,bitrate:number,quality?:n
 	const options:Record<string,string>=quality===undefined?{}:{flags:'+qscale',global_quality:String(Math.round((format==='MP3'?(100-quality)*9/99:quality/10)*118))};
 	let c=0,frame=0,pkt=0,oc=0,pb=0;
 	try {
-		let size:number;[,c,frame,pkt,size]=await lib.ff_init_encoder(codec,{ctx:{sample_fmt,sample_rate:pcm.sampleRate,channels:pcm.channels,channel_layout,bit_rate:bitrate*1000},options,time_base:[1,pcm.sampleRate]});
+		let size:number;
+		try { [,c,frame,pkt,size]=await lib.ff_init_encoder(codec,{ctx:{sample_fmt,sample_rate:pcm.sampleRate,channels:pcm.channels,channel_layout,bit_rate:quality===undefined?bitrate*1000:0},options,time_base:[1,pcm.sampleRate]}); }
+		catch { throw new Error(`${format} encoder cannot use ${pcm.sampleRate} Hz, ${pcm.channels} channels and ${quality===undefined?`${bitrate} kbps`:'this quality'}. Try a lower bitrate, VBR quality, another sample rate, or WAV.`); }
 		[oc,,pb]=await lib.ff_init_muxer({filename:'output',format_name:format==='MP3'?'mp3':format==='FLAC'?'flac':'ogg',open:true},[[c,1,pcm.sampleRate]]);
 		await lib.avformat_write_header(oc,0);
 		const frames=pcm.samples.length/pcm.channels;size=size||1024;

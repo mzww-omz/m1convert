@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, truncate, unlink } from 'node:fs/promises';
 import { detectFormat } from '../src/lib/registry.ts';
 
 // Uses an existing Playwright/browser installation; never downloads dependencies.
@@ -309,8 +309,13 @@ try {
   }
   const hugeDimensions = Buffer.from(png); hugeDimensions.writeUInt32BE(1000000, 16);
   await upload('huge.png', 'image/png', hugeDimensions); await page.getByText(/memory budget/).waitFor();
-  await upload('huge.png', 'image/png', Buffer.concat([png, Buffer.alloc(64 * 1024 ** 2)]));
-  await page.getByText(/64 MiB/).waitFor();
+  // Playwright's in-memory upload API itself stops at 50 MiB; use a real sparse file.
+  const oversizedPath=`${artifacts}/oversized-${process.pid}.png`;
+  await writeFile(oversizedPath,png);await truncate(oversizedPath,64*1024**2+1);
+  try {
+    await page.locator('input[type=file]').setInputFiles(oversizedPath);
+    await page.getByText(/64 MiB/).waitFor();
+  } finally {await unlink(oversizedPath);}
   await upload('no-extension', '', png); await readyDetails();
   console.log('PASS unsupported input, spoofing, corruption, empty/oversized files and recovery');
 

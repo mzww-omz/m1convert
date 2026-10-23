@@ -38,6 +38,9 @@ test('changing audio format keeps visible settings compatible instead of showing
  assert.equal(state.audio.sampleRate,0);assert.equal(state.audio.bitrate,320);
  state=transition(state,{type:'AUDIO',sampleRate:16000});assert.equal(state.audio.bitrate,128);
  state=transition(state,{type:'FORMAT',format:'OPUS'});assert.equal(state.audio.sampleRate,48000);
+ state={...state,analysis:{...state.analysis,outputs:['WAV','OGG','AAC']}};
+ state=transition(state,{type:'FORMAT',format:'OGG'});state=transition(state,{type:'AUDIO',bitrate:500});
+ state=transition(state,{type:'FORMAT',format:'AAC'});assert.equal(state.audio.bitrate,192);
 });
 
 test('audio batches retain their files across cancel but new load/reset clears them',()=>{

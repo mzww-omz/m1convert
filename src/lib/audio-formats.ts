@@ -20,7 +20,7 @@ export const audioFormats:readonly FormatDefinition[]=[
 export function audioBitrates(format:string,rate:number):number[] {
 	if(format==='MP3')return rate<32000?[8,16,24,32,40,48,56,64,80,96,112,128,144,160]:[32,40,48,56,64,80,96,112,128,160,192,224,256,320];
 	if(format==='OPUS')return [6,12,24,32,48,64,96,128,160,192,256,320,510];
-	return [32,48,64,96,128,160,192,256,320,512];
+	return [32,48,64,96,128,160,192,256,320,...(format==='OGG'?[480,500]:[512])];
 }
 export function validateAudioEncoding(format:string,rate:number,bitrate:number,mode:string,duration=0) {
 	if(!['bitrate','quality'].includes(mode))throw new Error('Invalid audio quality mode.');
@@ -42,6 +42,7 @@ export function compatibleAudioSettings(settings:AudioSettings,format:string,sou
 		const rate=audio.sampleRate||sourceRate;
 		if(!audioBitrates(format,rate).includes(audio.bitrate??192))audio={...audio,bitrate:rate<32000?128:192};
 	}
+	if(['AAC','M4A','OGG'].includes(format)&&audio.bitrate!==undefined&&!audioBitrates(format,audio.sampleRate||sourceRate).includes(audio.bitrate))audio={...audio,bitrate:192};
 	return audio;
 }
 export const sampleRates=[8000,11025,12000,16000,22050,24000,32000,44100,48000,64000,88200,96000,192000] as const;

@@ -27,6 +27,17 @@ test('archive names, links, duplicates, collisions and resource budgets are reje
   link.fill(32,148,156); const sum=link.subarray(0,512).reduce((a,b)=>a+b,0); text.encodeInto(sum.toString(8).padStart(6,'0')+'\0 ',link.subarray(148,156));
   assert.throws(()=>decodeTar(link),/type|link/i);
 });
+test('ZIP keeps long safe paths instead of enforcing Windows filename conventions as a format limit',async()=>{
+ for(const name of ['x'.repeat(300),'directory/'.repeat(40)+'hello.txt']) {
+  const zip=await encodeZip([{...entries[1],name}],false);
+  assert.equal((await decodeZip(zip))[0].name,name);
+  const analysis=await archiveCodec.inspect(new File([zip],'long.bin'),noop);
+  assert.ok(analysis.outputs.includes('ZIP'));assert.ok(!analysis.outputs.includes('TAR'));
+ }
+ assert.throws(()=>validateEntries([{...entries[1],name:'x'.repeat(65536)}]),/path|filename/i);
+ assert.throws(()=>validateEntries([{...entries[1],name:'d/'.repeat(129)+'x'}]),/path|depth/i);
+ assert.throws(()=>validateEntries(Array.from({length:20},(_,i)=>({...entries[1],name:`${i}-`+'x'.repeat(60000)}))),/name.*budget/i);
+});
 test('bounded gzip rejects corrupt streams and bombs while round-tripping real bytes', async () => {
   const gzip=await transform(text.encode('actual data'),'gzip',false,1024);
   assert.deepEqual(await transform(gzip,'gzip',true,1024),text.encode('actual data'));
