@@ -14,6 +14,8 @@ test('production image capabilities expose actual optional engines and reject un
  const noWasm=await engineCapabilities(imageEncoders,{format:'PNG',quality:90,width:2,height:2,encodedBytes:10},{...env,wasm:false});
  assert.equal(noWasm.find(e=>e.id==='wasm-png').available,false);
  assert.ok(!small.some(e=>/vips|ffmpeg-wasm/.test(e.id)),'Evaluated-only engines must not be advertised');
+ const invalid=await engineCapabilities(imageEncoders,{format:'PNG',quality:90,width:NaN,height:80,encodedBytes:10},env);
+ assert.ok(!invalid.some(e=>e.available));
 });
 test('audio capabilities distinguish PCM, WebCodecs and libav without loading WASM or claiming native AAC',async()=>{
  const q={format:'MP3',quality:90,bitrate:128,mode:'bitrate',sampleRate:48000,channels:2,duration:2};
@@ -24,4 +26,7 @@ test('audio capabilities distinguish PCM, WebCodecs and libav without loading WA
  const wav=await engineCapabilities(audioEncoders,{...q,format:'WAV'},env);assert.deepEqual(wav.filter(e=>e.available).map(e=>e.id),['builtin-pcm-encode']);
  const decode=await engineCapabilities(audioDecoders,{format:'FLAC'},env);assert.deepEqual(decode.filter(e=>e.available).map(e=>e.id),['wasm-libav-decode']);
  const unsupported=await engineCapabilities(audioEncoders,{...q,bitrate:129},env);assert.match(unsupported.find(e=>e.id==='wasm-libav-encode').reason,/bitrate/i);
+ for(const patch of [{sampleRate:96000},{channels:3},{format:'OPUS',sampleRate:22050}]) {
+  const report=await engineCapabilities(audioEncoders,{...q,...patch},env);assert.ok(!report.some(e=>e.available));
+ }
 });
