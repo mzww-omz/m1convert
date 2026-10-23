@@ -16,7 +16,7 @@ export interface EngineCapability {
 	limits:readonly string[];
 }
 export interface EngineAvailability extends EngineCapability { available:boolean; reason?:string }
-export interface EngineContext { signal:AbortSignal; stage:StageReporter }
+export interface EngineContext { signal:AbortSignal; stage:StageReporter; temporary?:(name:string)=>Promise<void>; streaming?:()=>void; activity?:(bytes:number)=>void }
 export interface CodecSession<Input,Output,Options> {
 	run(input:Input,options:Options,context:EngineContext):Promise<Output>;
 	dispose?():void|Promise<void>;
