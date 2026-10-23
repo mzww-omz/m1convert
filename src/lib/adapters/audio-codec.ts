@@ -2,7 +2,7 @@ import type {EngineAdapter,StageReporter,ConversionRequest} from '../engine-type
 import {audioFormats,mp3Rates,validateAudioEncoding} from '../audio-formats.ts';
 import {inspectAudioBytes,audioBounds} from '../audio-validation.ts';
 import {convertPcm,type Pcm} from './pcm.ts';
-import {runCodec,type EngineContext} from '../codec-registry.ts';
+import {runCodec,EngineFallbackError,type EngineContext} from '../codec-registry.ts';
 import {audioDecoders,audioEncoders} from '../engines/audio.ts';
 import {outputName} from '../results.ts';
 export const compressedOutputs=['MP3','FLAC','OGG','OPUS','AAC','M4A'];
@@ -51,15 +51,17 @@ async function single(request:ConversionRequest,stage:StageReporter,job:EngineCo
 	if(format==='MP3'&&!mp3Rates.includes(rate)) {if(settings.sampleRate)throw new Error('MP3 does not support this sample rate.');rate=48000;}
 	validateAudioEncoding(format,rate,bitrate,mode,pcm.samples.length/pcm.channels/pcm.sampleRate);
 	const converted=convertPcm(pcm,{...settings,sampleRate:rate===pcm.sampleRate&&!settings.sampleRate?0:rate});stage('encoding',0);
-	const {value:bytes,engineId:encoder,fallbackFrom}=await runCodec(audioEncoders,converted,{format,quality:request.quality,bitrate,mode,sampleRate:converted.sampleRate,channels:converted.channels,duration:converted.samples.length/converted.channels/converted.sampleRate},job,bytes=>{
+	const def=audioFormats.find(f=>f.id===format)!,name=outputName(request.file.name,format);
+	let verifiedBlob:Blob|undefined;
+	const {engineId:encoder,fallbackFrom}=await runCodec(audioEncoders,converted,{format,quality:request.quality,bitrate,mode,sampleRate:converted.sampleRate,channels:converted.channels,duration:converted.samples.length/converted.channels/converted.sampleRate},job,async bytes=>{
 		if(bytes.length>64*1024**2)throw new Error('Safety limit: audio output exceeds 64 MiB.');
+		stage('verifying',95);const candidate=new Blob([bytes.slice()],{type:def.mime});
+		const {pcm:verified,format:actual}=await readAudio(new File([candidate],name,{type:def.mime}),true,undefined,{...job,stage:()=>stage('verifying',95)});
+		const duration=converted.samples.length/converted.channels/converted.sampleRate,actualDuration=verified.samples.length/verified.channels/verified.sampleRate;
+		if(actual!==format||verified.channels!==converted.channels||verified.sampleRate!==converted.sampleRate||Math.abs(actualDuration-duration)>(['WAV','FLAC'].includes(format)?1/converted.sampleRate:.08))throw new EngineFallbackError('unsupported','Encoded audio codec, duration, channels or sample rate failed verification.');
+		verifiedBlob=candidate;
 	});
-	if(bytes.length>64*1024**2)throw new Error('Audio output exceeds 64 MiB.');
-	stage('verifying',95);const def=audioFormats.find(f=>f.id===format)!,name=outputName(request.file.name,format),blob=new Blob([bytes.slice()],{type:def.mime});
-	const {pcm:verified,format:actual}=await readAudio(new File([blob],name,{type:def.mime}),true,undefined,job);
-	const duration=converted.samples.length/converted.channels/converted.sampleRate,actualDuration=verified.samples.length/verified.channels/verified.sampleRate;
-	if(actual!==format||verified.channels!==converted.channels||verified.sampleRate!==converted.sampleRate||Math.abs(actualDuration-duration)>(['WAV','FLAC'].includes(format)?1/converted.sampleRate:.08))throw new Error('Encoded audio codec, duration, channels or sample rate failed verification.');
-	return {blob,name,format,mime:def.mime,engines:{decoder,encoder,fallbackFrom}};
+	return {blob:verifiedBlob!,name,format,mime:def.mime,engines:{decoder,encoder,fallbackFrom}};
 }
 export const audioCodec:EngineAdapter={
 	async inspect(file,stage,verifiedOutputs,context) {

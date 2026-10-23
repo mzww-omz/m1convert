@@ -33,7 +33,9 @@ test('WASM MP3 FLAC Vorbis and Opus inputs decode to bounded real WAV samples',a
   const file=new File([await fixture(ext)],'renamed.bin',{type:'application/zip'}),analysis=await audioCodec.inspect(file,noop);
   assert.equal(analysis.info.category,'audio');assert.equal(analysis.info.channels,2);assert.equal(analysis.info.sampleRate,48000);
   assert.ok(Math.abs(analysis.info.duration-2)<.08);
-  const result=await audioCodec.run({file,format:'WAV',quality:90},noop),pcm=decodePcm(new Uint8Array(await result.blob.arrayBuffer()),'WAV');
+  const stages=[],result=await audioCodec.run({file,format:'WAV',quality:90},(stage,percent)=>stages.push({stage,percent})),pcm=decodePcm(new Uint8Array(await result.blob.arrayBuffer()),'WAV');
+  assert.equal(result.engines.decoder,'wasm-libav-decode');assert.equal(result.engines.encoder,'builtin-pcm-encode');
+  assert.deepEqual(stages.at(-1),{stage:'verifying',percent:95});
   assert.equal(pcm.channels,2);assert.ok(pcm.samples.some(v=>Math.abs(v)>.1));assert.ok(Math.abs(pcm.samples.length/2/48000-2)<.08);
  }
 });
