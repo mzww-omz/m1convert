@@ -1,7 +1,6 @@
 import { ascii } from '../formats.ts';
 import { audioFormats, sampleRates } from '../audio-formats.ts';
 import type { AudioSettings, EngineAdapter } from '../engine-types.ts';
-import { outputName } from '../results.ts';
 const MAX_SAMPLES=8_000_000, MAX_BYTES=64*1024**2;
 export interface Pcm { sampleRate:number; channels:number; samples:Float32Array }
 function fail(message:string):never { throw new Error(message); }
@@ -115,18 +114,14 @@ async function read(file:File) {
 	return {pcm:decodePcm(b,format.id),format};
 }
 export const pcmCodec:EngineAdapter={
-	async inspect(file,stage,verifiedOutputs) {
+	async inspect(file,stage,verifiedOutputs,context) {
+		context?.signal.throwIfAborted();
 		stage('reading'); const {pcm,format}=await read(file); stage('verifying');
 		const {availableAudioOutputs}=await import('./audio-codec.ts');
-		return {info:{format:format.id,mime:format.mime,category:'audio',sampleRate:pcm.sampleRate,channels:pcm.channels,duration:pcm.samples.length/pcm.channels/pcm.sampleRate},outputs:await availableAudioOutputs(verifiedOutputs),preview:null};
+		return {info:{format:format.id,mime:format.mime,category:'audio',sampleRate:pcm.sampleRate,channels:pcm.channels,duration:pcm.samples.length/pcm.channels/pcm.sampleRate},outputs:await availableAudioOutputs(verifiedOutputs,context),preview:null};
 	},
-	async run(request,stage) {
+	async run(request,stage,context) {
 		if(request.format!=='WAV') fail('This audio output format is not supported.');
-		if(request.files && request.files.length>1) return (await import('./audio-codec.ts')).audioCodec.run(request,stage);
-		stage('reading'); const {pcm}=await read(request.file); stage('decoding');
-		const converted=convertPcm(pcm,request.audio??{sampleRate:0,channels:0}); stage('encoding');
-		const bytes=encodeWav(converted); stage('verifying'); const verified=decodePcm(bytes,'WAV');
-		if(verified.sampleRate!==converted.sampleRate||verified.channels!==converted.channels||verified.samples.length!==converted.samples.length) fail('Audio output verification failed.');
-		return {blob:new Blob([bytes.slice()],{type:'audio/wav'}),name:outputName(request.file.name,'WAV'),format:'WAV',mime:'audio/wav'};
+		return (await import('./audio-codec.ts')).audioCodec.run(request,stage,context);
 	}
 };

@@ -4,7 +4,7 @@ import {detectEnvironment,engineCapabilities,runCodec,EngineFallbackError} from 
 const env={wasm:true,wasmSimd:false,sharedMemory:false,offscreenCanvas:false,imageBitmap:false,canvasEncoding:false,audioEncoder:false,audioDecoder:false,compression:false,decompression:false};
 const context=signal=>({signal:signal??new AbortController().signal,stage:()=>{}});
 function engine(id,run,extra={}) {
- return {capability:{id,kind:'wasm',operation:'encode',formats:['PNG'],quality:'lossless',requirements:['wasm'],limits:['bounded input'],containers:['PNG']},load:async()=>({run}),...extra};
+ return {capability:{id,kind:'wasm',operation:'encode',formats:['PNG'],quality:{PNG:'lossless'},requirements:['wasm'],limits:['bounded input'],containers:['PNG']},load:async()=>({run}),...extra};
 }
 test('environment detection uses features, not user agent or an assumed thread requirement',()=>{
  const none=detectEnvironment({});assert.equal(none.wasm,false);assert.equal(none.sharedMemory,false);assert.equal(none.audioEncoder,false);
@@ -47,7 +47,21 @@ test('abort before load and after a pending load never starts a run or fallback;
  await new Promise(r=>setImmediate(r));d.abort();resolve({run:()=>assert.fail(),dispose:()=>disposed++});
  await assert.rejects(pending,{name:'AbortError'});assert.equal(disposed,1);
 });
+test('common stages restart on fallback and abort during a run disposes without verification or retry',async()=>{
+ const stages=[],job={...context(),stage:stage=>stages.push(stage)};
+ await runCodec([engine('first',async()=>{throw new EngineFallbackError('unsupported','no');}),engine('second',async()=>2)],0,{format:'PNG'},job,()=>{},env);
+ assert.deepEqual(stages,['encoding','encoding']);
+ const controller=new AbortController();let finish,disposed=0;
+ const wait=new Promise(r=>finish=r),slow=engine('slow',()=>wait,{load:async()=>({run:()=>wait,dispose:()=>disposed++})});
+ const pending=runCodec([slow,engine('never',()=>assert.fail())],0,{format:'PNG'},context(controller.signal),()=>assert.fail('Aborted output cannot be accepted'),env);
+ await new Promise(r=>setImmediate(r));controller.abort();finish(1);
+ await assert.rejects(pending,{name:'AbortError'});assert.equal(disposed,1);
+});
 test('an unavailable loader falls back, an exhausted registry explains attempted engines, cleanup errors stop retry',async()=>{
+ const network=engine('network',()=>assert.fail(),{load:async()=>{throw new TypeError('Failed to fetch dynamically imported module');}});
+ assert.equal((await runCodec([network,engine('available',async()=>7)],0,{format:'PNG'},context(),()=>{},env)).value,7);
+ const resource=engine('resource',()=>assert.fail(),{load:async()=>{throw new RangeError('Out of memory');}});
+ await assert.rejects(runCodec([resource,engine('never',()=>assert.fail())],0,{format:'PNG'},context(),()=>{},env),/Out of memory/);
  const unavailable=engine('missing',()=>assert.fail(),{load:async()=>{throw new EngineFallbackError('unavailable','Local WASM asset missing.');}});
  await assert.rejects(runCodec([unavailable],0,{format:'PNG'},context(),()=>{},env),/missing.*Local WASM asset missing/i);
  const brokenCleanup=engine('cleanup',()=>{}, {load:async()=>({run:async()=>{throw new EngineFallbackError('unsupported','retry');},dispose:()=>{throw new Error('Cleanup failed');}})});

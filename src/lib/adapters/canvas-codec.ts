@@ -1,6 +1,8 @@
 import type { EngineAdapter, Stage } from '../engine-types.ts';
 import { imageFormats, imageOutputs } from '../formats.ts';
-import { inspectFile, verifyOutput, type ImageInfo } from '../image-format.ts';
+import { inspectFile, verifyOutput, OutputVerificationError, type ImageInfo } from '../image-format.ts';
+import {runCodec,EngineFallbackError,detectEnvironment,type EngineContext} from '../codec-registry.ts';
+import {imageEncoders} from '../engines/image.ts';
 import { outputName } from '../results.ts';
 
 function checkBrowser() {
@@ -49,37 +51,16 @@ async function decode(file: Blob, info: ImageInfo, frameIndex = info.frame): Pro
 	}
 	return bitmap;
 }
-async function encode(canvas: OffscreenCanvas, id: string, quality: number): Promise<Blob> {
-	const format=imageFormats.find(f => f.id===id);
-	if (!format || !imageOutputs.includes(format)) throw new Error('This output format is not supported.');
-	if (id==='TIFF') {
-		const {encodeTiff}=await import('./tiff.ts');
-		return new Blob([encodeTiff(context(canvas).getImageData(0,0,canvas.width,canvas.height))],{type:format.mime});
-	}
-	if (id==='BMP') {
-		const { encodeBmp }=await import('./bmp.ts');
-		return new Blob([encodeBmp(context(canvas).getImageData(0,0,canvas.width,canvas.height))],{type:format.mime});
-	}
-	if (id==='ICO') {
-		const { encodeIco }=await import('./ico.ts');
-		const frames=[];
-		for (const size of [16,32,48,256]) {
-			const icon=new OffscreenCanvas(size,size);
-			try {
-				const scale=Math.min(size/canvas.width,size/canvas.height), w=canvas.width*scale, h=canvas.height*scale;
-				context(icon).drawImage(canvas,(size-w)/2,(size-h)/2,w,h);
-				const png=await icon.convertToBlob({type:'image/png'});
-				frames.push({width:size,height:size,bytes:new Uint8Array(await png.arrayBuffer())});
-			} finally { icon.width=icon.height=1; }
+async function encode(canvas:OffscreenCanvas,id:string,quality:number,job:EngineContext,encodedBytes=0) {
+	const width=canvas.width,height=canvas.height;
+	return runCodec(imageEncoders,canvas,{format:id,quality,width,height,encodedBytes},job,async blob=>{
+		job.stage('verifying');
+		try { await verify(blob,id,width,height); }
+		catch(error) {
+			if(error instanceof OutputVerificationError)throw new EngineFallbackError('unsupported',error.message);
+			throw error;
 		}
-		return new Blob([encodeIco(frames)],{type:format.mime});
-	}
-	try {
-		const blob=await canvas.convertToBlob({type:format.mime,quality:quality/100});
-		if(blob.type!==format.mime)throw new Error('Encoder returned another format.');
-		return blob;
-	}
-	catch { throw new Error(`${id} encoding failed for ${canvas.width} × ${canvas.height} pixels in this browser. Try PNG, a lower quality, or a smaller source image.`); }
+	});
 }
 async function verify(blob: Blob, id: string, width: number, height: number) {
 	await verifyOutput(blob,id);
@@ -89,18 +70,18 @@ async function verify(blob: Blob, id: string, width: number, height: number) {
 		if (info.frames?.length !== 4 || info.frames.some((f,i)=> f.width!==[16,32,48,256][i] || f.height!==f.width)) throw new Error('ICO output sizes do not match.');
 		for (let i=0;i<4;i++) { const bitmap=await decode(blob,{...info},i); bitmap.close(); }
 	} else {
-		if (info.width!==width || info.height!==height) throw new Error(`${id} encoder could not preserve ${width} × ${height} pixels (returned ${info.width} × ${info.height}). Try PNG or a smaller source image.`);
+		if (info.width!==width || info.height!==height) throw new OutputVerificationError(`${id} encoder could not preserve ${width} × ${height} pixels (returned ${info.width} × ${info.height}). Try PNG or a smaller source image.`);
 		const bitmap=await decode(blob,info); bitmap.close();
 	}
 }
-async function availableOutputs(verified:readonly string[]=[]): Promise<string[]> {
+async function availableOutputs(job:EngineContext,verified:readonly string[]=[]): Promise<string[]> {
 	const canvas = new OffscreenCanvas(2, 2), outputs: string[] = [];
 	try {
 		context(canvas).fillRect(0,0,2,2);
 		for (const format of imageOutputs) {
 			if(verified.includes(format.id)){outputs.push(format.id);continue;}
-			try { const blob=await encode(canvas,format.id,90); await verify(blob,format.id,2,2); outputs.push(format.id); }
-			catch { /* Unsupported encoders (including silent PNG fallback) are not advertised. */ }
+			try { await encode(canvas,format.id,90,job); outputs.push(format.id); }
+			catch { job.signal.throwIfAborted(); /* Unverified encoders are not advertised. */ }
 		}
 	} finally { canvas.width = canvas.height = 1; }
 	return outputs;
@@ -113,20 +94,24 @@ async function read(file: File, stage: (stage: Stage) => void, frame?: number) {
 	return {info,bitmap};
 }
 export const canvasCodec: EngineAdapter = {
-	async inspect(file, stage, verifiedOutputs) {
+	async inspect(file, stage, verifiedOutputs,jobContext) {
+		const job=jobContext??{signal:new AbortController().signal,stage};
+		job.signal.throwIfAborted();
 		const { info, bitmap } = await read(file, stage);
 		const scale = Math.min(1, 320 / info.width, 180 / info.height);
 		const canvas = new OffscreenCanvas(Math.max(1, Math.round(info.width * scale)), Math.max(1, Math.round(info.height * scale)));
 		try {
 			context(canvas).drawImage(bitmap, 0, 0, canvas.width, canvas.height);
 			bitmap.close();
-			const preview = await canvas.convertToBlob({ type: 'image/png' });
-			const outputs = await availableOutputs(verifiedOutputs);
+			const {value:preview}=await encode(canvas,'PNG',90,job);
+			const outputs = await availableOutputs(job,verifiedOutputs);
 			if (!outputs.length) throw new Error('No supported image encoders are available in this browser.');
-			return { info, preview, outputs };
+			return { info, preview, outputs,codecEngines:imageEncoders.map(e=>e.capability),environment:detectEnvironment() };
 		} finally { bitmap.close(); canvas.width = canvas.height = 1; }
 	},
-	async run(request, stage) {
+	async run(request, stage,jobContext) {
+		const job=jobContext??{signal:new AbortController().signal,stage};
+		job.signal.throwIfAborted();
 		if (!imageOutputs.some(f=>f.id===request.format)) throw new Error('This output format is not supported.');
 		if (!Number.isFinite(request.quality) || request.quality < 1 || request.quality > 100) throw new Error('Quality must be between 1 and 100.');
 		const { info, bitmap } = await read(request.file, stage, request.frame);
@@ -136,10 +121,9 @@ export const canvasCodec: EngineAdapter = {
 			if (request.format === 'JPEG') { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, info.width, info.height); }
 			ctx.drawImage(bitmap, 0, 0); bitmap.close();
 			stage('encoding');
-			const blob = await encode(canvas,request.format,request.quality);
+			const {value:blob,engineId,fallbackFrom}=await encode(canvas,request.format,request.quality,job,request.file.size);
 			canvas.width = canvas.height = 1;
-			stage('verifying'); await verify(blob,request.format,info.width,info.height);
-			return { blob, name:outputName(request.file.name,request.format), format:request.format, mime:blob.type,
+			return { blob,engines:{encoder:engineId,fallbackFrom}, name:outputName(request.file.name,request.format), format:request.format, mime:blob.type,
 				width:request.format==='ICO' ? 256 : info.width, height:request.format==='ICO' ? 256 : info.height };
 		} finally { bitmap.close(); canvas.width = canvas.height = 1; }
 	}

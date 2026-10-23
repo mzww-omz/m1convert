@@ -1,3 +1,4 @@
+import type {EngineCapability,EngineContext,EngineEnvironment} from './codec-registry.ts';
 export type Stage = 'reading' | 'decoding' | 'encoding' | 'verifying';
 export interface Progress { stage: Stage; percent: number | null }
 export const stageLabels: Record<Stage, string> = {
@@ -13,13 +14,14 @@ export interface ConversionResult {
 	mime: string;
 	width?: number;
 	height?: number;
+	engines?: {decoder?:string;encoder?:string;fallbackFrom?:string[]};
 }
 export interface AssetInfo { format: string; mime: string; width?: number; height?: number; frames?: {width:number;height:number}[]; frame?:number; category?:'audio'|'archive'; entries?:number; sampleRate?:number; channels?:number; duration?:number; codec?:string }
-export interface Analysis { info: AssetInfo; outputs: string[]; preview: Blob | null; warnings?:string[] }
+export interface Analysis { info: AssetInfo; outputs: string[]; preview: Blob | null; warnings?:string[]; codecEngines?:EngineCapability[]; environment?:EngineEnvironment }
 export type StageReporter=(stage:Stage,percent?:number)=>void;
 export interface EngineAdapter {
-	inspect(file: File, stage: StageReporter, verifiedOutputs?:readonly string[]): Promise<Analysis>;
-	run(request: ConversionRequest, stage: StageReporter): Promise<ConversionResult>;
+	inspect(file: File, stage: StageReporter, verifiedOutputs?:readonly string[], context?:EngineContext): Promise<Analysis>;
+	run(request: ConversionRequest, stage: StageReporter, context?:EngineContext): Promise<ConversionResult>;
 }
 export interface ConversionEngine {
 	inspect(file: File, signal: AbortSignal): Promise<Analysis>;

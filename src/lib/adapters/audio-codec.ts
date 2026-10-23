@@ -1,52 +1,47 @@
 import type {EngineAdapter,StageReporter,ConversionRequest} from '../engine-types.ts';
 import {audioFormats,mp3Rates,validateAudioEncoding} from '../audio-formats.ts';
 import {inspectAudioBytes,audioBounds} from '../audio-validation.ts';
-import {decodePcm,convertPcm,encodeWav,type Pcm} from './pcm.ts';
-import {decodeWasm,encodeWasm} from './wasm-audio.ts';
+import {convertPcm,type Pcm} from './pcm.ts';
+import {runCodec,type EngineContext} from '../codec-registry.ts';
+import {audioDecoders,audioEncoders} from '../engines/audio.ts';
 import {outputName} from '../results.ts';
 export const compressedOutputs=['MP3','FLAC','OGG','OPUS','AAC','M4A'];
-const qualityFormats=['MP3','OGG'];
 let outputs:Promise<string[]>|undefined;
-export async function readAudio(file:File,output=false,onDecode?:()=>void) {
+export async function readAudio(file:File,output=false,onDecode?:()=>void,context?:EngineContext) {
 	if(!file.size)throw new Error('Audio input is empty.');
 	if(file.size>64*1024**2)throw new Error('Safety limit: audio exceeds the 64 MiB buffer budget. Split the source into smaller files.');
-	const bytes=new Uint8Array(await file.arrayBuffer()),header=inspectAudioBytes(file,bytes);let pcm:Pcm;
+	const job=context??{signal:new AbortController().signal,stage:()=>{}};
+	job.signal.throwIfAborted();
+	const bytes=new Uint8Array(await file.arrayBuffer()),header=inspectAudioBytes(file,bytes);
 	onDecode?.();
-	if(['WAV','AIFF'].includes(header.format))pcm=decodePcm(bytes,header.format);
-	else if(['AAC','M4A'].includes(header.format))pcm=await (await import('./native-aac.ts')).decodeAac(file);
-	else pcm=await decodeWasm(bytes,header.format);
-	audioBounds(pcm.sampleRate,pcm.channels,pcm.samples.length);
-	if('total' in header&&typeof header.total==='number'&&header.total&&pcm.samples.length!==header.total*pcm.channels)throw new Error('FLAC decoded sample count does not match STREAMINFO.');
-	return {pcm,format:header.format};
+	const {value:pcm,engineId}=await runCodec(audioDecoders,{file,bytes},{format:header.format},job,pcm=>{
+		audioBounds(pcm.sampleRate,pcm.channels,pcm.samples.length);
+		if('total' in header&&typeof header.total==='number'&&header.total&&pcm.samples.length!==header.total*pcm.channels)throw new Error('FLAC decoded sample count does not match STREAMINFO.');
+	});
+	return {pcm,format:header.format,engineId};
 }
-export function availableAudioOutputs(verified:readonly string[]=[]) {
+export function availableAudioOutputs(verified:readonly string[]=[],context?:EngineContext) {
 	if(!outputs)outputs=(async()=>{
 		const result=['WAV',...compressedOutputs.filter(format=>verified.includes(format))],pcm:Pcm={sampleRate:48000,channels:2,samples:Float32Array.from({length:8192},(_,i)=>.2*Math.sin(i*.1))};
-		const probeWasm=async()=>{
-			for(const format of ['MP3','FLAC','OGG','OPUS'].filter(format=>!result.includes(format)))try {
-				const bytes=await encodeWasm(pcm,format,192),def=audioFormats.find(f=>f.id===format)!;
-				inspectAudioBytes(new File([bytes.slice()],`probe.${def.extension}`,{type:def.mime}),bytes);
-				const decoded=await decodeWasm(bytes,format);
-				if(decoded.channels===2&&decoded.sampleRate===48000&&Math.abs(decoded.samples.length-pcm.samples.length)<48000*.1*2)result.push(format);
-			}catch{/* Only actual encoders whose output decodes correctly are advertised. */}
+		const job:EngineContext=context??{signal:new AbortController().signal,stage:()=>{}};
+		const probe=async(formats:readonly string[])=>{
+			for(const format of formats.filter(format=>!result.includes(format)))try {
+				await runCodec(audioEncoders,pcm,{format,quality:90,bitrate:192,mode:'bitrate',sampleRate:48000,channels:2,duration:pcm.samples.length/2/48000},job,async bytes=>{
+					const def=audioFormats.find(f=>f.id===format)!,file=new File([bytes.slice()],`probe.${def.extension}`,{type:def.mime});
+					const {pcm:decoded,format:actual}=await readAudio(file,true,undefined,job);
+					if(actual!==format||decoded.channels!==2||decoded.sampleRate!==48000||Math.abs(decoded.samples.length-pcm.samples.length)>=48000*.1*2)throw new Error('Codec probe failed verification.');
+				});
+				result.push(format);
+			}catch{job.signal.throwIfAborted();/* Only real, verified encoders are advertised. */}
 		};
-		const probeNativeAac=async()=>{
-			if(result.includes('AAC')&&result.includes('M4A')||typeof AudioEncoder==='undefined'||typeof AudioDecoder==='undefined')return;
-			try {
-				const {nativeAacAvailable,encodeAac,decodeAac}=await import('./native-aac.ts');
-				if(await nativeAacAvailable())for(const format of ['AAC','M4A'].filter(format=>!result.includes(format)))try {
-					const bytes=await encodeAac(pcm,format,192),def=audioFormats.find(f=>f.id===format)!,file=new File([bytes.slice()],`probe.${def.extension}`,{type:def.mime});
-					inspectAudioBytes(file,bytes);const decoded=await decodeAac(file);
-					if(decoded.sampleRate===48000&&decoded.channels===2&&Math.abs(decoded.samples.length-pcm.samples.length)<48000*.1*2)result.push(format);
-				}catch{/* Native codec support includes genuine mux/decode verification. */}
-			}catch{/* Native AAC is optional; WASM and PCM paths remain available. */}
-		};
-		await Promise.all([probeWasm(),probeNativeAac()]);
+		// Libav uses one virtual filesystem per worker: do not run its probes concurrently.
+		await Promise.all([probe(['MP3','FLAC','OGG','OPUS']),probe(['AAC','M4A'])]);
 		return ['WAV',...compressedOutputs].filter(format=>result.includes(format));
-	})();return outputs;
+	})().catch(error=>{outputs=undefined;throw error;});return outputs;
 }
-async function single(request:ConversionRequest,stage:StageReporter) {
-	stage('reading');const {pcm}=await readAudio(request.file,false,()=>stage('decoding'));stage('decoding');
+async function single(request:ConversionRequest,stage:StageReporter,job:EngineContext) {
+	job.signal.throwIfAborted();
+	stage('reading');const {pcm,engineId:decoder}=await readAudio(request.file,false,()=>stage('decoding'),job);stage('decoding');
 	const settings=request.audio??{sampleRate:0,channels:0},format=request.format;
 	if(!['WAV',...compressedOutputs].includes(format))throw new Error('Unsupported audio output format.');
 	const bitrate=settings.bitrate??192,mode=settings.mode??'bitrate';
@@ -55,31 +50,32 @@ async function single(request:ConversionRequest,stage:StageReporter) {
 	if(format==='OPUS') {if(settings.sampleRate&&settings.sampleRate!==48000)throw new Error('Ogg Opus output uses 48000 Hz.');rate=48000;}
 	if(format==='MP3'&&!mp3Rates.includes(rate)) {if(settings.sampleRate)throw new Error('MP3 does not support this sample rate.');rate=48000;}
 	validateAudioEncoding(format,rate,bitrate,mode,pcm.samples.length/pcm.channels/pcm.sampleRate);
-	const converted=convertPcm(pcm,{...settings,sampleRate:rate});stage('encoding',0);let bytes:Uint8Array;
-	if(format==='WAV')bytes=encodeWav(converted);
-	else if(['AAC','M4A'].includes(format))bytes=await (await import('./native-aac.ts')).encodeAac(converted,format,bitrate,p=>stage('encoding',Math.min(95,p*95)));
-	else bytes=await encodeWasm(converted,format,bitrate,mode==='quality'&&qualityFormats.includes(format)?request.quality:undefined,p=>stage('encoding',Math.min(95,p*95)));
+	const converted=convertPcm(pcm,{...settings,sampleRate:rate===pcm.sampleRate&&!settings.sampleRate?0:rate});stage('encoding',0);
+	const {value:bytes,engineId:encoder,fallbackFrom}=await runCodec(audioEncoders,converted,{format,quality:request.quality,bitrate,mode,sampleRate:converted.sampleRate,channels:converted.channels,duration:converted.samples.length/converted.channels/converted.sampleRate},job,bytes=>{
+		if(bytes.length>64*1024**2)throw new Error('Safety limit: audio output exceeds 64 MiB.');
+	});
 	if(bytes.length>64*1024**2)throw new Error('Audio output exceeds 64 MiB.');
 	stage('verifying',95);const def=audioFormats.find(f=>f.id===format)!,name=outputName(request.file.name,format),blob=new Blob([bytes.slice()],{type:def.mime});
-	const {pcm:verified,format:actual}=await readAudio(new File([blob],name,{type:def.mime}),true);
+	const {pcm:verified,format:actual}=await readAudio(new File([blob],name,{type:def.mime}),true,undefined,job);
 	const duration=converted.samples.length/converted.channels/converted.sampleRate,actualDuration=verified.samples.length/verified.channels/verified.sampleRate;
 	if(actual!==format||verified.channels!==converted.channels||verified.sampleRate!==converted.sampleRate||Math.abs(actualDuration-duration)>(['WAV','FLAC'].includes(format)?1/converted.sampleRate:.08))throw new Error('Encoded audio codec, duration, channels or sample rate failed verification.');
-	return {blob,name,format,mime:def.mime};
+	return {blob,name,format,mime:def.mime,engines:{decoder,encoder,fallbackFrom}};
 }
 export const audioCodec:EngineAdapter={
-	async inspect(file,stage,verifiedOutputs) {
-		stage('reading');const {pcm,format}=await readAudio(file,false,()=>stage('decoding'));stage('verifying');const def=audioFormats.find(f=>f.id===format)!;
-		return {info:{format,mime:def.mime,category:'audio',sampleRate:pcm.sampleRate,channels:pcm.channels,duration:pcm.samples.length/pcm.channels/pcm.sampleRate,codec:format==='M4A'?'AAC':format==='OGG'?'Vorbis':format},outputs:await availableAudioOutputs(verifiedOutputs),preview:null};
+	async inspect(file,stage,verifiedOutputs,context) {
+		stage('reading');const {pcm,format}=await readAudio(file,false,()=>stage('decoding'),context);stage('verifying');const def=audioFormats.find(f=>f.id===format)!;
+		return {info:{format,mime:def.mime,category:'audio',sampleRate:pcm.sampleRate,channels:pcm.channels,duration:pcm.samples.length/pcm.channels/pcm.sampleRate,codec:format==='M4A'?'AAC':format==='OGG'?'Vorbis':format},outputs:await availableAudioOutputs(verifiedOutputs,context),preview:null};
 	},
-	async run(request,stage) {
-		if(!request.files||request.files.length<2)return single(request,stage);
+	async run(request,stage,context) {
+		const job=context??{signal:new AbortController().signal,stage};
+		if(!request.files||request.files.length<2)return single(request,stage,job);
 		const files=request.files;
 		if(files.length>32||files[0].name!==request.file.name||files.reduce((n,f)=>n+f.size,0)>32*1024**2)throw new Error('Audio batch exceeds 32 files or 32 MiB total.');
 		const {encodeZip,decodeZip}=await import('./archive.ts');const entries=[];let total=0;
 		for(let i=0;i<files.length;i++) {
 			let result;
-			try { result=await single({...request,file:files[i],files:undefined},s=>stage(s)); }
-			catch(error) { throw new Error(`Audio batch file ${i+1} (${files[i].name}): ${error instanceof Error?error.message:'conversion failed'}`); }
+			try { result=await single({...request,file:files[i],files:undefined},s=>stage(s),job); }
+			catch(error) { job.signal.throwIfAborted(); throw new Error(`Audio batch file ${i+1} (${files[i].name}): ${error instanceof Error?error.message:'conversion failed'}`); }
 			const data=new Uint8Array(await result.blob.arrayBuffer());total+=data.length;
 			if(total>64*1024**2)throw new Error('Audio batch exceeds the 64 MiB output limit.');
 			entries.push({name:`${i+1}-${result.name}`,data,directory:false,mtime:0});stage('encoding',(i+1)/files.length*95);

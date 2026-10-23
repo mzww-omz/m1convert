@@ -43,6 +43,7 @@ test('independent WAV and AIFF fixtures convert to WAV with rate/channel options
     assert.ok(info.outputs.includes('WAV')); assert.equal(info.info.channels,2); assert.equal(info.info.sampleRate,48000);
     for(const audio of [{sampleRate:0,channels:0},{sampleRate:16000,channels:1},{sampleRate:44100,channels:2}]) {
       const result=await pcmCodec.run({file,format:'WAV',quality:90,audio},noop);
+      assert.equal(result.engines.decoder,'builtin-pcm-decode');assert.equal(result.engines.encoder,'builtin-pcm-encode');
       const decoded=decodePcm(new Uint8Array(await result.blob.arrayBuffer()),'WAV');
       assert.equal(decoded.sampleRate,audio.sampleRate||48000); assert.equal(decoded.channels,audio.channels||2);
       assert.ok(Math.abs(decoded.samples.length/decoded.channels/decoded.sampleRate-info.info.duration)<1/decoded.sampleRate);

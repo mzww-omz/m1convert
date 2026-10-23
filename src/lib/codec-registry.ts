@@ -10,7 +10,7 @@ export interface EngineCapability {
 	kind:'native'|'webcodecs'|'wasm'|'builtin';
 	operation:'decode'|'encode';
 	formats:readonly string[];
-	quality:'lossless'|'percentage'|'bitrate'|'bitrate-or-quality'|'not-applicable';
+	quality:Readonly<Record<string,'lossless'|'percentage'|'bitrate'|'bitrate-or-quality'|'not-applicable'>>;
 	containers:readonly string[];
 	requirements:readonly (keyof EngineEnvironment)[];
 	limits:readonly string[];
@@ -71,8 +71,14 @@ export async function runCodec<I,O,Q extends {format:string}>(
 		if(!status.available) { reasons.push(`${status.id}: ${status.reason}`); continue; }
 		let session:CodecSession<I,O,Q>|undefined;
 		try {
-			session=await engine.load();
+			try { session=await engine.load(); }
+			catch(error) {
+				// load() cannot consume a file; a missing module is an availability failure.
+				if(error instanceof TypeError)throw new EngineFallbackError('unavailable',`Engine module could not load: ${error.message}`);
+				throw error;
+			}
 			context.signal.throwIfAborted();
+			context.stage(status.operation==='encode'?'encoding':'decoding');
 			const value=await session.run(input,options,context);
 			context.signal.throwIfAborted();
 			await verify(value);
