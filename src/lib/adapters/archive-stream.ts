@@ -190,7 +190,7 @@ export const streamArchiveCodec:EngineAdapter={
 			if(format==='GZIP') {
 				await equalStreams(blobStream(output.blob,job).pipeThrough(new DecompressionStream('gzip')),entries.find(e=>!e.directory)!.open(),job,onVerified);
 			} else {
-				const verified=await readArchive(output.blob,name,job);
+				const verified=await readArchive(output.blob,name,{...job,stage:()=>stage('verifying',85)});
 				if(verified.entries.length!==entries.length)fail('Archive output verification entry count mismatch.');
 				for(let i=0;i<entries.length;i++) {const a=entries[i],b=verified.entries[i];if(a.name!==b.name||a.directory!==b.directory||a.size!==b.size)fail('Archive output verification metadata mismatch.');await equalStreams(a.open(),b.open(),job,onVerified);}
 			}

@@ -16,6 +16,8 @@ test('TAR and ZIP conversion uses ranged input, with exact independently decoded
    if(decoded)assert.equal(decoded.find(e=>!e.directory).data.length,14);
    else assert.equal((await transform(bytes,'gzip',true)).length,14);
    assert.ok(stages.some(([,p])=>typeof p==='number'));
+   const checking=stages.findIndex(([s,p])=>s==='verifying'&&p===85);
+   assert.ok(checking>=0);assert.ok(stages.slice(checking).every(([s])=>s==='verifying'),'output checking must not revert to input-reading labels');
   }
  }
 });

@@ -46,6 +46,6 @@ port.onmessage = async ({ data }) => {
 		}
 		else port.postMessage({ type: 'converted', result: await adapter.run(data.request, stage,context) });
 	} catch (error) {
-		port.postMessage({ type: 'error', message: error instanceof RangeError ? 'The selected engine could not allocate its working memory. No lower-quality output was substituted. Close other tabs or use a smaller source.' : error instanceof Error ? error.message : 'File processing failed. Try again.' });
+		port.postMessage({ type: 'error', message: error instanceof RangeError ? `The selected engine could not allocate its working memory. No lower-quality output was substituted. Close other tabs or use a smaller source. Details: ${error.message}` : error instanceof Error ? error.message : 'File processing failed. Try again.' });
 	}
 };

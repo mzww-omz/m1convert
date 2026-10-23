@@ -69,7 +69,11 @@ export async function createOutput(job:EngineContext,mime:string,limit=STREAM_LI
 		},
 		async finish():Promise<StoredOutput> {
 			job.signal.throwIfAborted();if(closed)throw new Error('Output is already closed.');
-			if(writer) {await writer.close();closed=true;return {blob:(await handle!.getFile()).slice(0,metrics.bytesWritten,mime),temporaryFile};}
+			if(writer) {
+				try {await writer.close();}
+				catch {throw new Error('Temporary disk output could not be finalized (storage quota or I/O). Free browser storage and retry.');}
+				closed=true;return {blob:(await handle!.getFile()).slice(0,metrics.bytesWritten,mime),temporaryFile};
+			}
 			closed=true;const blob=new Blob(chunks,{type:mime});chunks.length=0;return {blob};
 		},
 		async abort() {
