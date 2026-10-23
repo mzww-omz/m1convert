@@ -56,7 +56,9 @@ try {
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
     await page.screenshot({path:`artifacts/continuous/${name}-mobile.png`});await page.setViewportSize({width:1280,height:900});
   }
-  await upload([await fixture('tone.wav'),await fixture('tone.aiff')]);
+  const renamed=await fixture('tone.wav');renamed.name='audio.unknown';renamed.mimeType='image/png';
+  await upload([renamed,{...await fixture('tone.aiff'),name:'other.bin'}]);
+  assert.equal(await page.getByText(/Compatibility warning: file extension/).count(),1);
   await page.getByRole('combobox',{name:'Sample rate',exact:true}).selectOption('16000');await convert();const batch=await download();
   assert.equal(batch.name,'converted-audio.zip');const entries=await decodeZip(batch.bytes);assert.equal(entries.length,2);
   for(const e of entries) assert.equal(decodePcm(e.data,'WAV').sampleRate,16000);
@@ -77,7 +79,6 @@ try {
   await output().waitFor();assert.equal(await page.getByRole('combobox',{name:'Sample rate',exact:true}).inputValue(),'96000');
   assert.equal(await page.evaluate(()=>window.activeWorkers),0);assert.equal(await page.evaluate(()=>window.liveUrls.size),0);
   for(const [name,buffer,message] of [
-    ['fake.mp3',(await fixture('tone.wav')).buffer,/not supported|conversion is not supported|extension/i],
     ['bad.zip',Buffer.from('PK\x03\x04garbage'),/ZIP|archive|corrupt/i],
     ['animated.gif',(await fixture('animated.gif')).buffer,/animat/i]
   ]) {

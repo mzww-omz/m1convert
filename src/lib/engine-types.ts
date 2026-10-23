@@ -15,7 +15,7 @@ export interface ConversionResult {
 	height?: number;
 }
 export interface AssetInfo { format: string; mime: string; width?: number; height?: number; frames?: {width:number;height:number}[]; frame?:number; category?:'audio'|'archive'; entries?:number; sampleRate?:number; channels?:number; duration?:number; codec?:string }
-export interface Analysis { info: AssetInfo; outputs: string[]; preview: Blob | null }
+export interface Analysis { info: AssetInfo; outputs: string[]; preview: Blob | null; warnings?:string[] }
 export type StageReporter=(stage:Stage,percent?:number)=>void;
 export interface EngineAdapter {
 	inspect(file: File, stage: StageReporter, verifiedOutputs?:readonly string[]): Promise<Analysis>;

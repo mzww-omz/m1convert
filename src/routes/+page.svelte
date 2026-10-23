@@ -5,7 +5,7 @@
 	import { formatBytes } from '#lib/machine.ts';
 	import { formatById } from '#lib/registry.ts';
 	import { stageLabels } from '#lib/engine.ts';
-	import { sampleRates } from '#lib/audio-formats.ts';
+	import { sampleRates, audioBitrates } from '#lib/audio-formats.ts';
 
 	const converter = new Converter();
 	const thumbnail = $derived(converter.state.analysis?.preview ?? null);
@@ -33,8 +33,8 @@
 	function accept(files: FileList | File[] | null) {
 		if (!files?.length) return;
 		if (converter.state.phase === 'progress') return;
-		const batch=files.length>1 && Array.from(files).every(f=>/\.(wav|wave|aif|aiff|mp3|flac|ogg|oga|opus|aac|adts|m4a|mp4)$/i.test(f.name));
-		notice = batch ? `${files.length} audio files. Converted one at a time; download all as ZIP.` : files.length > 1 ? 'One file at a time. The first file was selected.' : '';
+		const batch=files.length>1;
+		notice = batch ? `${files.length} files selected. Audio converts one at a time to ZIP; other formats use the first file.` : '';
 		converter.send({ type: 'LOAD', file: files[0], ...(batch?{files:Array.from(files)}:{}) });
 	}
 
@@ -132,7 +132,7 @@
 								{:else if !['WAV','FLAC'].includes(view.format)}
 									<label class="field">Bitrate
 										<select value={view.audio.bitrate ?? 192} onchange={(event)=>converter.send({type:'AUDIO',bitrate:+event.currentTarget.value})}>
-											{#each [32,48,64,96,128,160,192,256,320].filter(n=>view.format!=='MP3'||(view.audio.sampleRate||view.analysis?.info.sampleRate||48000)>=32000||n<=160) as bitrate}<option value={bitrate}>{bitrate} kbps</option>{/each}
+											{#each audioBitrates(view.format,view.audio.sampleRate||view.analysis?.info.sampleRate||48000) as bitrate}<option value={bitrate}>{bitrate} kbps</option>{/each}
 										</select>
 									</label>
 								{:else}<div class="field format-note">Encoding<span>{view.format === 'FLAC' ? '16-bit FLAC' : '16-bit PCM'}</span></div>{/if}
@@ -159,6 +159,7 @@
 								</label>
 							{/if}
 						</div>
+						{#each view.analysis?.warnings ?? [] as warning}<p class="engine-note" role="status">{warning}</p>{/each}
 						<p class="engine-note" id="conversion-note" role="status">{view.analysisError || (!view.analysis ? 'Checking file…' : view.analysis.info.category === 'audio' ? view.format === 'OPUS' ? 'Target bitrate. Ogg Opus uses 48000 Hz. Metadata is removed.' : ['AAC','M4A'].includes(view.format) ? 'Native AAC-LC with target bitrate (may use VBR). Metadata is removed; padding may affect duration.' : ['WAV','FLAC'].includes(view.format) ? '16-bit output. Metadata is removed; resampling can affect quality.' : 'Converted locally. Metadata is removed. Bitrate is a target; lossy encoding can affect quality.' : view.analysis.info.category === 'archive' ? view.format === 'GZIP' ? 'Compresses the single file only. Folders and original filename are not stored.' : 'Paths and file times are kept where possible. Links and unsafe archives are rejected.' : view.analysis.info.format === 'TIFF' ? 'Single-page uncompressed 8-bit RGB/RGBA only. Metadata is removed.' : view.format === 'JPEG' ? 'Transparency is filled with white.' : view.format === 'ICO' ? 'Creates 16, 32, 48 and 256 px icons. Aspect ratio is kept.' : view.analysis.info.format === 'ICO' ? 'Preview shows the largest frame. Converts the selected frame.' : view.analysis.info.format === 'AVIF' ? '8-bit still AVIF only. HDR and color profiles are not preserved.' : 'Converted locally. Your original stays unchanged.')}</p>
 						{#if notice}<p class="notice" role="status">{notice}</p>{/if}
 						<div class="actions">

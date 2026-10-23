@@ -4,7 +4,7 @@ export const MAX_AUDIO_SAMPLES=8_000_000;
 export function audioBounds(rate:number,channels:number,samples:number) {
 	if(!Number.isInteger(rate)||rate<8000||rate>192000) throw new Error('Unsupported audio sample rate (8000–192000 Hz).');
 	if(![1,2].includes(channels)) throw new Error('Only mono/stereo audio channels are supported.');
-	if(!Number.isInteger(samples)||samples<0||samples>MAX_AUDIO_SAMPLES) throw new Error('Audio exceeds the 8 million decoded samples limit.');
+	if(!Number.isInteger(samples)||samples<0||samples>MAX_AUDIO_SAMPLES) throw new Error('Safety limit: audio exceeds the 8 million decoded samples memory budget. Split the source or reduce its duration/channels before importing.');
 }
 function corrupt(name:string):never {throw new Error(`Corrupt, truncated or unsupported ${name} audio structure.`);}
 const rates=[96000,88200,64000,48000,44100,32000,24000,22050,16000,12000,11025,8000];

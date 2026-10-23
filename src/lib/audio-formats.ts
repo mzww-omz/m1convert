@@ -17,13 +17,30 @@ export const audioFormats:readonly FormatDefinition[]=[
 	{id:'M4A',mime:'audio/mp4',extension:'m4a',extensions:['m4a','mp4'],quality:false,
 		matches:b=>ascii(b,4,4)==='ftyp'&&!['avif','avis'].includes(ascii(b,8,4))}
 ];
+export function audioBitrates(format:string,rate:number):number[] {
+	if(format==='MP3')return rate<32000?[8,16,24,32,40,48,56,64,80,96,112,128,144,160]:[32,40,48,56,64,80,96,112,128,160,192,224,256,320];
+	if(format==='OPUS')return [6,12,24,32,48,64,96,128,160,192,256,320,510];
+	return [32,48,64,96,128,160,192,256,320,512];
+}
+export function validateAudioEncoding(format:string,rate:number,bitrate:number,mode:string,duration=0) {
+	if(!['bitrate','quality'].includes(mode))throw new Error('Invalid audio quality mode.');
+	if(['WAV','FLAC'].includes(format)||mode==='quality'&&['MP3','OGG'].includes(format))return;
+	if(!Number.isSafeInteger(bitrate)||bitrate<1||bitrate>2147483)throw new Error('Invalid audio bitrate: use a positive kbps value representable by the encoder.');
+	if(format==='MP3'&&!audioBitrates(format,rate).includes(bitrate))throw new Error('MP3 bitrate is incompatible with the sample rate. Choose a listed bitrate or use VBR quality.');
+	if(format==='OPUS'&&(bitrate<6||bitrate>510))throw new Error('Opus bitrate must be 6–510 kbps. Choose a lower bitrate.');
+	if(bitrate*125*duration>63*1024**2)throw new Error('Safety limit: target audio output exceeds the 64 MiB buffer budget including container overhead. Choose a lower bitrate or split the source.');
+}
 export const mp3Rates=[8000,11025,12000,16000,22050,24000,32000,44100,48000];
 export function compatibleAudioSettings(settings:AudioSettings,format:string,sourceRate=48000):AudioSettings {
 	let audio=settings;
-	if(format==='OPUS'&&audio.sampleRate&&audio.sampleRate!==48000)audio={...audio,sampleRate:48000};
+	if(format==='OPUS') {
+		if(audio.sampleRate&&audio.sampleRate!==48000)audio={...audio,sampleRate:48000};
+		if(audio.bitrate!==undefined&&!audioBitrates(format,48000).includes(audio.bitrate))audio={...audio,bitrate:192};
+	}
 	if(format==='MP3') {
 		if(audio.sampleRate&&!mp3Rates.includes(audio.sampleRate))audio={...audio,sampleRate:0};
-		if((audio.sampleRate||sourceRate)<32000&&(audio.bitrate??192)>160)audio={...audio,bitrate:128};
+		const rate=audio.sampleRate||sourceRate;
+		if(!audioBitrates(format,rate).includes(audio.bitrate??192))audio={...audio,bitrate:rate<32000?128:192};
 	}
 	return audio;
 }

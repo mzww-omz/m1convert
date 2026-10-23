@@ -27,7 +27,7 @@ test('category settings are validated, retained on cancel and reset on replaceme
 test('audio bitrate and quality mode update independently, validate bounds and survive cancel',()=>{
  let state=ready();state=transition(state,{type:'AUDIO',bitrate:128});state=transition(state,{type:'AUDIO',mode:'quality'});
  assert.deepEqual(state.audio,{sampleRate:0,channels:0,bitrate:128,mode:'quality'});
- for(const event of [{type:'AUDIO',bitrate:NaN},{type:'AUDIO',bitrate:10000},{type:'AUDIO',mode:'fake'}])assert.equal(transition(state,event),state);
+ for(const event of [{type:'AUDIO',bitrate:NaN},{type:'AUDIO',bitrate:2147484},{type:'AUDIO',mode:'fake'}])assert.equal(transition(state,event),state);
  state=transition(state,{type:'AUDIO',channels:1});assert.equal(state.audio.bitrate,128);assert.equal(state.audio.mode,'quality');
  const cancelled=transition(transition(state,{type:'START'}),{type:'CANCEL'});assert.deepEqual(cancelled.audio,state.audio);
 });

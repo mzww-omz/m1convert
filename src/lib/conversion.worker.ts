@@ -1,5 +1,6 @@
 import { adapters, detectFormat, planConversion } from './registry.ts';
 import { LIMITS } from './image-format.ts';
+import { compatibilityWarnings } from './compatibility.ts';
 import type { Stage, WorkerReply, WorkerRequest } from './engine-types.ts';
 
 const port = self as unknown as {
@@ -28,7 +29,8 @@ port.onmessage = async ({ data }) => {
 		const adapter = await definition.load();
 		if (data.type === 'inspect') {
 			const category=input.mime.startsWith('image/')?'image':input.mime.startsWith('audio/')?'audio':undefined;
-			port.postMessage({ type:'analyzed', analysis:await adapter.inspect(file,stage,category?data.verifiedOutputs?.[category]:undefined) });
+			const analysis=await adapter.inspect(file,stage,category?data.verifiedOutputs?.[category]:undefined);
+			port.postMessage({ type:'analyzed', analysis:{...analysis,warnings:compatibilityWarnings(file,analysis.info.format)} });
 		}
 		else port.postMessage({ type: 'converted', result: await adapter.run(data.request, stage) });
 	} catch (error) {

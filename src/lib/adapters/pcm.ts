@@ -8,7 +8,8 @@ function fail(message:string):never { throw new Error(message); }
 function bounds(rate:number,channels:number,frames:number) {
 	if(!Number.isInteger(rate)||rate<8000||rate>192000) fail('Audio sample rate must be between 8000 and 192000 Hz.');
 	if(![1,2].includes(channels)) fail('Only mono and stereo audio channels are supported.');
-	if(!Number.isInteger(frames)||frames<1||frames*channels>MAX_SAMPLES) fail('Audio exceeds the 8 million decoded samples limit or has no samples.');
+	if(!Number.isInteger(frames)||frames<1) fail('Audio has no samples or an invalid sample count.');
+	if(frames*channels>MAX_SAMPLES) fail('Safety limit: audio exceeds the 8 million decoded samples memory budget. Split the source into shorter files.');
 }
 export function decodePcm(b:Uint8Array,format:string):Pcm {
 	const v=new DataView(b.buffer,b.byteOffset,b.length), little=format==='WAV';

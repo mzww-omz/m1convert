@@ -74,7 +74,12 @@ async function encode(canvas: OffscreenCanvas, id: string, quality: number): Pro
 		}
 		return new Blob([encodeIco(frames)],{type:format.mime});
 	}
-	return canvas.convertToBlob({type:format.mime,quality:quality/100});
+	try {
+		const blob=await canvas.convertToBlob({type:format.mime,quality:quality/100});
+		if(blob.type!==format.mime)throw new Error('Encoder returned another format.');
+		return blob;
+	}
+	catch { throw new Error(`${id} encoding failed for ${canvas.width} × ${canvas.height} pixels in this browser. Try PNG, a lower quality, or a smaller source image.`); }
 }
 async function verify(blob: Blob, id: string, width: number, height: number) {
 	await verifyOutput(blob,id);
@@ -84,7 +89,7 @@ async function verify(blob: Blob, id: string, width: number, height: number) {
 		if (info.frames?.length !== 4 || info.frames.some((f,i)=> f.width!==[16,32,48,256][i] || f.height!==f.width)) throw new Error('ICO output sizes do not match.');
 		for (let i=0;i<4;i++) { const bitmap=await decode(blob,{...info},i); bitmap.close(); }
 	} else {
-		if (info.width!==width || info.height!==height) throw new Error('Output dimensions do not match.');
+		if (info.width!==width || info.height!==height) throw new Error(`${id} encoder could not preserve ${width} × ${height} pixels (returned ${info.width} × ${info.height}). Try PNG or a smaller source image.`);
 		const bitmap=await decode(blob,info); bitmap.close();
 	}
 }

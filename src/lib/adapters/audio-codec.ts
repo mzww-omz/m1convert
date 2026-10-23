@@ -1,5 +1,5 @@
 import type {EngineAdapter,StageReporter,ConversionRequest} from '../engine-types.ts';
-import {audioFormats,mp3Rates} from '../audio-formats.ts';
+import {audioFormats,mp3Rates,validateAudioEncoding} from '../audio-formats.ts';
 import {inspectAudioBytes,audioBounds} from '../audio-validation.ts';
 import {decodePcm,convertPcm,encodeWav,type Pcm} from './pcm.ts';
 import {decodeWasm,encodeWasm} from './wasm-audio.ts';
@@ -50,13 +50,11 @@ async function single(request:ConversionRequest,stage:StageReporter) {
 	const settings=request.audio??{sampleRate:0,channels:0},format=request.format;
 	if(!['WAV',...compressedOutputs].includes(format))throw new Error('Unsupported audio output format.');
 	const bitrate=settings.bitrate??192,mode=settings.mode??'bitrate';
-	if(!Number.isInteger(bitrate)||bitrate<6||bitrate>510||!['bitrate','quality'].includes(mode))throw new Error('Invalid audio bitrate or quality mode.');
 	if(!Number.isFinite(request.quality)||request.quality<1||request.quality>100)throw new Error('Audio quality must be 1–100.');
 	let rate=settings.sampleRate||pcm.sampleRate;
 	if(format==='OPUS') {if(settings.sampleRate&&settings.sampleRate!==48000)throw new Error('Ogg Opus output uses 48000 Hz.');rate=48000;}
 	if(format==='MP3'&&!mp3Rates.includes(rate)) {if(settings.sampleRate)throw new Error('MP3 does not support this sample rate.');rate=48000;}
-	const mp3Bitrates=rate<32000?[8,16,24,32,40,48,56,64,80,96,112,128,144,160]:[32,40,48,56,64,80,96,112,128,160,192,224,256,320];
-	if(format==='MP3'&&mode==='bitrate'&&!mp3Bitrates.includes(bitrate))throw new Error('MP3 bitrate is incompatible with the sample rate.');
+	validateAudioEncoding(format,rate,bitrate,mode,pcm.samples.length/pcm.channels/pcm.sampleRate);
 	const converted=convertPcm(pcm,{...settings,sampleRate:rate});stage('encoding',0);let bytes:Uint8Array;
 	if(format==='WAV')bytes=encodeWav(converted);
 	else if(['AAC','M4A'].includes(format))bytes=await (await import('./native-aac.ts')).encodeAac(converted,format,bitrate,p=>stage('encoding',Math.min(95,p*95)));
@@ -79,7 +77,10 @@ export const audioCodec:EngineAdapter={
 		if(files.length>32||files[0].name!==request.file.name||files.reduce((n,f)=>n+f.size,0)>32*1024**2)throw new Error('Audio batch exceeds 32 files or 32 MiB total.');
 		const {encodeZip,decodeZip}=await import('./archive.ts');const entries=[];let total=0;
 		for(let i=0;i<files.length;i++) {
-			const result=await single({...request,file:files[i],files:undefined},s=>stage(s)),data=new Uint8Array(await result.blob.arrayBuffer());total+=data.length;
+			let result;
+			try { result=await single({...request,file:files[i],files:undefined},s=>stage(s)); }
+			catch(error) { throw new Error(`Audio batch file ${i+1} (${files[i].name}): ${error instanceof Error?error.message:'conversion failed'}`); }
+			const data=new Uint8Array(await result.blob.arrayBuffer());total+=data.length;
 			if(total>64*1024**2)throw new Error('Audio batch exceeds the 64 MiB output limit.');
 			entries.push({name:`${i+1}-${result.name}`,data,directory:false,mtime:0});stage('encoding',(i+1)/files.length*95);
 		}

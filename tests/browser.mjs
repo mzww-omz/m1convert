@@ -289,8 +289,6 @@ try {
 
   for (const [name, type, bytes, message] of [
     ['notes.txt', 'text/plain', Buffer.from('text'), /not supported/],
-    ['fake.jpg', 'image/png', png, /extension/],
-    ['fake.png', 'image/jpeg', png, /MIME/],
     ['broken.png', 'image/png', png.subarray(0, 40), /corrupt|truncated/],
     ['broken.jpg', 'image/jpeg', jpeg.subarray(0, jpeg.length - 2), /corrupt|truncated/],
     ['empty.png', 'image/png', Buffer.alloc(0), /not supported|empty/]
@@ -301,10 +299,18 @@ try {
     await page.getByRole('button', { name: 'Try again' }).click();
     await page.locator('#conversion-note').filter({ hasText: message }).waitFor();
   }
-  const hugeDimensions = Buffer.from(png); hugeDimensions.writeUInt32BE(9000, 16);
-  await upload('huge.png', 'image/png', hugeDimensions); await page.getByText(/dimensions must/).waitFor();
-  await upload('huge.png', 'image/png', Buffer.concat([png, Buffer.alloc(32 * 1024 ** 2)]));
-  await page.getByText(/32 MiB/).waitFor();
+  for(const [name,mimeType] of [['fake.jpg','image/png'],['fake.png','image/jpeg']]) {
+    await upload(name,mimeType,png);await readyDetails();
+    await page.getByText(/Compatibility warning:/).waitFor();
+    await page.getByRole('combobox',{name:'Output format'}).selectOption('PNG');
+    await page.getByRole('button',{name:'Convert',exact:true}).click();await phase('complete');
+    assert.equal(detectFormat((await download()).bytes)?.id,'PNG');
+    await page.getByRole('button',{name:'Convert Again'}).click();await readyDetails();
+  }
+  const hugeDimensions = Buffer.from(png); hugeDimensions.writeUInt32BE(1000000, 16);
+  await upload('huge.png', 'image/png', hugeDimensions); await page.getByText(/memory budget/).waitFor();
+  await upload('huge.png', 'image/png', Buffer.concat([png, Buffer.alloc(64 * 1024 ** 2)]));
+  await page.getByText(/64 MiB/).waitFor();
   await upload('no-extension', '', png); await readyDetails();
   console.log('PASS unsupported input, spoofing, corruption, empty/oversized files and recovery');
 

@@ -63,7 +63,7 @@ export function transition(state: State, event: Event): State {
 		case 'AUDIO': {
 			const {type,...patch}=event, audio={...state.audio,...patch};
 			return state.phase==='details' && state.analysis?.info.category==='audio' && [0,...sampleRates].includes(audio.sampleRate) && [0,1,2].includes(audio.channels)
-				&& (audio.bitrate===undefined||Number.isInteger(audio.bitrate)&&audio.bitrate>=6&&audio.bitrate<=510) && (audio.mode===undefined||['bitrate','quality'].includes(audio.mode))
+				&& (audio.bitrate===undefined||Number.isInteger(audio.bitrate)&&audio.bitrate>=1&&audio.bitrate<=2147483) && (audio.mode===undefined||['bitrate','quality'].includes(audio.mode))
 				? {...state,audio:compatibleAudioSettings(audio,state.format,state.analysis.info.sampleRate)} : state;
 		}
 		case 'ARCHIVE':

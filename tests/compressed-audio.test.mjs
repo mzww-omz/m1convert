@@ -30,7 +30,7 @@ test('M4A sample tables are bounded before native library parsing and non-AAC sa
 });
 test('WASM MP3 FLAC Vorbis and Opus inputs decode to bounded real WAV samples',async()=>{
  for(const ext of ['mp3','flac','ogg','opus']) {
-  const file=await fixture(ext),analysis=await audioCodec.inspect(file,noop);
+  const file=new File([await fixture(ext)],'renamed.bin',{type:'application/zip'}),analysis=await audioCodec.inspect(file,noop);
   assert.equal(analysis.info.category,'audio');assert.equal(analysis.info.channels,2);assert.equal(analysis.info.sampleRate,48000);
   assert.ok(Math.abs(analysis.info.duration-2)<.08);
   const result=await audioCodec.run({file,format:'WAV',quality:90},noop),pcm=decodePcm(new Uint8Array(await result.blob.arrayBuffer()),'WAV');
