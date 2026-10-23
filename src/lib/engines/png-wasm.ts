@@ -4,8 +4,9 @@ let loading:Promise<typeof import('@jsquash/png/encode.js')>|undefined;
 async function loadPng() {
 	if(!loading)loading=(async()=>{
 		try {
-			const codec=await import('@jsquash/png/encode.js');
-			await codec.init(new URL(`${import.meta.env.BASE_URL}vendor/png-3.1.1/squoosh_png_bg.wasm`,location.origin));
+			const url=new URL(`${import.meta.env.BASE_URL}vendor/png-3.1.1/encode.js`,location.origin);
+			const codec=await import(/* @vite-ignore */ url.href) as typeof import('@jsquash/png/encode.js');
+			await codec.init();
 			return codec;
 		} catch(error) {
 			if(error instanceof RangeError)throw error;
