@@ -1,4 +1,4 @@
-import type {EngineCapability,EngineContext,EngineEnvironment} from './codec-registry.ts';
+import type {EngineCapability,EngineContext,EngineEnvironment,BrowserCapabilities} from './codec-registry.ts';
 export type Stage = 'reading' | 'decoding' | 'encoding' | 'verifying';
 export interface Progress { stage: Stage; percent: number | null }
 export const stageLabels: Record<Stage, string> = {
@@ -19,7 +19,7 @@ export interface ConversionResult {
 	resources?:{mode:string;bytesWritten:number;maxChunkBytes:number;retainedBytes:number};
 }
 export interface AssetInfo { format: string; mime: string; width?: number; height?: number; frames?: {width:number;height:number}[]; frame?:number; category?:'audio'|'archive'; entries?:number; sampleRate?:number; channels?:number; duration?:number; codec?:string }
-export interface Analysis { info: AssetInfo; outputs: string[]; preview: Blob | null; warnings?:string[]; codecEngines?:EngineCapability[]; environment?:EngineEnvironment }
+export interface Analysis { info: AssetInfo; outputs: string[]; preview: Blob | null; warnings?:string[]; codecEngines?:EngineCapability[]; environment?:EngineEnvironment; browserCapabilities?:BrowserCapabilities }
 export type StageReporter=(stage:Stage,percent?:number)=>void;
 export interface EngineAdapter {
 	inspect(file: File, stage: StageReporter, verifiedOutputs?:readonly string[], context?:EngineContext): Promise<Analysis>;

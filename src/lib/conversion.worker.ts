@@ -1,7 +1,7 @@
 import { adapters, detectFormat, planConversion } from './registry.ts';
 import { LIMITS } from './image-format.ts';
 import { compatibilityWarnings } from './compatibility.ts';
-import {detectEnvironment} from './codec-registry.ts';
+import {detectEnvironment,detectBrowserCapabilities} from './codec-registry.ts';
 import {imageEncoders} from './engines/image.ts';
 import {audioDecoders,audioEncoders} from './engines/audio.ts';
 import type { Stage, WorkerReply, WorkerRequest } from './engine-types.ts';
@@ -42,7 +42,7 @@ port.onmessage = async ({ data }) => {
 		if (data.type === 'inspect') {
 			const category=input.mime.startsWith('image/')?'image':input.mime.startsWith('audio/')?'audio':undefined;
 			const analysis=await adapter.inspect(file,stage,category?data.verifiedOutputs?.[category]:undefined,context);
-			port.postMessage({ type:'analyzed', analysis:{...analysis,codecEngines:(category==='image'?imageEncoders:category==='audio'?[...audioDecoders,...audioEncoders]:[]).map(e=>e.capability),environment:detectEnvironment(),warnings:[...(analysis.warnings??[]),...compatibilityWarnings(file,analysis.info.format)]} });
+			port.postMessage({ type:'analyzed', analysis:{...analysis,codecEngines:(category==='image'?imageEncoders:category==='audio'?[...audioDecoders,...audioEncoders]:[]).map(e=>e.capability),environment:detectEnvironment(),browserCapabilities:detectBrowserCapabilities(),warnings:[...(analysis.warnings??[]),...compatibilityWarnings(file,analysis.info.format)]} });
 		}
 		else port.postMessage({ type: 'converted', result: await adapter.run(data.request, stage,context) });
 	} catch (error) {

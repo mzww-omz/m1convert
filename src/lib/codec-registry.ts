@@ -46,6 +46,23 @@ export function detectEnvironment(scope:Record<string,any>=globalThis):EngineEnv
 		audioEncoder:typeof scope.AudioEncoder==='function',audioDecoder:typeof scope.AudioDecoder==='function',
 		compression:typeof scope.CompressionStream==='function',decompression:typeof scope.DecompressionStream==='function'};
 }
+// API presence is not an operational guarantee; real inspect/run probes remain authoritative.
+export function detectBrowserCapabilities(scope:Record<string,any>=globalThis) {
+	const algorithms=(name:string)=>['gzip','deflate','deflate-raw'].filter(format=>{
+		try { new scope[name](format); return true; } catch { return false; }
+	});
+	return {
+		environment:detectEnvironment(scope),
+		secureContext:scope.isSecureContext===true,
+		crossOriginIsolated:scope.crossOriginIsolated===true,
+		worker:typeof scope.Worker==='function',
+		opfs:typeof scope.navigator?.storage?.getDirectory==='function',
+		webLocks:typeof scope.navigator?.locks?.request==='function',
+		compression:algorithms('CompressionStream'),decompression:algorithms('DecompressionStream')
+	};
+}
+export type BrowserCapabilities=ReturnType<typeof detectBrowserCapabilities>;
+
 async function availability<I,O,Q extends {format:string}>(engine:CodecEngine<I,O,Q>,options:Q,env:EngineEnvironment):Promise<EngineAvailability> {
 	const cap=engine.capability;
 	let reason:string|undefined;
