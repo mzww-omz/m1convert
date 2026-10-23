@@ -72,40 +72,66 @@ Downloads are checked with existing `detectFormat`, `inspectFile`, `inspectAudio
 | Large output / temporary storage | Existing OPFS + Web Locks path is conditional on actual storage access. Small Blob fallback remains bounded at 64 MiB. This new small-fixture matrix does not validate every engine's large-file OPFS behavior. |
 | Secure context / isolation | Record actual flags. Loopback verification is a secure-context environment; do not extrapolate to insecure hosting. Shared memory is optional for the present single-thread engines. |
 
-## Measured verification — 2026-10-23
+## Measured verification — 2026-10-23, after approved browser installation
 
-macOS ARM64, Node 26.0.0, production static preview at `127.0.0.1:4181`, tested conversion/runner commit `1b76781` (matrix-only capability rendering subsequently added and unit-tested in `ac72431`). Used the existing external Playwright module and Chromium headless-shell executable (revision 1248), explicitly overriding Playwright's absent default revision 1247. No downloads or environment installs.
+macOS ARM64, Node 26.0.0, production static preview at `127.0.0.1:4181`, tested implementation commit **`64caaa3`**. Final sequential run: 13:57:40–14:06:31 UTC. Existing external Playwright **1.64.0-alpha-1790635538000**, existing Chromium headless-shell revision 1248 (explicit executable override; default revision 1247 absent).
 
-| Engine | Result | Success / coverage | Conversion-time sum |
-|---|---|---|---|
-| Chromium 156.0.8078.4 | **134 passed**, 0 failed, 0 unsupported | 100% / 100% | 94,851 ms |
-| Firefox | **134 untested**; expected `firefox-1553` executable absent | null / 0% | not measured |
-| WebKit | **134 untested**; expected `webkit-2368/pw_run.sh` absent | null / 0% | not measured |
+Firefox and WebKit were initially unavailable, then **installed with explicit user approval** using the existing Playwright CLI:
 
-Chromium: all image destinations PNG/JPEG/WebP/BMP/ICO/TIFF, all eight audio destinations including native AAC/M4A, all four archive destinations. Native AVIF output was not advertised. Worker capability snapshot: WebAssembly/SIMD, OffscreenCanvas, imageBitmap, canvas encoding, AudioEncoder/Decoder, OPFS, Web Locks and gzip/deflate/deflate-raw compression/decompression present; secure context true, isolation/shared memory false. Runtime errors, external requests and upload attempts: **zero**. This does not verify OPFS quota or every codec profile in other browsers.
+```sh
+node /absolute/path/to/playwright/cli.js install firefox webkit
+```
 
-Observed checks:
+Downloaded Firefox revision **1553** (105.2 MiB) and WebKit revision **2368** (78.4 MiB) into the normal Playwright cache. No package installation, lockfile change, OS dependency installation or new service. The test runner itself still never installs browsers.
 
-- `npm test`: **110/110 passed**, including five new capability/status-accounting/matrix tests.
+| Engine | Passed | Unsupported | Failed | Untested | Success / coverage | Conversion-time sum |
+|---|---:|---:|---:|---:|---|---:|
+| Chromium 156.0.8078.4 | **134** | 0 | 0 | 0 | 100% / 100% | 96,283 ms |
+| Firefox 156.0 | **118** | **16** | 0 | 0 | 100% / 88.1% | 99,329 ms |
+| WebKit 26.6 | **125** | **9** | 0 | 0 | 100% / 93.3% | 107,379 ms |
+
+**377 passed + 25 unsupported = all 402 browser/route combinations accounted for.** All advertised routes succeeded; unsupported routes are not successes. Runtime errors, external conversion requests and upload attempts: **zero** across all three browsers.
+
+| Browser-dependent observation | Evidence / constraint |
+|---|---|
+| Chromium | All 134 baseline routes available, including native AAC/M4A and all six image destinations. |
+| Firefox | AAC and M4A **outputs** were not advertised for any of the eight audio inputs: 16 unsupported pairs. AAC/M4A **input decoding** and the other six audio destinations passed. AudioEncoder/AudioDecoder API presence did not guarantee AAC output support. No codec fallback was invented. |
+| WebKit | WebP **output** was not advertised for any of the nine image inputs: 9 unsupported pairs. WebP input decoding and the other five image destinations passed. All 64 audio routes, including AAC/M4A, passed. |
+| Chromium / Firefox storage | All 16 archive routes passed using actual OPFS outputs. |
+| WebKit storage | In Playwright's non-persistent/private context, OPFS API was present but initial `getDirectory()` failed. After the bounded-fallback fix below, all 16 archive routes passed using **Blob** outputs, retaining the 64 MiB cap. This does not certify large-file OPFS behavior in shipping Safari. |
+
+All three worker snapshots had WebAssembly/SIMD, OffscreenCanvas, ImageBitmap, canvas encoding, AudioEncoder/Decoder, OPFS and Web Locks APIs, plus gzip/deflate/deflate-raw constructors. Secure context true, isolation/shared memory false. Native AVIF output was not advertised (outside the baseline 134). Actual operational results, not these presence flags alone, determine compatibility.
+
+### Verified compatibility fix
+
+The first installed-WebKit run failed all **16 archive routes** with `Temporary disk output could not open`. A direct probe reproduced `navigator.storage.getDirectory()` rejecting with **UnknownError** in both window and worker of a non-persistent WebKit context; the same access succeeded in a temporary persistent context. The probe's temporary profile was removed afterwards.
+
+`createOutput()` previously allowed the bounded Blob fallback only for NotSupportedError/SecurityError. The minimal fix additionally accepts **UnknownError before any temporary file has been registered**. It does not swallow quota/allocation failures or UnknownError after file registration; write/finalize errors and cleanup behavior are unchanged. A new regression test proves exact Blob bytes, the retained size bound, and continued rejection of quota/allocation failures. No new codec or storage backend was added.
+
+The full three-browser strict-mode rerun passed all supported pairs after the fix. Pre-fix evidence remains in ignored `artifacts/phase8.1/pre-webkit-fix-results.json`; committed snapshots are the final post-fix run.
+
+### Observed checks
+
+- `npm test`: **111/111 passed**, including the new inaccessible-OPFS regression.
 - `npm run check`: **0 errors, 0 warnings**.
-- `npm run build`: static build passed.
-- `npm run test:compatibility`: exit 0; Chromium 134/134, Firefox/WebKit explicitly untested (non-strict mode).
-- `npm run test:phase6`: **26 real conversions**, TIFF pixel equality, AIFF decode/options, cancel/retry and worker/URL cleanup passed.
-- `node tests/audio-lifecycle-browser.mjs`: cancellation, stale replies, cleanup, missing-WASM PCM fallback and simulated missing native AAC passed. Simulations are not Firefox/WebKit executions.
-- `npm run test:static`: prerendered output, local WASM and notices passed.
+- `npm run build`: static build passed; preview restarted before browser rerun.
+- `REQUIRE_BROWSERS=1 npm run test:compatibility` (with module/executable/URL overrides above): **exit 0**, all three engines executed, no untested or failed routes.
+- `npm run test:phase7`: **exit 0 after the fix** — 96 MiB archive streaming, independent Python byte integrity, OPFS/Blob/quota/OOM, cancellation/create race/retry/cleanup, 10-minute PCM, same MorphSurface and no uploads. This confirms the ordinary Chromium disk path still works.
+- Earlier Phase 8.1 checks: Phase 6's **26 real conversions**, TIFF pixel equality, AIFF options/cancel/retry; audio lifecycle; static output/assets/notices all passed. Their capability simulations were not counted as real Firefox/WebKit coverage.
 - LSP tool returned no applicable TypeScript diagnostics; the actual type/Svelte check above is the verification used.
 
-The first matrix run reported four TAR.GZ failures due to the **new harness**, not conversion: gzip magic identifies only GZIP, while TAR.GZ requires expanded-content inspection. Corrected that single assertion to expect the gzip wrapper, retaining the existing archive inspector's strict TAR.GZ content check. The full rerun passed all four. Initial evidence is retained in ignored `artifacts/phase8.1/initial-results.json`; final published snapshots contain the corrected run. No production conversion bug was established, so no speculative codec change was made.
+An earlier harness-only issue treated TAR.GZ's gzip magic as the final format. That assertion was fixed while retaining expanded-content validation; initial evidence remains in ignored `artifacts/phase8.1/initial-results.json`.
 
-Not rerun: the entire legacy image/UI motion suite, independent FFmpeg/SNR matrix and Phase 7 large-file RSS benchmarks. The common matrix plus focused Phase 6/audio lifecycle/static regressions bound this non-UI change. No browser installation, dependency changes, UI/MorphSurface changes, push or deployment.
+Not rerun: the entire legacy image/UI motion suite, independent FFmpeg/SNR matrix and peak-RSS benchmarks. No UI/MorphSurface changes, new formats/WASM, project dependencies, push or deployment.
 
 ## Findings and Phase 8.2 handoff
 
-The measured summary above separates execution success from availability. Priority means verification/engineering priority, not a claim of an observed vulnerability.
+Priority means verification/engineering priority, not a claim of an observed vulnerability.
 
-1. **P1 — Firefox and WebKit evidence gap:** if unavailable locally, all 134 pairs stay untested. Provision matching existing Playwright browser distributions only with operator approval, then rerun with `REQUIRE_BROWSERS=1`. WebKit success alone will still not certify shipping Safari/iOS.
-2. **P2 — broaden browser-specific storage/lifecycle checks:** adapt the existing Phase 7 large-file/cancel/quota suite once browsers are available; its Chromium-oriented OPFS instrumentation must not become a universal feature assumption.
-3. **P2 — branded/mobile and profile coverage:** real Safari/iOS and Chrome builds, AAC availability/profile differences, private storage restrictions, larger/real-world media and independent output decoding. Retain exact failure reasons and capability snapshots before proposing codecs or UI changes.
-4. **P3 — probe diagnostics:** existing inspect output filtering does not expose each rejected encoder's internal exception. Current reports say only “not advertised”; Phase 8.2 can add structured reasons if real browser failures justify it.
+1. **P1 — resolved: WebKit private-context archives unusable.** Initial OPFS UnknownError now uses the existing bounded Blob fallback. All 16 archive routes passed after the fix; large outputs still stop at the documented 64 MiB fallback limit.
+2. **P2 — known output limitations:** Firefox AAC/M4A (16 pairs) and WebKit WebP (9 pairs) remain unsupported by actual output probes. Keep destinations hidden; do not claim success or add a large WASM engine to mask these limits in 8.1. More specific structured rejection reasons can be investigated in 8.2.
+3. **P2 — storage/lifecycle coverage:** test persistent-context WebKit storage, private-mode size-limit rejection, real Safari/iOS and cross-tab cleanup using the existing Phase 7 cases. The successful Chromium Phase 7 test does not certify Firefox/WebKit large-file behavior.
+4. **P2 — branded/mobile/profile coverage:** shipping Safari/iOS and branded Chrome, varied AAC profiles, larger/real-world media and independent output decoding remain unverified. Playwright WebKit/Firefox builds are not a substitute for every shipping browser/device.
+5. **P3 — probe diagnostics:** inspect output filtering currently exposes only “not advertised,” not each rejected encoder's internal exception. Add structured reasons only where actual failures justify it.
 
-No speculative conversion fixes or new codecs are justified by missing-browser evidence. Major storage changes, browser installations and UI changes remain outside 8.1.
+The original missing-browser gap is closed on this machine. All 134 canonical routes remain available in Chromium, and all three engines have real fixture evidence. Major storage changes, new codecs and UI changes remain outside 8.1.
