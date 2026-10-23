@@ -135,7 +135,10 @@ function webpInfo(bytes: Uint8Array) {
 	return { width, height, orientation };
 }
 
-export async function inspectFile(file: File, output = false): Promise<ImageInfo> {
+export async function inspectFile(file:File,output=false):Promise<ImageInfo> {
+	return (await readImage(file,output)).info;
+}
+export async function readImage(file: File, output = false): Promise<{info:ImageInfo;bytes:Uint8Array<ArrayBuffer>}> {
 	if (!file.size) throw new Error('The file is empty. Choose a PNG, JPEG or WebP image.');
 	if (file.size > (output ? LIMITS.maxOutputBytes : LIMITS.maxFileBytes)) throw new Error('Safety limit: encoded image exceeds the 64 MiB buffer budget. Use a smaller source.');
 	const bytes = new Uint8Array(await file.arrayBuffer());
@@ -164,12 +167,12 @@ export async function inspectFile(file: File, output = false): Promise<ImageInfo
 		raw = { ...frames[frame], frames: frames.map(({width,height}) => ({width,height})), frame, orientation:1 };
 	}
 	checkDimensions(raw.width, raw.height, file.size);
-	return {
+	return {bytes,info:{
 		format: format.id, mime: format.mime, encodedWidth: raw.width, encodedHeight: raw.height,
 		width: raw.orientation >= 5 ? raw.height : raw.width,
 		height: raw.orientation >= 5 ? raw.width : raw.height,
 		orientation: raw.orientation, ...(raw.frames ? { frames:raw.frames, frame:raw.frame } : {})
-	};
+	}};
 }
 
 export class OutputVerificationError extends Error {}

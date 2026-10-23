@@ -1,6 +1,6 @@
 import type { EngineAdapter, Stage } from '../engine-types.ts';
 import { imageFormats, imageOutputs } from '../formats.ts';
-import { inspectFile, verifyOutput, OutputVerificationError, type ImageInfo } from '../image-format.ts';
+import { readImage, verifyOutput, OutputVerificationError, type ImageInfo } from '../image-format.ts';
 import {runCodec,EngineFallbackError,detectEnvironment,type EngineContext} from '../codec-registry.ts';
 import {imageEncoders} from '../engines/image.ts';
 import { outputName } from '../results.ts';
@@ -22,17 +22,17 @@ async function rgbaBitmap(rgba: {width:number;height:number;data:Uint8ClampedArr
 		return canvas.transferToImageBitmap();
 	} finally { canvas.width=canvas.height=1; }
 }
-async function decode(file: Blob, info: ImageInfo, frameIndex = info.frame): Promise<ImageBitmap> {
+async function decode(file: Blob, info: ImageInfo, bytes:Uint8Array<ArrayBuffer>, frameIndex = info.frame): Promise<ImageBitmap> {
 	let bitmap: ImageBitmap;
 	if (info.format === 'TIFF') {
 		const {decodeTiff}=await import('./tiff.ts');
-		bitmap=await rgbaBitmap(decodeTiff(new Uint8Array(await file.arrayBuffer())));
+		bitmap=await rgbaBitmap(decodeTiff(bytes));
 	} else if (info.format === 'BMP') {
 		const { decodeBmp }=await import('./bmp.ts');
-		bitmap=await rgbaBitmap(decodeBmp(new Uint8Array(await file.arrayBuffer())));
+		bitmap=await rgbaBitmap(decodeBmp(bytes));
 	} else if (info.format === 'ICO') {
 		const { icoFrames,decodeIconDib }=await import('./ico.ts');
-		const bytes=new Uint8Array(await file.arrayBuffer()), frames=icoFrames(bytes);
+		const frames=icoFrames(bytes);
 		if (!Number.isInteger(frameIndex) || !frames[frameIndex!]) throw new Error('Invalid ICO frame selection.');
 		const frame=frames[frameIndex!], payload=bytes.subarray(frame.offset,frame.offset+frame.length);
 		if (payload[0] === 137) bitmap=await createImageBitmap(new Blob([payload],{type:'image/png'}));
@@ -41,7 +41,7 @@ async function decode(file: Blob, info: ImageInfo, frameIndex = info.frame): Pro
 	} else if (info.format === 'SVG') {
 		const { svgInfo }=await import('./svg.ts');
 		const { decodeSvg }=await import('./worker-svg.ts');
-		bitmap=await decodeSvg(svgInfo(new Uint8Array(await file.arrayBuffer())).svg);
+		bitmap=await decodeSvg(svgInfo(bytes).svg);
 	} else {
 		try { bitmap = await createImageBitmap(file.slice(0, file.size, info.mime), { imageOrientation: 'from-image' }); }
 		catch { throw new Error('The image cannot be decoded. It may be corrupt or unsupported by this browser.'); }
@@ -65,13 +65,13 @@ async function encode(canvas:OffscreenCanvas,id:string,quality:number,job:Engine
 async function verify(blob: Blob, id: string, width: number, height: number) {
 	await verifyOutput(blob,id);
 	const format=imageFormats.find(f=>f.id===id)!;
-	const info=await inspectFile(new File([blob],`output.${format.extension}`,{type:format.mime}),true);
+	const {info,bytes}=await readImage(new File([blob],`output.${format.extension}`,{type:format.mime}),true);
 	if (id==='ICO') {
 		if (info.frames?.length !== 4 || info.frames.some((f,i)=> f.width!==[16,32,48,256][i] || f.height!==f.width)) throw new Error('ICO output sizes do not match.');
-		for (let i=0;i<4;i++) { const bitmap=await decode(blob,{...info},i); bitmap.close(); }
+		for (let i=0;i<4;i++) { const bitmap=await decode(blob,{...info},bytes,i); bitmap.close(); }
 	} else {
 		if (info.width!==width || info.height!==height) throw new OutputVerificationError(`${id} encoder could not preserve ${width} × ${height} pixels (returned ${info.width} × ${info.height}). Try PNG or a smaller source image.`);
-		const bitmap=await decode(blob,info); bitmap.close();
+		const bitmap=await decode(blob,info,bytes); bitmap.close();
 	}
 }
 async function availableOutputs(job:EngineContext,verified:readonly string[]=[]): Promise<string[]> {
@@ -88,9 +88,9 @@ async function availableOutputs(job:EngineContext,verified:readonly string[]=[])
 }
 async function read(file: File, stage: (stage: Stage) => void, frame?: number) {
 	checkBrowser(); stage('reading');
-	const info=await inspectFile(file);
+	const {info,bytes}=await readImage(file);
 	stage('decoding');
-	const bitmap=await decode(file,info,frame ?? info.frame);
+	const bitmap=await decode(file,info,bytes,frame ?? info.frame);
 	return {info,bitmap};
 }
 export const canvasCodec: EngineAdapter = {
