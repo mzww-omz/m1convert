@@ -9,8 +9,8 @@ export const fixture=async ext=>new File([await readFile(new URL('./fixtures/aud
 test('compressed contents and stream codec determine format, not filenames or MIME',async()=>{
  for(const [ext,id] of [['mp3','MP3'],['flac','FLAC'],['ogg','OGG'],['opus','OPUS'],['aac','AAC'],['m4a','M4A']]) {
   const file=await fixture(ext),bytes=new Uint8Array(await file.arrayBuffer());assert.equal(inspectAudioBytes(file,bytes).format,id);
-  assert.throws(()=>inspectAudioBytes(new File([file],'spoof.zip'),bytes),/extension/i);
-  assert.throws(()=>inspectAudioBytes(new File([file],file.name,{type:'image/png'}),bytes),/MIME/i);
+  assert.equal(inspectAudioBytes(new File([file],'spoof.zip'),bytes).format,id);
+  assert.equal(inspectAudioBytes(new File([file],file.name,{type:'image/png'}),bytes).format,id);
  }
 });
 test('complete compressed structures reject truncation, checksum corruption and invalid budgets',async()=>{

@@ -2,9 +2,7 @@ import { ascii } from './formats.ts';
 import { detectFormat } from './registry.ts';
 
 export const LIMITS = {
-	maxFileBytes: 32 * 1024 ** 2,
-	maxPixels: 16_000_000,
-	maxDimension: 8192,
+	maxFileBytes: 64 * 1024 ** 2,
 	maxWorkingBytes: 256 * 1024 ** 2,
 	maxOutputBytes: 64 * 1024 ** 2
 } as const;
@@ -25,10 +23,10 @@ function corrupt(): never { throw new Error('The image is corrupt or truncated. 
 function animated(): never { throw new Error('Animated images are not supported yet. Choose a still image.'); }
 
 export function checkDimensions(width: number, height: number, encodedBytes: number) {
-	if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1 || width > LIMITS.maxDimension || height > LIMITS.maxDimension)
-		throw new Error('Image dimensions must be between 1 and 8192 pixels per side.');
-	if (width * height > LIMITS.maxPixels) throw new Error('Image exceeds the 16 million pixels limit.');
-	if (width * height * 12 + encodedBytes * 2 > LIMITS.maxWorkingBytes) throw new Error('Image exceeds the 256 MiB working memory budget.');
+	if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height) || width < 1 || height < 1 || !Number.isSafeInteger(encodedBytes) || encodedBytes < 0)
+		throw new Error('Invalid image dimensions or encoded size.');
+	// Budget decoded pixels, canvas/verification copies and encoded input before allocation.
+	if (width * height * 12 + encodedBytes * 2 > LIMITS.maxWorkingBytes) throw new Error('Safety limit: image exceeds the 256 MiB working memory budget. Resize or use a smaller source image.');
 }
 
 // Read only the orientation tag; never trust TIFF offsets or entry counts.
@@ -43,7 +41,7 @@ function exifOrientation(bytes: Uint8Array): number {
 	const offset = view.getUint32(4, little);
 	if (offset < 8 || offset + 2 > view.byteLength) return corrupt();
 	const entries = view.getUint16(offset, little);
-	if (entries > 512 || offset + 2 + entries * 12 + 4 > view.byteLength) return corrupt();
+	if (offset + 2 + entries * 12 + 4 > view.byteLength) return corrupt();
 	for (let i = 0; i < entries; i++) {
 		const p = offset + 2 + i * 12;
 		if (view.getUint16(p, little) !== 0x0112) continue;
@@ -139,14 +137,10 @@ function webpInfo(bytes: Uint8Array) {
 
 export async function inspectFile(file: File, output = false): Promise<ImageInfo> {
 	if (!file.size) throw new Error('The file is empty. Choose a PNG, JPEG or WebP image.');
-	if (file.size > (output ? LIMITS.maxOutputBytes : LIMITS.maxFileBytes)) throw new Error(output ? 'Output exceeds the 64 MiB limit.' : 'File exceeds the 32 MiB limit.');
+	if (file.size > (output ? LIMITS.maxOutputBytes : LIMITS.maxFileBytes)) throw new Error('Safety limit: encoded image exceeds the 64 MiB buffer budget. Use a smaller source.');
 	const bytes = new Uint8Array(await file.arrayBuffer());
 	const format = detectFormat(bytes);
 	if (!format || !format.mime.startsWith('image/')) throw new Error('This file is not supported. Choose a supported still image.');
-	if (file.type && file.type !== 'application/octet-stream' && file.type !== format.mime && !(format.id === 'ICO' && file.type === 'image/vnd.microsoft.icon') && !(format.id === 'BMP' && file.type === 'image/x-ms-bmp'))
-		throw new Error(`The declared MIME type does not match the ${format.id} file contents.`);
-	const extension = file.name.includes('.') ? file.name.split('.').pop()?.toLowerCase() : '';
-	if (extension && !format.extensions.includes(extension)) throw new Error(`The file extension does not match its ${format.id} contents.`);
 	let raw: { width: number; height: number; orientation: number; frames?: {width:number;height:number}[]; frame?:number };
 	if (format.id === 'PNG') raw = pngInfo(bytes);
 	else if (format.id === 'JPEG') raw = jpegInfo(bytes);

@@ -8,7 +8,8 @@ export const compressedOutputs=['MP3','FLAC','OGG','OPUS','AAC','M4A'];
 const qualityFormats=['MP3','OGG'];
 let outputs:Promise<string[]>|undefined;
 export async function readAudio(file:File,output=false,onDecode?:()=>void) {
-	if(!file.size||file.size>(output?64:32)*1024**2)throw new Error('Audio input is empty or exceeds the size limit.');
+	if(!file.size)throw new Error('Audio input is empty.');
+	if(file.size>64*1024**2)throw new Error('Safety limit: audio exceeds the 64 MiB buffer budget. Split the source into smaller files.');
 	const bytes=new Uint8Array(await file.arrayBuffer()),header=inspectAudioBytes(file,bytes);let pcm:Pcm;
 	onDecode?.();
 	if(['WAV','AIFF'].includes(header.format))pcm=decodePcm(bytes,header.format);

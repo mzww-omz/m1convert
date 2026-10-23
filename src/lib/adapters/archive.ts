@@ -3,7 +3,7 @@ import { archiveFormats } from '../archive-formats.ts';
 import { ascii } from '../formats.ts';
 import { outputName } from '../results.ts';
 
-const MAX = 64 * 1024 ** 2, INPUT = 32 * 1024 ** 2, COUNT = 1000;
+const MAX = 64 * 1024 ** 2, COUNT = 1000;
 const utf8 = new TextEncoder(), decoder = new TextDecoder('utf-8', {fatal:true});
 export interface Entry { name:string; data:Uint8Array; directory:boolean; mtime:number }
 function fail(message:string):never { throw new Error(message); }
@@ -184,20 +184,17 @@ export async function encodeZip(entries:readonly Entry[], compressed:boolean):Pr
 }
 function supported(format:'gzip'|'deflate-raw',decompress=false) { try { if(decompress) new DecompressionStream(format); else new CompressionStream(format); return true; } catch { return false; } }
 async function read(file:File, output=false) {
-	if(!file.size || file.size>(output?MAX:INPUT)) fail('Archive input is empty or exceeds the size limit.');
+	if(!file.size) fail('Archive input is empty.');
+	if(file.size>MAX) fail('Safety limit: archive exceeds the 64 MiB buffer budget. Split it into smaller archives.');
 	const b=new Uint8Array(await file.arrayBuffer()), definition=archiveFormats.find(f=>f.matches(b));
 	if(!definition) fail('Unsupported archive contents.');
-	const ext=file.name.includes('.')?file.name.split('.').pop()!.toLowerCase():'';
-	if(ext&&!definition.extensions.includes(ext)) fail('Archive extension does not match its contents.');
-	if(file.type && !['application/octet-stream',definition.mime,...(definition.id==='GZIP'?['application/x-gzip']:[])].includes(file.type)) fail('Archive MIME does not match its contents.');
 	let entries:Entry[], format=definition.id;
 	if(format==='ZIP') entries=await decodeZip(b);
 	else if(format==='TAR') entries=decodeTar(b);
 	else {
 		const expanded=await transform(b,'gzip',true,MAX);
-		if(ascii(expanded,257,5)==='ustar' || (/\.(?:tar\.gz|tgz)$/i.test(file.name) && archiveFormats.find(f=>f.id==='TAR')!.matches(expanded))) { entries=decodeTar(expanded); format='TAR.GZ'; }
+		if(archiveFormats.find(f=>f.id==='TAR')!.matches(expanded)) { entries=decodeTar(expanded); format='TAR.GZ'; }
 		else {
-			if(/\.(?:tar\.gz|tgz)$/i.test(file.name)) fail('The compressed contents are not a TAR archive.');
 			const name=file.name.replace(/\.gz$/i,'')||'file'; entries=[{name,data:expanded,directory:false,mtime:0}];
 		}
 	}

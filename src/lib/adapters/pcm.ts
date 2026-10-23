@@ -2,7 +2,7 @@ import { ascii } from '../formats.ts';
 import { audioFormats, sampleRates } from '../audio-formats.ts';
 import type { AudioSettings, EngineAdapter } from '../engine-types.ts';
 import { outputName } from '../results.ts';
-const MAX_SAMPLES=8_000_000, MAX_BYTES=32*1024**2;
+const MAX_SAMPLES=8_000_000, MAX_BYTES=64*1024**2;
 export interface Pcm { sampleRate:number; channels:number; samples:Float32Array }
 function fail(message:string):never { throw new Error(message); }
 function bounds(rate:number,channels:number,frames:number) {
@@ -107,12 +107,9 @@ export function encodeWav(pcm:Pcm):Uint8Array {
 	return b;
 }
 async function read(file:File) {
-	if(!file.size||file.size>MAX_BYTES) fail('Audio input is empty or exceeds the 32 MiB limit.');
+	if(!file.size) fail('Audio input is empty.');
+	if(file.size>MAX_BYTES) fail('Safety limit: audio exceeds the 64 MiB input buffer budget. Split the source into smaller files.');
 	const b=new Uint8Array(await file.arrayBuffer()),format=audioFormats.find(f=>['WAV','AIFF'].includes(f.id)&&f.matches(b)); if(!format) fail('Unsupported audio contents.');
-	const ext=file.name.includes('.')?file.name.split('.').pop()!.toLowerCase():'';
-	if(ext&&!format.extensions.includes(ext)) fail('Audio extension does not match its contents.');
-	const aliases=format.id==='WAV'?['audio/x-wav','audio/wave','audio/vnd.wave']:['audio/x-aiff'];
-	if(file.type&&!['application/octet-stream',format.mime,...aliases].includes(file.type)) fail('Audio MIME does not match its contents.');
 	return {pcm:decodePcm(b,format.id),format};
 }
 export const pcmCodec:EngineAdapter={

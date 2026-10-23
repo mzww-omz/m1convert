@@ -96,7 +96,7 @@ test('archive adapter converts real TAR/ZIP/GZIP bytes with validated names and 
     const check=await archiveCodec.inspect(new File([result.blob],result.name,{type:result.mime}),noop);
     assert.ok(check.outputs.includes('TAR'));
   }
-  await assert.rejects(archiveCodec.inspect(new File([tar],'fake.zip'),noop),/extension/i);
+  assert.equal((await archiveCodec.inspect(new File([tar],'fake.zip',{type:'image/png'}),noop)).info.format,'TAR');
   const many=encodeTar([...entries,{...entries[1],name:'other.txt'}]);
   assert.ok(!(await archiveCodec.inspect(new File([many],'x.tar'),noop)).outputs.includes('GZIP'));
   await assert.rejects(archiveCodec.run({file:new File([many],'x.tar'),format:'GZIP',quality:90},noop),/single|one file/i);

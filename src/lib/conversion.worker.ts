@@ -18,7 +18,7 @@ port.onmessage = async ({ data }) => {
 	if (data.type !== 'inspect' && data.type !== 'convert') return;
 	try {
 		const file = data.type === 'inspect' ? data.file : data.request.file;
-		if (file.size > LIMITS.maxFileBytes) throw new Error('File exceeds the 32 MiB limit.');
+		if (file.size > LIMITS.maxFileBytes) throw new Error('Safety limit: file exceeds the 64 MiB input buffer budget. Split or reduce the source file.');
 		const input = detectFormat(new Uint8Array(await file.slice(0, 4096).arrayBuffer()));
 		if (!input) throw new Error('This file is not supported. Choose a supported image, PCM audio or archive.');
 		const definition = data.type === 'inspect'

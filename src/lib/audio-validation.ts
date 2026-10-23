@@ -115,9 +115,5 @@ function mp4(b:Uint8Array) {
 export function inspectAudioBytes(file:File,b:Uint8Array) {
 	if(!b.length||b.length>64*1024**2)throw new Error('Audio is empty or exceeds the size limit.');
 	const def=audioFormats.find(f=>f.matches(b));if(!def)throw new Error('Unsupported audio contents.');
-	const ext=file.name.includes('.')?file.name.split('.').pop()!.toLowerCase():'';
-	if(ext&&!def.extensions.includes(ext))throw new Error('Audio extension does not match its contents.');
-	const aliases:Record<string,string[]>={WAV:['audio/x-wav','audio/wave','audio/vnd.wave'],AIFF:['audio/x-aiff'],MP3:['audio/mp3'],FLAC:['audio/x-flac'],OGG:['application/ogg'],OPUS:['audio/ogg','application/ogg'],AAC:['audio/aacp','audio/x-aac'],M4A:['audio/x-m4a','video/mp4']};
-	if(file.type&&!['application/octet-stream',def.mime,...aliases[def.id]??[]].includes(file.type))throw new Error('Audio MIME does not match its contents.');
 	if(def.id==='MP3')return mp3(b);if(def.id==='FLAC')return flac(b);if(['OGG','OPUS'].includes(def.id))return ogg(b);if(def.id==='AAC')return adts(b);if(def.id==='M4A')return mp4(b);return {format:def.id};
 }

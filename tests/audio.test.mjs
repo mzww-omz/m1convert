@@ -39,7 +39,7 @@ test('independent WAV and AIFF fixtures convert to WAV with rate/channel options
       assert.equal(decoded.sampleRate,audio.sampleRate||48000); assert.equal(decoded.channels,audio.channels||2);
       assert.ok(Math.abs(decoded.samples.length/decoded.channels/decoded.sampleRate-info.info.duration)<1/decoded.sampleRate);
     }
-    await assert.rejects(pcmCodec.inspect(new File([file],'fake.mp3'),noop),/extension/i);
+    assert.equal((await pcmCodec.inspect(new File([file],'fake.mp3',{type:'image/png'}),noop)).info.format,info.info.format);
     await assert.rejects(pcmCodec.run({file,format:'MP3',quality:90},noop),/supported/i);
   }
 });

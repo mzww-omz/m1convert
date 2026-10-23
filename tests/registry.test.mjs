@@ -31,10 +31,9 @@ test('registry retains all nine original paths, including re-encoding', () => {
   assert.throws(() => planConversion('PNG', 'SVG'), /not supported/);
 });
 
-test('conflicting extensions/MIME and unsupported or truncated files are rejected', async () => {
-  await assert.rejects(inspectFile(await fixture('png', 'image/jpeg')), /MIME/);
-  await assert.rejects(inspectFile(await fixture('png', 'image/png', 'fake.jpg')), /extension/);
-  await assert.rejects(inspectFile(await fixture('png', 'image/png', 'fake.svg')), /extension/);
+test('conflicting labels are accepted but unsupported or truncated files are rejected', async () => {
+  for(const [mime,name] of [['image/jpeg','fake.png'],['image/png','fake.jpg'],['image/png','fake.svg']])
+    assert.equal((await inspectFile(await fixture('png',mime,name))).format,'PNG');
   assert.equal((await inspectFile(await fixture('png', '', 'no-extension'))).format, 'PNG');
   assert.equal((await inspectFile(await fixture('png', 'application/octet-stream'))).format, 'PNG');
   for (const contents of ['', 'GIF89a', 'RIFF1234WEBP', '\x89PNG']) await assert.rejects(inspectFile(new File([contents], 'unknown')), /supported|corrupt|empty/i);
@@ -45,10 +44,10 @@ test('conflicting extensions/MIME and unsupported or truncated files are rejecte
 test('encoded size, pre-decode dimensions, decoded pixels and working memory are bounded', async () => {
   const huge = await fixture('png');
   Object.defineProperty(huge, 'size', { value: LIMITS.maxFileBytes + 1 });
-  await assert.rejects(inspectFile(huge), /32 MiB/);
+  await assert.rejects(inspectFile(huge), /64 MiB/);
   assert.throws(() => checkDimensions(4000, 4000, 64 * 1024 ** 2), /memory/);
   const original = new Uint8Array(await (await fixture('png')).arrayBuffer());
-  for (const [width, height] of [[9000, 1], [8000, 8000], [0, 80]]) {
+  for (const [width, height] of [[Number.MAX_SAFE_INTEGER, 1], [8000, 8000], [0, 80]]) {
     const bytes = original.slice();
     const view = new DataView(bytes.buffer);
     view.setUint32(16, width); view.setUint32(20, height);
