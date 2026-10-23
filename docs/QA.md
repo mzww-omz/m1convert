@@ -1,6 +1,6 @@
 # Verification history
 
-Latest results: [Checking latency verification](#checking-latency-verification). Earlier Phase 2 / continuous-development / compressed-audio records are historical; their counts describe those earlier commits.
+Latest results and current safety policy: [Phase 4 constraint audit](phase-4-constraints.md). [Checking latency verification](#checking-latency-verification) and the Phase 2 / continuous-development / compressed-audio records below are historical; their limits and counts describe those earlier commits.
 
 # Phase 2 verification — extended image formats
 

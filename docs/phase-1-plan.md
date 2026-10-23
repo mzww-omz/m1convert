@@ -1,5 +1,7 @@
 # Phase 1 implementation plan
 
+> Historical plan. Current constraint classifications and replacements are documented in the [Phase 4 audit](phase-4-constraints.md).
+
 Goal: real, local PNG/JPEG/WebP conversions without changing MorphSurface or the existing visual language.
 
 ## Scope and boundaries

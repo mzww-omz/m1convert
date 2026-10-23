@@ -1,6 +1,6 @@
 # Continuous converter development
 
-> Historical first expansion (72 routes). The later [compressed-audio implementation](compressed-audio.md) supersedes this document's no-dependency/audio deferrals and raises the Chromium-verified total to 126. Its safety limits remain unless explicitly changed there.
+> Historical first expansion (72 routes). The later [compressed-audio implementation](compressed-audio.md) supersedes this document's no-dependency/audio deferrals and raises the Chromium-verified total to 126. The [Phase 4 audit](phase-4-constraints.md) now defines current input, label, geometry, bitrate and archive-path policy; older limits below are historical.
 
 ## Constraints and implementation plan
 

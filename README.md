@@ -56,7 +56,7 @@ See **[compressed-audio matrix, licensing, payload sizes and limits](docs/compre
 npm run dev
 ```
 
-Select, drop or paste a file, choose the output and Convert. Download saves the real encoded Blob with a matching MIME type and extension. Convert Again and Cancel retain the source and settings. New File/Remove clear state and revoke associated Blob URLs. Change file cancels pending analysis. Multiple supported audio filenames enable audio batch conversion; other multiple-file drops select the first file and say so. During conversion, cancel before replacing the input.
+Select, drop or paste a file, choose the output and Convert. Download saves the real encoded Blob with a matching MIME type and extension. Convert Again and Cancel retain the source and settings. New File/Remove clear state and revoke associated Blob URLs. Change file cancels pending analysis. When the first file is detected as audio, multiple selections enable content-validated audio batch conversion regardless of filenames; other categories use the first file and say so. During conversion, cancel before replacing the input.
 
 Analysis shows filename/size immediately and fills in validated metadata, a bounded thumbnail and available outputs asynchronously. Invalid files remain in Details with a clear explanation, Try again, Change file and Remove. Conversion failures use the same surface with retry.
 
@@ -68,11 +68,15 @@ All categories require module Workers. Images additionally require worker-side `
 
 ## Safety and resource limits
 
-- Encoded input: **32 MiB**; output: **64 MiB**.
-- Dimensions: **8192 pixels per side**, at most **16 million pixels**.
+- Single encoded input and output: **64 MiB** each; audio batches retain their separate **32 files / 32 MiB total** budget.
+- No independent 8192px-side or 16-million-pixel cap: valid image dimensions are evaluated against the combined memory budget and actual browser codec capabilities.
 - Estimated working buffers: at most **256 MiB** (`12 × pixels + 2 × input bytes`). Native browser decoder/encoder internals are not a hard OS memory sandbox; real peak process memory can exceed this estimate.
 - One active worker per converter. Each analysis/conversion has a **30-second** deadline. Cancel, replacement, reset, errors and deadlines terminate the worker. Late callbacks are ignored by both the scheduler and state machine.
-- Signatures and bounded structural headers are checked before decoding. Conflicting extensions/MIME, invalid dimensions, truncated structures, malformed EXIF offsets, unsupported animation and native decoding failures are rejected. Empty MIME or `application/octet-stream` and extensionless files are accepted only when contents identify a supported format.
+- Signatures, bounded structural parsing and actual decoding determine the format. Conflicting input extensions/MIME produce compatibility warnings, not rejection. Invalid dimensions, truncated/corrupt structures, unsafe SVG, unsupported animation and decode failures still reject. Output MIME/signature and re-decoding must match the requested format.
+- Safe long ZIP paths are preserved with a compatibility warning; unsafe paths/links/collisions remain rejected. Archive expansion is capped at **64 MiB / 1000 entries**, filename metadata at **1 MiB**, and path depth at **128 components**. Unrepresentable USTAR output is hidden while ZIP remains available.
+- Bitrate choices are codec-specific, not one universal range. MP3 uses rate-specific legal values, Opus 6–510 kbps, native AAC probes the requested configuration, and Vorbis uses the actual encoder. Failures suggest a lower bitrate, VBR, another rate or WAV; image encoder size failures suggest PNG or a smaller source.
+
+See the **[Phase 4 constraint audit](docs/phase-4-constraints.md)** for every removed, changed and retained constraint, its classification, tests and remaining implementation limits.
 - Only a validated, worker-generated thumbnail (max 320 × 180) reaches the UI preview. Raw files are never inserted as HTML/SVG into the document or read/parsed synchronously on the main thread. SVG's validated static subset uses an isolated Blob image during asynchronous rasterization, with abort/deadline URL and image cleanup.
 - Source files are immutable, held in memory and never sent to a server or written to browser storage. The explicit Download action is the only output save. Object URLs, bitmaps and canvases are released on completion/replacement/reset/destruction; terminating a worker releases its job resources.
 

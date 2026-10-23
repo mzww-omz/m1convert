@@ -1,5 +1,7 @@
 # Compressed audio implementation and dependency review
 
+> Historical implementation record. The [Phase 4 audit](phase-4-constraints.md) supersedes the input-byte, label-mismatch, source-rate and common-bitrate restrictions recorded here; decoded sample and batch safety budgets remain.
+
 ## Decision / plan
 
 Implement inline, test-first, preserving the existing PCM engine, 72 routes, MorphSurface, local-only conversion, worker termination, 32 MiB input / 64 MiB output and decoded sample budgets. No push/deploy. WASM dependencies are authorized for this request; project-wide GPL adoption is not.
