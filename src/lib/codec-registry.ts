@@ -28,7 +28,8 @@ export interface CodecEngine<Input,Output,Options extends {format:string}> {
 }
 // Only explicitly classified availability/configuration failures may cross to another engine.
 export class EngineFallbackError extends Error {
-	constructor(public readonly code:'unavailable'|'unsupported',message:string) { super(message); this.name='EngineFallbackError'; }
+	readonly code:'unavailable'|'unsupported';
+	constructor(code:'unavailable'|'unsupported',message:string) { super(message); this.code=code; this.name='EngineFallbackError'; }
 }
 export function detectEnvironment(scope:Record<string,any>=globalThis):EngineEnvironment {
 	const wasm=typeof scope.WebAssembly==='object';
