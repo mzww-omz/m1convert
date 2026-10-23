@@ -10,6 +10,8 @@
 		"test:categories": "node tests/categories-browser.mjs",
 		"test:checking": "node tests/checking-browser.mjs",
 		"test:phase4": "node tests/phase4-browser.mjs",
+		"test:phase5": "node tests/phase5-browser.mjs",
+		"test:static": "node tests/static-build.mjs",
 		"test:audio": "node tests/audio-browser.mjs && node tests/audio-lifecycle-browser.mjs",
 		"sync:audio-assets": "node scripts/sync-audio-assets.mjs",
 		"sync:png-assets": "node scripts/sync-png-assets.mjs",
@@ -21,7 +23,7 @@
 	},
 	"devDependencies": {
 		"@libav.js/types": "6.10.9",
-		"@sveltejs/adapter-auto": "^8.0.0",
+		"@sveltejs/adapter-static": "4.0.0",
 		"@sveltejs/kit": "^3.0.0",
 		"@sveltejs/vite-plugin-svelte": "^7.2.0",
 		"@tailwindcss/vite": "^4.3.0",
