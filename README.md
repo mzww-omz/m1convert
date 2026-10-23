@@ -68,17 +68,18 @@ All categories require module Workers. Images additionally require worker-side `
 
 ## Safety and resource limits
 
-- Single encoded input and output: **64 MiB** each; audio batches retain their separate **32 files / 32 MiB total** budget.
+- Whole-buffer image/audio engines: **64 MiB** encoded input/output. Audio batches retain **32 files / 32 MiB total** and **8 million interleaved decoded samples**. These are not streaming codecs.
+- Archives: range-read input and streamed data; no global 64 MiB upload rejection. Expanded entries and each disk output are capped at **2 GiB**, additionally limited by available OPFS quota. Without usable disk storage, each accumulated Blob/spool stays within **64 MiB**; large compressible TAR→GZIP can still succeed without OPFS.
 - No independent 8192px-side or 16-million-pixel cap: valid image dimensions are evaluated against the combined memory budget and actual browser codec capabilities.
-- Estimated working buffers: at most **256 MiB** (`12 × pixels + 2 × input bytes`). Native browser decoder/encoder internals are not a hard OS memory sandbox; real peak process memory can exceed this estimate.
-- One active worker per converter. Each analysis/conversion has a **30-second** deadline. Cancel, replacement, reset, errors and deadlines terminate the worker. Late callbacks are ignored by both the scheduler and state machine.
+- Image working-buffer estimate: **256 MiB** (`12 × pixels + 2 × input bytes`; TIFF/PNG WASM use a more conservative `20 × pixels + 2 × input bytes`). Native browser decoder/encoder internals are not a hard OS memory sandbox; real peak process memory can exceed this estimate.
+- One active worker per converter. Buffered codecs retain a **30-second** deadline. Streaming archives have a **10-minute absolute / 120-second inactivity** deadline; actual I/O renews inactivity, not the absolute limit. Cancel, replacement, reset, errors and deadlines terminate the worker. Late callbacks are ignored.
 - Signatures, bounded structural parsing and actual decoding determine the format. Conflicting input extensions/MIME produce compatibility warnings, not rejection. Invalid dimensions, truncated/corrupt structures, unsafe SVG, unsupported animation and decode failures still reject. Output MIME/signature and re-decoding must match the requested format.
-- Safe long ZIP paths are preserved with a compatibility warning; unsafe paths/links/collisions remain rejected. Archive expansion is capped at **64 MiB / 1000 entries**, filename metadata at **1 MiB**, and path depth at **128 components**. Unrepresentable USTAR output is hidden while ZIP remains available.
+- Safe long ZIP paths are preserved with a compatibility warning; unsafe paths/links/collisions remain rejected. Archive metadata remains capped at **1000 entries / 1 MiB filenames / 128 path components**, separately from the streamed data budget. ZIP64, links, devices and unsupported USTAR extensions remain rejected. Unrepresentable USTAR output is hidden while ZIP remains available.
 - Bitrate choices are codec-specific, not one universal range. MP3 uses rate-specific legal values, Opus 6–510 kbps, native AAC probes the requested configuration, and Vorbis uses the actual encoder. Failures suggest a lower bitrate, VBR, another rate or WAV; image encoder size failures suggest PNG or a smaller source.
 
 See the **[Phase 4 constraint audit](docs/phase-4-constraints.md)** for every removed, changed and retained constraint, its classification, tests and remaining implementation limits.
 - Only a validated, worker-generated thumbnail (max 320 × 180) reaches the UI preview. Raw files are never inserted as HTML/SVG into the document or read/parsed synchronously on the main thread. SVG's validated static subset uses an isolated Blob image during asynchronous rasterization, with abort/deadline URL and image cleanup.
-- Source files are immutable, held in memory and never sent to a server or written to browser storage. The explicit Download action is the only output save. Object URLs, bitmaps and canvases are released on completion/replacement/reset/destruction; terminating a worker releases its job resources.
+- Original files are immutable and never uploaded. **Streaming archives may write expanded data and output into temporary origin-private browser storage (OPFS)**, not a user-selected filesystem destination. Only explicit Download exports the result. Intermediates are removed on completion; Cancel/error removes all job files; completed disk output is removed on clear/replacement/reset/destruction. Object URLs, bitmaps and canvases are released too. Browser/process crashes can leave temporary files; with Web Locks, later disk jobs reclaim unleased files older than 24 hours, otherwise clear this site’s browser storage manually.
 
 ## Architecture and extension
 
@@ -97,13 +98,17 @@ See the **[Phase 4 constraint audit](docs/phase-4-constraints.md)** for every re
 | Bounded compressed-container/stream validation | `src/lib/audio-validation.ts` |
 | Lazy LGPL WASM / native AAC bridges | `src/lib/adapters/{wasm-audio,native-aac}.ts` |
 | Self-hosted codec / license and source assets | `static/vendor/`, `static/legal/` |
-| Lazy bounded ZIP/TAR/GZIP engine | `src/lib/adapters/archive.ts` |
+| Buffered archive helpers and lazy streaming adapter | `src/lib/adapters/archive.ts` |
+| Range-read ZIP/TAR, CRC, streams and exact output verification | `src/lib/adapters/archive-stream.ts` |
+| OPFS/bounded Blob sinks, temporary-file cleanup and cross-tab leases | `src/lib/stream-output.ts` |
 | Cancellable async SVG bitmap bridge | `src/lib/adapters/{worker-svg,svg-raster}.ts`, `scheduler.ts` |
 | Adapter selection and worker protocol | `src/lib/conversion.worker.ts`, `engine-types.ts` |
 | Scheduling, abort/timeout/worker cleanup | `src/lib/scheduler.ts`, `engine.ts` |
 | State machine and asynchronous lifecycle | `src/lib/machine.ts`, `converter.svelte.ts` |
 | Result Blob URLs, filenames and downloads | `src/lib/results.ts` |
 | Existing persistent animated frame | `src/lib/MorphSurface.svelte` (unchanged) |
+
+**Phase 7:** streaming ZIP/TAR/GZIP conversion, disk-backed output and Cancel-safe temporary-file ownership; redundant custom-image/audio copies removed. Demonstrated 96 MiB archives above the old 64 MiB ceiling and lower measured Node peak RSS. No new dependencies; MorphSurface unchanged. See **[memory audit, benchmarks, storage/privacy behavior and limits](docs/phase-7.md)**. Run `npm run test:phase7` and `npm run benchmark:phase7`.
 
 **Phase 6 (incremental):** verified AIFF output from all eight audio inputs, PackBits TIFF and 16-bit/grayscale TIFF decoding. No new dependency, binary or initial WASM load. See **[implemented routes, candidate/license/size research, verification and deferred formats](docs/phase-6.md)**. `npm run test:phase6` checks new image/audio conversions and real cancellation.
 
@@ -148,6 +153,9 @@ npm run test:audio
 npm run test:checking
 npm run test:phase4
 npm run test:phase5
+npm run test:phase6
+npm run test:phase7
+npm run benchmark:phase7
 ```
 
 For an installation outside this repository:
@@ -163,6 +171,6 @@ No browser/package is downloaded automatically. For production verification, bui
 
 The browser suite exercises the original nine and extended real conversions (including BMP 24-bit input, all ICO output sizes/selected frames, AVIF input and rejected unsafe SVG), downloaded-file bytes and decoding, dimensions/transparency/JPEG background, both quality controls, all eight EXIF orientations, unsupported encoders, validation/errors/retry, high-entropy 16-megapixel cancellation, worker/URL cleanup, input methods, rapid operations, focus, reduced motion, touch emulation, 320px/tablet/resizing and actual frame geometry/timing. Fixtures in `tests/fixtures/` contain opaque, semi-transparent and transparent regions. `swatch.avif` is an 8-bit still with alpha generated locally from the PNG fixture using installed ImageMagick; conversion at runtime never uses that tool. Controller unit tests compile the real runes module with the existing Svelte/TypeScript toolchain.
 
-The category browser suite additionally checks all 16 archive pairs, the legacy PCM routes/settings, batch ZIP contents, actual archive/audio cancellation, errors, 320px/desktop layouts, persistent DOM and zero workers/URLs/uploads/external requests after cleanup. `test:audio` uses the existing local FFmpeg/ffprobe executables to independently decode all 56 real audio downloads, check samples/duration/channels/metadata/SNR, verify MP3 bitrate and actual quality changes, and test mixed batches, Cancel, blocked WASM and missing native AAC. Node tests cover archive attacks, expansion bounds, absent compression APIs, extensible PCM, long names and nested payloads.
+The category browser suite additionally checks all 16 archive pairs, the legacy PCM routes/settings, batch ZIP contents, actual archive/audio cancellation, errors, 320px/desktop layouts, persistent DOM and zero workers/URLs/uploads/external requests after cleanup. `test:audio` uses the existing local FFmpeg/ffprobe executables to independently decode all 64 real audio downloads, check samples/duration/channels/metadata/SNR, verify MP3 bitrate and actual quality changes, and test mixed batches, Cancel, blocked WASM and missing native AAC. Node tests cover archive attacks, expansion bounds, absent compression APIs, extensible PCM, long names and nested payloads.
 
 Screenshots, downloaded files and measured frame intervals are written to ignored `artifacts/phase1/`, `artifacts/continuous/` and `artifacts/audio/`. Codec notices/source downloads are linked from the footer and `static/legal/NOTICE.txt`; see deployment/replacement obligations in `docs/compressed-audio.md`. Results and unverified environments are recorded in [`docs/QA.md`](docs/QA.md). Physical mobile devices, OS clipboard integration, screen readers, Safari and Firefox still require manual verification.
