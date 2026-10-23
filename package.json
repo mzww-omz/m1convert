@@ -11,6 +11,7 @@
 		"test:checking": "node tests/checking-browser.mjs",
 		"test:phase4": "node tests/phase4-browser.mjs",
 		"test:phase5": "node tests/phase5-browser.mjs",
+		"test:phase6": "node tests/phase6-browser.mjs",
 		"test:static": "node tests/static-build.mjs",
 		"test:audio": "node tests/audio-browser.mjs && node tests/audio-lifecycle-browser.mjs",
 		"sync:audio-assets": "node scripts/sync-audio-assets.mjs",

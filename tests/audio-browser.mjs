@@ -39,8 +39,9 @@ try {
   await upload(await fixture(ext));
   for(const format of choices){await output().selectOption(format);const ms=await convert(),path=`${dir}/${id}-to-${format}.${formatById(format).extension}`,saved=await download(path),metadata=probe(path),stream=metadata.streams[0];
    assert.equal(metadata.streams.length,1);assert.equal(stream.codec_type,'audio');assert.equal(stream.channels,2);assert.equal(+stream.sample_rate,48000);
-   assert.equal(stream.codec_name,{WAV:'pcm_s16le',MP3:'mp3',FLAC:'flac',OGG:'vorbis',OPUS:'opus',AAC:'aac',M4A:'aac'}[format]);
+   assert.equal(stream.codec_name,{WAV:'pcm_s16le',AIFF:'pcm_s16be',MP3:'mp3',FLAC:'flac',OGG:'vorbis',OPUS:'opus',AAC:'aac',M4A:'aac'}[format]);
    const decoded=decode(path),duration=decoded.length/stream.channels/(+stream.sample_rate);
+   if(format==='AIFF'&&['WAV','AIFF','FLAC'].includes(id))assert.deepEqual(decoded,reference,'PCM16 samples must survive AIFF output without loss');
    assert.ok(Math.abs(duration-2)<.13,`${id}→${format} actual decoded duration ${duration}`);
    assert.ok(!metadata.format.tags?.title&&!metadata.format.tags?.artist&&!stream.tags?.title,'source metadata removed');
    const quality=snr(reference,decoded);assert.ok(quality.db>15,`${id}→${format} SNR ${quality.db}`);
