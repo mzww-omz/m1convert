@@ -97,7 +97,8 @@ for(const name of ['chromium','firefox','webkit']) {
      await page.getByRole('button',{name:'Download',exact:true}).waitFor();
      const pending=page.waitForEvent('download');await page.getByRole('button',{name:'Download',exact:true}).click();
      const download=await pending,bytes=await readFile(await download.path());
-     assert.ok(bytes.length);assert.equal(detectFormat(bytes)?.id,target);
+     // Gzip magic cannot distinguish TAR.GZ; archive inspection below validates expanded contents.
+     assert.ok(bytes.length);assert.equal(detectFormat(bytes)?.id,target==='TAR.GZ'?'GZIP':target);
      const saved=new File([bytes],download.suggestedFilename());
      if(group===groups[0])assert.equal((await inspectFile(saved)).format,target);
      else if(group===groups[1])assert.equal(inspectAudioBytes(saved,bytes).format,target);
