@@ -14,6 +14,14 @@ test('WAV samples, channels and duration round trip with metadata-free PCM16 out
   const stereo=convertPcm({sampleRate:48000,channels:1,samples:new Float32Array(480).fill(.25)},{sampleRate:16000,channels:2});
   assert.equal(stereo.samples.length,320); assert.ok(stereo.samples.every(v=>Math.abs(v-.25)<.0001));
 });
+test('PCM preserves valid source rates outside old presets and enforces WAV integer field capacity',async()=>{
+ for(const sampleRate of [4000,384000]) {
+  const bytes=encodeWav({...pcm,sampleRate}),file=new File([bytes],'audio.bin');
+  const result=await pcmCodec.run({file,format:'WAV',quality:90,audio:{sampleRate:0,channels:0}},noop);
+  assert.equal(decodePcm(new Uint8Array(await result.blob.arrayBuffer()),'WAV').sampleRate,sampleRate);
+ }
+ assert.throws(()=>encodeWav({...pcm,sampleRate:0x40000000}),/WAV.*byte rate/i);
+});
 test('PCM rejects invalid chunks, sample formats, NaN, rates, channels and budgets', () => {
   const base=encodeWav(pcm);
   for(const mutate of [

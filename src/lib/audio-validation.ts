@@ -2,7 +2,7 @@ import {ascii} from './formats.ts';
 import {audioFormats} from './audio-formats.ts';
 export const MAX_AUDIO_SAMPLES=8_000_000;
 export function audioBounds(rate:number,channels:number,samples:number) {
-	if(!Number.isInteger(rate)||rate<8000||rate>192000) throw new Error('Unsupported audio sample rate (8000–192000 Hz).');
+	if(!Number.isSafeInteger(rate)||rate<1||rate>0xffffffff) throw new Error('Audio sample rate must be a positive 32-bit integer.');
 	if(![1,2].includes(channels)) throw new Error('Only mono/stereo audio channels are supported.');
 	if(!Number.isInteger(samples)||samples<0||samples>MAX_AUDIO_SAMPLES) throw new Error('Safety limit: audio exceeds the 8 million decoded samples memory budget. Split the source or reduce its duration/channels before importing.');
 }

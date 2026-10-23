@@ -19,7 +19,7 @@ test('complete compressed structures reject truncation, checksum corruption and 
   if(ext!=='flac') assert.throws(()=>inspectAudioBytes(f,b.subarray(0,-3)),/corrupt|truncat|length|audio|MP3|AAC|Ogg|MP4/i);
   if(['ogg','opus'].includes(ext)) {b[b.length-5]^=1;assert.throws(()=>inspectAudioBytes(f,b),/checksum/i);}
  }
- const f=await fixture('flac'),b=new Uint8Array(await f.arrayBuffer());b[18]=255;b[19]=255;
+ const f=await fixture('flac'),b=new Uint8Array(await f.arrayBuffer());b[20]=(b[20]&0xf1)|0x0e; // forged eight-channel STREAMINFO, unsupported by the PCM layout
  assert.throws(()=>inspectAudioBytes(f,b),/rate|channel|sample|FLAC|limit/i);
 });
 test('M4A sample tables are bounded before native library parsing and non-AAC sample entries are rejected',async()=>{

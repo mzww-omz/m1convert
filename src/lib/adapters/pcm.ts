@@ -6,7 +6,7 @@ const MAX_SAMPLES=8_000_000, MAX_BYTES=64*1024**2;
 export interface Pcm { sampleRate:number; channels:number; samples:Float32Array }
 function fail(message:string):never { throw new Error(message); }
 function bounds(rate:number,channels:number,frames:number) {
-	if(!Number.isInteger(rate)||rate<8000||rate>192000) fail('Audio sample rate must be between 8000 and 192000 Hz.');
+	if(!Number.isSafeInteger(rate)||rate<1||rate>0xffffffff) fail('Audio sample rate must be a positive 32-bit integer.');
 	if(![1,2].includes(channels)) fail('Only mono and stereo audio channels are supported.');
 	if(!Number.isInteger(frames)||frames<1) fail('Audio has no samples or an invalid sample count.');
 	if(frames*channels>MAX_SAMPLES) fail('Safety limit: audio exceeds the 8 million decoded samples memory budget. Split the source into shorter files.');
@@ -100,6 +100,7 @@ export function quantizePcm16(value:number):number {
 }
 export function encodeWav(pcm:Pcm):Uint8Array {
 	bounds(pcm.sampleRate,pcm.channels,pcm.samples.length/pcm.channels);
+	if(pcm.sampleRate*pcm.channels*2>0xffffffff) fail('WAV byte rate exceeds the 32-bit format capacity. Choose a lower sample rate.');
 	const b=new Uint8Array(44+pcm.samples.length*2),v=new DataView(b.buffer);
 	const str=(p:number,s:string)=>b.set(new TextEncoder().encode(s),p);
 	str(0,'RIFF'); v.setUint32(4,b.length-8,true); str(8,'WAVE'); str(12,'fmt '); v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,pcm.channels,true);
