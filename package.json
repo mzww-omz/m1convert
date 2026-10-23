@@ -12,6 +12,7 @@
 		"test:phase4": "node tests/phase4-browser.mjs",
 		"test:audio": "node tests/audio-browser.mjs && node tests/audio-lifecycle-browser.mjs",
 		"sync:audio-assets": "node scripts/sync-audio-assets.mjs",
+		"sync:png-assets": "node scripts/sync-png-assets.mjs",
 		"build": "vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
@@ -35,6 +36,7 @@
 		"#lib/*": "./src/lib/*"
 	},
 	"dependencies": {
+		"@jsquash/png": "3.1.1",
 		"@libav.js/variant-obsolete": "6.10.9",
 		"mediabunny": "1.62.0"
 	}

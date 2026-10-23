@@ -1,4 +1,4 @@
-Convert audio codecs — third-party notices and corresponding sources
+Convert codecs — third-party notices and corresponding sources
 
 This application uses unmodified libav.js 6.10.9.0 (obsolete variant).
 Wrapper/build project: https://github.com/Yahweasel/libav.js/tree/v6.10.9.0
@@ -29,6 +29,15 @@ Sources distributed in the npm package and upstream:
 https://github.com/Vanilagy/mediabunny/tree/v1.62.0
 https://registry.npmjs.org/mediabunny/-/mediabunny-1.62.0.tgz
 MPL applies to the library's covered files, not automatically to this application's own files.
+
+@jsquash/png 3.1.1: unmodified Apache-2.0 wrapper and Squoosh PNG WASM.
+Wrapper license: /legal/PNG-LICENSE
+Codec redistribution notice supplied by the package: /legal/PNG-CODEC-LICENSE
+Package source and version: https://registry.npmjs.org/@jsquash/png/-/png-3.1.1.tgz
+Upstream wrapper: https://github.com/jamsinclair/jSquash/tree/main/packages/png
+Codec provenance declared by the package: GoogleChromeLabs/squoosh v1.12.0 (Apache-2.0), Rust PNG crate.
+Exact unmodified WASM: /vendor/png-3.1.1/squoosh_png_bg.wasm
+It is a single-thread baseline codec, with no SharedArrayBuffer requirement. Only its 8-bit RGBA PNG encoder is exposed by Convert. The binary remains separately replaceable; sync:png-assets restores the pinned npm binary and notices.
 
 Source/license archives are offered as downloads, not fetched during conversion.
 AAC encoding/decoding, where exposed, is provided by runtime-verified native browser codecs. No GPL FFmpeg core or additional AAC WASM is bundled. Platform/patent obligations depend on distribution jurisdiction; this notice is technical provenance, not legal advice.
