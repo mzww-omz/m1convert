@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {audioCodec,availableAudioOutputs} from '../src/lib/adapters/audio-codec.ts';
-import {decodePcm,encodeWav,quantizePcm16} from '../src/lib/adapters/pcm.ts';
+import {decodePcm,encodeWav,encodeAiff,quantizePcm16} from '../src/lib/adapters/pcm.ts';
 import {planConversion} from '../src/lib/registry.ts';
 
 // Catches missing AIFF routing, wrong endian samples, rate fields and PCM16 clipping.
@@ -21,6 +21,18 @@ test('all audio inputs have a real AIFF output; WAV to AIFF preserves PCM16 valu
   const decoded=decodePcm(b,'AIFF');assert.equal(decoded.sampleRate,rate);assert.equal(decoded.channels,2);
   assert.deepEqual([...decoded.samples].map(quantizePcm16),[-32768,32767,16384,-8192,0,1]);
  }
+});
+test('AIFF encodes the full integer Hz range and rejects invalid samples and layout',()=>{
+ for(const sampleRate of [1,65535,0xffffffff]) {
+  const pcm={sampleRate,channels:1,samples:Float32Array.of(-1,.5)};
+  assert.deepEqual(decodePcm(encodeAiff(pcm),'AIFF'),pcm);
+ }
+ for(const pcm of [
+  {sampleRate:0,channels:1,samples:Float32Array.of(0)},
+  {sampleRate:48000,channels:3,samples:Float32Array.of(0,0,0)},
+  {sampleRate:48000,channels:1,samples:Float32Array.of(NaN)},
+  {sampleRate:48000,channels:2,samples:Float32Array.of(0)}
+ ])assert.throws(()=>encodeAiff(pcm));
 });
 test('AIFF supports resampling, mono conversion and cancellation through registry',async()=>{
  const file=new File([await readFile(new URL('./fixtures/tone.wav',import.meta.url))],'tone.wav');

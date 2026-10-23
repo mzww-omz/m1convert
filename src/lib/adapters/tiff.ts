@@ -20,7 +20,7 @@ function parse(b:Uint8Array) {
 	const count=v.getUint16(offset,little); if(count<1||count>128||offset+2+count*12+4>b.length||v.getUint32(offset+2+count*12,little)) return fail();
 	const tags=new Map<number,number[]>(), ranges:{start:number;end:number}[]=[{start:0,end:8},{start:offset,end:offset+2+count*12+4}];
 	const sizes:Record<number,number>={1:1,2:1,3:2,4:4,5:8,6:1,7:1,8:2,9:4,10:8,11:4,12:8};
-	const needed=[256,257,258,259,262,273,274,277,278,279,284,338,339];
+	const needed=[256,257,258,259,262,266,273,274,277,278,279,284,317,338,339];
 	for(let i=0,p=offset+2;i<count;i++,p+=12) {
 		const tag=v.getUint16(p,little),type=v.getUint16(p+2,little),n=v.getUint32(p+4,little),size=sizes[type];
 		if(tag===34675 || tag===301) throw new Error('TIFF ICC profiles and transfer functions are not supported. Use an sRGB TIFF without a profile.');
@@ -36,8 +36,8 @@ function parse(b:Uint8Array) {
 	const single=(tag:number,fallback=0)=> { const a=tags.get(tag); if(!a) return fallback; if(a.length!==1) return fail(); return a[0]; };
 	const width=single(256),height=single(257),channels=single(277,1),rows=single(278,height),bits=tags.get(258),compression=single(259,1),photo=single(262),depth=bits?.[0];
 	checkDimensions(width,height,b.length);
-	if(![1,32773].includes(compression)||!(photo===2?[3,4].includes(channels):[0,1].includes(photo)&&channels===1)||!bits||bits.length!==channels||![8,16].includes(depth!)||bits.some(v=>v!==depth)||single(274,1)!==1||single(284,1)!==1||!rows||
-		(tags.has(339)&&tags.get(339)!.some(v=>v!==1)) || (channels===4&&(tags.get(338)?.length!==1||single(338)!==2)) || (channels!==4&&tags.has(338))) return fail();
+	if(![1,32773].includes(compression)||!(photo===2?[3,4].includes(channels):[0,1].includes(photo)&&channels===1)||!bits||bits.length!==channels||![8,16].includes(depth!)||bits.some(v=>v!==depth)||single(274,1)!==1||single(284,1)!==1||single(266,1)!==1||single(317,1)!==1||!rows||
+		(tags.has(339)&&(![1,channels].includes(tags.get(339)!.length)||tags.get(339)!.some(v=>v!==1))) || (channels===4&&(tags.get(338)?.length!==1||single(338)!==2)) || (channels!==4&&tags.has(338))) return fail();
 	// Include the largest unpacked strip in addition to Canvas/verification copies.
 	if(width*height*20+b.length*2>LIMITS.maxWorkingBytes)throw new Error('Safety limit: TIFF exceeds the 256 MiB working memory budget.');
 	const offsets=tags.get(273),lengths=tags.get(279),strips=Math.ceil(height/rows);

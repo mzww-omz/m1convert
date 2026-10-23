@@ -5,6 +5,7 @@ import {decodeTiff,tiffInfo} from '../src/lib/adapters/tiff.ts';
 // Hand-authored classic TIFF: independently specified IFD and encoded sample bytes.
 export function tiffFixture({little=true,bits=8,photo=2,channels=3,compression=1,payload=Uint8Array.of(255,0,128),width=1,height=1}={}) {
  const tags=[[256,4,1,width],[257,4,1,height],[258,3,channels,bits],[259,3,1,compression],[262,3,1,photo],[273,4,1,0],[277,3,1,channels],[278,4,1,height],[279,4,1,payload.length],[284,3,1,1]];
+ if(channels===4)tags.push([338,3,1,2]);
  const end=8+2+tags.length*12+4,pixels=end+(channels>2?channels*2:0),b=new Uint8Array(pixels+payload.length),v=new DataView(b.buffer);
  b.set(little?[73,73,42,0]:[77,77,0,42]);v.setUint32(4,8,little);v.setUint16(8,tags.length,little);
  tags[5][3]=pixels;
@@ -21,8 +22,12 @@ test('TIFF decodes PackBits RGB, white/black grayscale and 16-bit samples in bot
    const b=tiffFixture({little,photo,bits,channels:1,payload:bits===8?Uint8Array.of(128):Uint8Array.from(little?[0,128]:[128,0])});
    assert.deepEqual([...decodeTiff(b).data],photo===0?[127,127,127,255]:[128,128,128,255]);
   }
+  const rgba16=tiffFixture({little,bits:16,channels:4,payload:Uint8Array.from(little?[255,255,0,0,0,128,0,64]:[255,255,0,0,128,0,64,0])});
+  assert.deepEqual([...decodeTiff(rgba16).data],[255,0,128,64]);
   const rgb16=tiffFixture({little,bits:16,payload:Uint8Array.from(little?[255,255,0,0,0,128]:[255,255,0,0,128,0])});
   assert.deepEqual([...decodeTiff(rgb16).data],[255,0,128,255]);
+  const compressed16=tiffFixture({little,bits:16,compression:32773,payload:Uint8Array.from(little?[5,255,255,0,0,0,128]:[5,255,255,0,0,128,0])});
+  assert.deepEqual([...decodeTiff(compressed16).data],[255,0,128,255]);
  }
  const run=tiffFixture({width:2,compression:32773,payload:Uint8Array.of(251,12)});
  assert.deepEqual([...decodeTiff(run).data],[12,12,12,255,12,12,12,255]);
