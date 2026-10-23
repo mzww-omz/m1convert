@@ -21,6 +21,21 @@ test('opening disk output reclaims only stale Convert-owned files, not foreign o
  finally {await releaseTemporary('convert-c');unlock?.();await held;if(descriptor)Object.defineProperty(navigator,'storage',descriptor);else delete navigator.storage;}
 });
 
+test('inaccessible WebKit private OPFS uses bounded Blob without hiding quota or allocation failures',async()=>{
+ const descriptor=Object.getOwnPropertyDescriptor(navigator,'storage');
+ let failure=new DOMException('Private session storage unavailable','UnknownError');
+ Object.defineProperty(navigator,'storage',{configurable:true,value:{getDirectory:async()=>{throw failure;}}});
+ try {
+  const sink=await createOutput({...job(),temporary:async()=>{assert.fail('inaccessible storage must not create a host file');}},'text/plain',2);
+  assert.equal(sink.metrics.mode,'blob');await sink.write(Uint8Array.of(1,2));
+  await assert.rejects(sink.write(Uint8Array.of(3)),/Blob memory budget/);
+  assert.deepEqual([...new Uint8Array(await(await sink.finish()).blob.arrayBuffer())],[1,2]);
+  for(const error of [new DOMException('Full','QuotaExceededError'),new RangeError('Allocation failed')]) {
+   failure=error;await assert.rejects(createOutput({...job(),temporary:async()=>{}},'text/plain'),/Temporary disk output could not open/);
+  }
+ }finally{if(descriptor)Object.defineProperty(navigator,'storage',descriptor);else delete navigator.storage;}
+});
+
 test('aborted output rejects without accepting more data',async()=>{
  const controller=new AbortController(),sink=await createOutput({...job(),signal:controller.signal},'text/plain');
  controller.abort();await assert.rejects(sink.write(Uint8Array.of(1)),{name:'AbortError'});await sink.abort();

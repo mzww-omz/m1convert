@@ -49,7 +49,9 @@ export async function createOutput(job:EngineContext,mime:string,limit=STREAM_LI
 		handle=await directory.getFileHandle(temporaryFile);writer=await handle.createWritable();
 	} catch(error) {
 		if(temporaryFile)await releaseTemporary(temporaryFile);
-		if(!['NotSupportedError','SecurityError'].includes((error as DOMException).name))throw new Error('Temporary disk output could not open. Free browser storage and retry.');
+		// WebKit private contexts expose OPFS but reject initial access with UnknownError.
+		const inaccessible=!temporaryFile&&(error as DOMException).name==='UnknownError';
+		if(!inaccessible&&!['NotSupportedError','SecurityError'].includes((error as DOMException).name))throw new Error('Temporary disk output could not open. Free browser storage and retry.');
 		temporaryFile=undefined;handle=undefined;
 	}
 	if(!writer)limit=Math.min(limit,BLOB_LIMIT);
