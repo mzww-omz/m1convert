@@ -48,7 +48,12 @@ try {
    assert.equal(await page.evaluate(()=>window.workers),0);await again();
   }
  }
- await upload(await fixture('wav'));await output().selectOption('MP3');
+ await upload(await fixture('wav'));
+ if(await output().locator('option[value="AAC"]').count()) {
+  await output().selectOption('AAC');await page.getByRole('combobox',{name:'Bitrate',exact:true}).selectOption('512');await convert();
+  await download(`${dir}/aac-512.aac`);assert.equal(probe(`${dir}/aac-512.aac`).streams[0].codec_name,'aac');await again();
+ }
+ await output().selectOption('MP3');
  for(const bitrate of ['128','320']){await page.getByRole('combobox',{name:'Bitrate',exact:true}).selectOption(bitrate);await convert();const p=`${dir}/bitrate-${bitrate}.mp3`;await download(p);assert.ok(Math.abs(+probe(p).streams[0].bit_rate-(+bitrate)*1000)<1000);await again();}
  for(const format of ['MP3','OGG']){await output().selectOption(format);await page.getByRole('combobox',{name:'Encoding mode'}).selectOption('quality');const results=[];
   for(const key of ['Home','End']){await page.getByRole('slider',{name:/Quality/}).focus();await page.keyboard.press(key);await convert();const path=`${dir}/quality-${format}-${key}.${formatById(format).extension}`,saved=await download(path);results.push({bytes:saved.bytes,snr:snr(reference,decode(path)).db});await again();}

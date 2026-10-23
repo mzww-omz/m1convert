@@ -158,7 +158,7 @@ try {
   const svg=Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 80"><rect width="64" height="40" fill="red"/><rect x="64" width="64" height="40" fill="blue"/><rect y="40" width="64" height="40" fill="green" fill-opacity="0.5"/></svg>');
   const avif=await fixture('avif');
   const capabilities={};
-  for (const [input,ext,mime,bytes] of [['BMP','bmp','image/bmp',bmp],['ICO','ico','image/x-icon',icon.bytes],['AVIF','avif','image/avif',avif],['SVG','svg','image/svg+xml',svg],['GIF','gif','image/gif',await fixture('gif')],['TIFF','tiff','image/tiff',await fixture('tiff')]]) {
+  for (const [input,ext,mime,bytes] of [['PNG','png','image/png',png],['JPEG','jpg','image/jpeg',jpeg],['WEBP','webp','image/webp',webp],['BMP','bmp','image/bmp',bmp],['ICO','ico','image/x-icon',icon.bytes],['AVIF','avif','image/avif',avif],['SVG','svg','image/svg+xml',svg],['GIF','gif','image/gif',await fixture('gif')],['TIFF','tiff','image/tiff',await fixture('tiff')]]) {
     await upload(`extended.${ext}`,mime,bytes); await readyDetails();
     const outputs=await page.getByRole('combobox',{name:'Output format'}).locator('option').allTextContents();
     assert.ok(!outputs.includes('SVG'));
@@ -180,7 +180,7 @@ try {
       } else {
         const decoded=await decode(result.bytes,detectFormat(result.bytes).mime); dimensions=[decoded.width,decoded.height];
         assert.ok(decoded.corners[0][0]>170,`${input} → ${output} red pixels`);
-        if (output!=='JPEG') {
+        if (output!=='JPEG' && input!=='JPEG') {
           assert.equal(decoded.corners[3][3],0,`${input} → ${output} full transparency`);
           if (input!=='ICO' && input!=='GIF') assert.ok(Math.abs(decoded.corners[2][3]-128)<=2,`${input} → ${output} partial transparency`);
         }

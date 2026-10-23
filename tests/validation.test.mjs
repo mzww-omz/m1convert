@@ -31,5 +31,5 @@ test('generated files within the buffer budget can be loaded again as inputs', a
 test('output budget rejects oversized encoder results without allocating a giant payload', async () => {
   const blob = new Blob([await read('png')], { type: 'image/png' });
   Object.defineProperty(blob, 'size', { value: LIMITS.maxOutputBytes + 1 });
-  await assert.rejects(verifyOutput(blob, 'PNG'), /encode/);
+  await assert.rejects(verifyOutput(blob, 'PNG'), /Safety limit:.*64 MiB.*lower quality/i);
 });

@@ -173,7 +173,9 @@ export async function inspectFile(file: File, output = false): Promise<ImageInfo
 }
 
 export async function verifyOutput(blob: Blob, formatId: string): Promise<void> {
+	if (!blob.size) throw new Error('The image encoder returned an empty output. Try another format.');
+	if (blob.size > LIMITS.maxOutputBytes) throw new Error('Safety limit: image encoder output exceeds the 64 MiB buffer budget. Try PNG, a lower quality, or a smaller source image.');
 	const format = detectFormat(new Uint8Array(await blob.slice(0, 4096).arrayBuffer()));
-	if (!blob.size || blob.size > LIMITS.maxOutputBytes || format?.id !== formatId || blob.type !== format.mime)
-		throw new Error('The browser could not encode the requested output format.');
+	if (format?.id !== formatId || blob.type !== format.mime)
+		throw new Error(`The browser could not encode ${formatId}: output contents or MIME do not match. Try another format.`);
 }

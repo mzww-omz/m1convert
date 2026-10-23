@@ -9,6 +9,7 @@
 		"test:browser": "node tests/browser.mjs",
 		"test:categories": "node tests/categories-browser.mjs",
 		"test:checking": "node tests/checking-browser.mjs",
+		"test:phase4": "node tests/phase4-browser.mjs",
 		"test:audio": "node tests/audio-browser.mjs && node tests/audio-lifecycle-browser.mjs",
 		"sync:audio-assets": "node scripts/sync-audio-assets.mjs",
 		"build": "vite build",
