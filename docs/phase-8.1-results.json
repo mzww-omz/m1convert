@@ -1,0 +1,4711 @@
+[
+  {
+    "browser": "chromium",
+    "startedAt": "2026-10-23T13:24:32.086Z",
+    "revision": "1b76781eaf20e27b1e964d6ff78258ab58132aa3",
+    "base": "http://127.0.0.1:4181",
+    "node": "v26.0.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "errors": [],
+    "external": [],
+    "uploads": [],
+    "executablePath": "/Users/agemizu/Library/Caches/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-mac-arm64/chrome-headless-shell",
+    "version": "156.0.8078.4",
+    "summary": {
+      "total": 134,
+      "passed": 134,
+      "failed": 0,
+      "unsupported": 0,
+      "untested": 0,
+      "attempted": 134,
+      "successRate": 1,
+      "coverage": 1,
+      "conversionMs": 94851.16403799983
+    },
+    "finishedAt": "2026-10-23T13:27:18.224Z",
+    "browserCapabilities": {
+      "environment": {
+        "wasm": true,
+        "wasmSimd": true,
+        "sharedMemory": false,
+        "offscreenCanvas": true,
+        "imageBitmap": true,
+        "canvasEncoding": true,
+        "audioEncoder": true,
+        "audioDecoder": true,
+        "compression": true,
+        "decompression": true
+      },
+      "secureContext": true,
+      "crossOriginIsolated": false,
+      "worker": true,
+      "opfs": true,
+      "webLocks": true,
+      "compression": [
+        "gzip",
+        "deflate",
+        "deflate-raw"
+      ],
+      "decompression": [
+        "gzip",
+        "deflate",
+        "deflate-raw"
+      ]
+    },
+    "analyses": [
+      {
+        "input": "PNG",
+        "fixture": "swatch.png",
+        "ms": 682.688666,
+        "info": {
+          "format": "PNG",
+          "mime": "image/png",
+          "encodedWidth": 128,
+          "encodedHeight": 80,
+          "width": 128,
+          "height": 80,
+          "orientation": 1
+        },
+        "outputs": [
+          "PNG",
+          "JPEG",
+          "WEBP",
+          "BMP",
+          "ICO",
+          "TIFF"
+        ],
+        "warnings": []
+      },
+      {
+        "input": "JPEG",
+        "fixture": "swatch.jpg",
+        "ms": 514.7791670000006,
+        "info": {
+          "format": "JPEG",
+          "mime": "image/jpeg",
+          "encodedWidth": 128,
+          "encodedHeight": 80,
+          "width": 128,
+          "height": 80,
+          "orientation": 1
+        },
+        "outputs": [
+          "PNG",
+          "JPEG",
+          "WEBP",
+          "BMP",
+          "ICO",
+          "TIFF"
+        ],
+        "warnings": []
+      },
+      {
+        "input": "WEBP",
+        "fixture": "swatch.webp",
+        "ms": 503.8769160000011,
+        "info": {
+          "format": "WEBP",
+          "mime": "image/webp",
+          "encodedWidth": 128,
+          "encodedHeight": 80,
+          "width": 128,
+          "height": 80,
+          "orientation": 1
+        },
+        "outputs": [
+          "PNG",
+          "JPEG",
+          "WEBP",
+          "BMP",
+          "ICO",
+          "TIFF"
+        ],
+        "warnings": []
+      },
+      {
+        "input": "AVIF",
+        "fixture": "swatch.avif",
+        "ms": 487.90250000000015,
+        "info": {
+          "format": "AVIF",
+          "mime": "image/avif",
+          "encodedWidth": 128,
+          "encodedHeight": 80,
+          "width": 128,
+          "height": 80,
+          "orientation": 1
+        },
+        "outputs": [
+          "PNG",
+          "JPEG",
+          "WEBP",
+          "BMP",
+          "ICO",
+          "TIFF"
+        ],
+        "warnings": []
+      },
+      {
+        "input": "BMP",
+        "fixture": "swatch.bmp",
+        "ms": 486.0148330000011,
+        "info": {
+          "format": "BMP",
+          "mime": "image/bmp",
+          "encodedWidth": 2,
+          "encodedHeight": 2,
+          "width": 2,
+          "height": 2,
+          "orientation": 1
+        },
+        "outputs": [
+          "PNG",
+          "JPEG",
+          "WEBP",
+          "BMP",
+          "ICO",
+          "TIFF"
+        ],
+        "warnings": []
+      },
+      {
+        "input": "ICO",
+        "fixture": "swatch.ico",
+        "ms": 498.69399999999587,
+        "info": {
+          "format": "ICO",
+          "mime": "image/x-icon",
+          "encodedWidth": 128,
+          "encodedHeight": 80,
+          "width": 128,
+          "height": 80,
+          "orientation": 1,
+          "frames": [
+            {
+              "width": 128,
+              "height": 80
+            }
+          ],
+          "frame": 0
+        },
+        "outputs": [
+          "PNG",
+          "JPEG",
+          "WEBP",
+          "BMP",
+          "ICO",
+          "TIFF"
+        ],
+        "warnings": []
+      },
+      {
+        "input": "SVG",
+        "fixture": "swatch.svg",
+        "ms": 489.9287919999988,
+        "info": {
+          "format": "SVG",
+          "mime": "image/svg+xml",
+          "encodedWidth": 128,
+          "encodedHeight": 80,
+          "width": 128,
+          "height": 80,
+          "orientation": 1
+        },
+        "outputs": [
+          "PNG",
+          "JPEG",
+          "WEBP",
+          "BMP",
+          "ICO",
+          "TIFF"
+        ],
+        "warnings": []
+      },
+      {
+        "input": "GIF",
+        "fixture": "swatch.gif",
+        "ms": 503.7517080000034,
+        "info": {
+          "format": "GIF",
+          "mime": "image/gif",
+          "encodedWidth": 128,
+          "encodedHeight": 80,
+          "width": 128,
+          "height": 80,
+          "orientation": 1
+        },
+        "outputs": [
+          "PNG",
+          "JPEG",
+          "WEBP",
+          "BMP",
+          "ICO",
+          "TIFF"
+        ],
+        "warnings": []
+      },
+      {
+        "input": "TIFF",
+        "fixture": "swatch.tiff",
+        "ms": 505.99241600000096,
+        "info": {
+          "format": "TIFF",
+          "mime": "image/tiff",
+          "encodedWidth": 128,
+          "encodedHeight": 80,
+          "width": 128,
+          "height": 80,
+          "orientation": 1
+        },
+        "outputs": [
+          "PNG",
+          "JPEG",
+          "WEBP",
+          "BMP",
+          "ICO",
+          "TIFF"
+        ],
+        "warnings": []
+      },
+      {
+        "input": "WAV",
+        "fixture": "audio/music.wav",
+        "ms": 558.2880000000005,
+        "info": {
+          "format": "WAV",
+          "mime": "audio/wav",
+          "category": "audio",
+          "sampleRate": 48000,
+          "channels": 2,
+          "duration": 2
+        },
+        "outputs": [
+          "WAV",
+          "AIFF",
+          "MP3",
+          "FLAC",
+          "OGG",
+          "OPUS",
+          "AAC",
+          "M4A"
+        ],
+        "warnings": []
+      },
+      {
+        "input": "AIFF",
+        "fixture": "audio/music.aiff",
+        "ms": 561.3939170000085,
+        "info": {
+          "format": "AIFF",
+          "mime": "audio/aiff",
+          "category": "audio",
+          "sampleRate": 48000,
+          "channels": 2,
+          "duration": 2
+        },
+        "outputs": [
+          "WAV",
+          "AIFF",
+          "MP3",
+          "FLAC",
+          "OGG",
+          "OPUS",
+          "AAC",
+          "M4A"
+        ],
+        "warnings": []
+      },
+      {
+        "input": "MP3",
+        "fixture": "audio/music.mp3",
+        "ms": 501.35391599999275,
+        "info": {
+          "format": "MP3",
+          "mime": "audio/mpeg",
+          "category": "audio",
+          "sampleRate": 48000,
+          "channels": 2,
+          "duration": 2,
+          "codec": "MP3"
+        },
+        "outputs": [
+          "WAV",
+          "AIFF",
+          "MP3",
+          "FLAC",
+          "OGG",
+          "OPUS",
+          "AAC",
+          "M4A"
+        ],
+        "warnings": []
+      },
+      {
+        "input": "FLAC",
+        "fixture": "audio/music.flac",
+        "ms": 507.56170900000143,
+        "info": {
+          "format": "FLAC",
+          "mime": "audio/flac",
+          "category": "audio",
+          "sampleRate": 48000,
+          "channels": 2,
+          "duration": 2,
+          "codec": "FLAC"
+        },
+        "outputs": [
+          "WAV",
+          "AIFF",
+          "MP3",
+          "FLAC",
+          "OGG",
+          "OPUS",
+          "AAC",
+          "M4A"
+        ],
+        "warnings": []
+      },
+      {
+        "input": "OGG",
+        "fixture": "audio/music.ogg",
+        "ms": 504.37379100000544,
+        "info": {
+          "format": "OGG",
+          "mime": "audio/ogg",
+          "category": "audio",
+          "sampleRate": 48000,
+          "channels": 2,
+          "duration": 2,
+          "codec": "Vorbis"
+        },
+        "outputs": [
+          "WAV",
+          "AIFF",
+          "MP3",
+          "FLAC",
+          "OGG",
+          "OPUS",
+          "AAC",
+          "M4A"
+        ],
+        "warnings": []
+      },
+      {
+        "input": "OPUS",
+        "fixture": "audio/music.opus",
+        "ms": 500.1909169999999,
+        "info": {
+          "format": "OPUS",
+          "mime": "audio/opus",
+          "category": "audio",
+          "sampleRate": 48000,
+          "channels": 2,
+          "duration": 2,
+          "codec": "OPUS"
+        },
+        "outputs": [
+          "WAV",
+          "AIFF",
+          "MP3",
+          "FLAC",
+          "OGG",
+          "OPUS",
+          "AAC",
+          "M4A"
+        ],
+        "warnings": []
+      },
+      {
+        "input": "AAC",
+        "fixture": "audio/music.aac",
+        "ms": 484.591333999997,
+        "info": {
+          "format": "AAC",
+          "mime": "audio/aac",
+          "category": "audio",
+          "sampleRate": 48000,
+          "channels": 2,
+          "duration": 2.026666666666667,
+          "codec": "AAC"
+        },
+        "outputs": [
+          "WAV",
+          "AIFF",
+          "MP3",
+          "FLAC",
+          "OGG",
+          "OPUS",
+          "AAC",
+          "M4A"
+        ],
+        "warnings": []
+      },
+      {
+        "input": "M4A",
+        "fixture": "audio/music.m4a",
+        "ms": 485.58079100001487,
+        "info": {
+          "format": "M4A",
+          "mime": "audio/mp4",
+          "category": "audio",
+          "sampleRate": 48000,
+          "channels": 2,
+          "duration": 2,
+          "codec": "AAC"
+        },
+        "outputs": [
+          "WAV",
+          "AIFF",
+          "MP3",
+          "FLAC",
+          "OGG",
+          "OPUS",
+          "AAC",
+          "M4A"
+        ],
+        "warnings": []
+      },
+      {
+        "input": "ZIP",
+        "fixture": "deflated.zip",
+        "ms": 503.76954199999454,
+        "info": {
+          "format": "ZIP",
+          "mime": "application/zip",
+          "category": "archive",
+          "entries": 2
+        },
+        "outputs": [
+          "ZIP",
+          "TAR",
+          "TAR.GZ",
+          "GZIP"
+        ],
+        "warnings": []
+      },
+      {
+        "input": "TAR",
+        "fixture": "sample.tar",
+        "ms": 503.0182920000225,
+        "info": {
+          "format": "TAR",
+          "mime": "application/x-tar",
+          "category": "archive",
+          "entries": 2
+        },
+        "outputs": [
+          "ZIP",
+          "TAR",
+          "TAR.GZ",
+          "GZIP"
+        ],
+        "warnings": []
+      },
+      {
+        "input": "TAR.GZ",
+        "fixture": "sample.tar.gz",
+        "ms": 501.87824999997974,
+        "info": {
+          "format": "TAR.GZ",
+          "mime": "application/gzip",
+          "category": "archive",
+          "entries": 2
+        },
+        "outputs": [
+          "ZIP",
+          "TAR",
+          "TAR.GZ",
+          "GZIP"
+        ],
+        "warnings": []
+      },
+      {
+        "input": "GZIP",
+        "fixture": "hello.txt.gz",
+        "ms": 497.16387499999837,
+        "info": {
+          "format": "GZIP",
+          "mime": "application/gzip",
+          "category": "archive",
+          "entries": 1
+        },
+        "outputs": [
+          "ZIP",
+          "TAR",
+          "TAR.GZ",
+          "GZIP"
+        ],
+        "warnings": []
+      }
+    ],
+    "routes": [
+      {
+        "input": "PNG",
+        "output": "PNG",
+        "status": "passed",
+        "reason": null,
+        "ms": 526.5686250000001,
+        "result": {
+          "engines": {
+            "encoder": "native-canvas",
+            "fallbackFrom": []
+          },
+          "name": "swatch.png",
+          "format": "PNG",
+          "mime": "image/png",
+          "width": 128,
+          "height": 80,
+          "size": 592
+        }
+      },
+      {
+        "input": "PNG",
+        "output": "JPEG",
+        "status": "passed",
+        "reason": null,
+        "ms": 524.5729590000001,
+        "result": {
+          "engines": {
+            "encoder": "native-canvas",
+            "fallbackFrom": []
+          },
+          "name": "swatch.jpg",
+          "format": "JPEG",
+          "mime": "image/jpeg",
+          "width": 128,
+          "height": 80,
+          "size": 958
+        }
+      },
+      {
+        "input": "PNG",
+        "output": "WEBP",
+        "status": "passed",
+        "reason": null,
+        "ms": 522.1115,
+        "result": {
+          "engines": {
+            "encoder": "native-canvas",
+            "fallbackFrom": []
+          },
+          "name": "swatch.webp",
+          "format": "WEBP",
+          "mime": "image/webp",
+          "width": 128,
+          "height": 80,
+          "size": 690
+        }
+      },
+      {
+        "input": "PNG",
+        "output": "BMP",
+        "status": "passed",
+        "reason": null,
+        "ms": 507.41291699999965,
+        "result": {
+          "engines": {
+            "encoder": "builtin-image",
+            "fallbackFrom": []
+          },
+          "name": "swatch.bmp",
+          "format": "BMP",
+          "mime": "image/bmp",
+          "width": 128,
+          "height": 80,
+          "size": 41082
+        }
+      },
+      {
+        "input": "PNG",
+        "output": "ICO",
+        "status": "passed",
+        "reason": null,
+        "ms": 523.4819159999997,
+        "result": {
+          "engines": {
+            "encoder": "builtin-image",
+            "fallbackFrom": []
+          },
+          "name": "swatch.ico",
+          "format": "ICO",
+          "mime": "image/x-icon",
+          "width": 256,
+          "height": 256,
+          "size": 3185
+        }
+      },
+      {
+        "input": "PNG",
+        "output": "TIFF",
+        "status": "passed",
+        "reason": null,
+        "ms": 535.5234999999993,
+        "result": {
+          "engines": {
+            "encoder": "builtin-image",
+            "fallbackFrom": []
+          },
+          "name": "swatch.tiff",
+          "format": "TIFF",
+          "mime": "image/tiff",
+          "width": 128,
+          "height": 80,
+          "size": 41138
+        }
+      },
+      {
+        "input": "JPEG",
+        "output": "PNG",
+        "status": "passed",
+        "reason": null,
+        "ms": 510.18791599999986,
+        "result": {
+          "engines": {
+            "encoder": "native-canvas",
+            "fallbackFrom": []
+          },
+          "name": "swatch.png",
+          "format": "PNG",
+          "mime": "image/png",
+          "width": 128,
+          "height": 80,
+          "size": 792
+        }
+      },
+      {
+        "input": "JPEG",
+        "output": "JPEG",
+        "status": "passed",
+        "reason": null,
+        "ms": 492.13716699999895,
+        "result": {
+          "engines": {
+            "encoder": "native-canvas",
+            "fallbackFrom": []
+          },
+          "name": "swatch.jpg",
+          "format": "JPEG",
+          "mime": "image/jpeg",
+          "width": 128,
+          "height": 80,
+          "size": 1129
+        }
+      },
+      {
+        "input": "JPEG",
+        "output": "WEBP",
+        "status": "passed",
+        "reason": null,
+        "ms": 604.9025829999991,
+        "result": {
+          "engines": {
+            "encoder": "native-canvas",
+            "fallbackFrom": []
+          },
+          "name": "swatch.webp",
+          "format": "WEBP",
+          "mime": "image/webp",
+          "width": 128,
+          "height": 80,
+          "size": 746
+        }
+      },
+      {
+        "input": "JPEG",
+        "output": "BMP",
+        "status": "passed",
+        "reason": null,
+        "ms": 527.5324170000004,
+        "result": {
+          "engines": {
+            "encoder": "builtin-image",
+            "fallbackFrom": []
+          },
+          "name": "swatch.bmp",
+          "format": "BMP",
+          "mime": "image/bmp",
+          "width": 128,
+          "height": 80,
+          "size": 41082
+        }
+      },
+      {
+        "input": "JPEG",
+        "output": "ICO",
+        "status": "passed",
+        "reason": null,
+        "ms": 509.4985830000005,
+        "result": {
+          "engines": {
+            "encoder": "builtin-image",
+            "fallbackFrom": []
+          },
+          "name": "swatch.ico",
+          "format": "ICO",
+          "mime": "image/x-icon",
+          "width": 256,
+          "height": 256,
+          "size": 4617
+        }
+      },
+      {
+        "input": "JPEG",
+        "output": "TIFF",
+        "status": "passed",
+        "reason": null,
+        "ms": 526.9455419999995,
+        "result": {
+          "engines": {
+            "encoder": "builtin-image",
+            "fallbackFrom": []
+          },
+          "name": "swatch.tiff",
+          "format": "TIFF",
+          "mime": "image/tiff",
+          "width": 128,
+          "height": 80,
+          "size": 41138
+        }
+      },
+      {
+        "input": "WEBP",
+        "output": "PNG",
+        "status": "passed",
+        "reason": null,
+        "ms": 509.1357500000013,
+        "result": {
+          "engines": {
+            "encoder": "native-canvas",
+            "fallbackFrom": []
+          },
+          "name": "swatch.png",
+          "format": "PNG",
+          "mime": "image/png",
+          "width": 128,
+          "height": 80,
+          "size": 819
+        }
+      },
+      {
+        "input": "WEBP",
+        "output": "JPEG",
+        "status": "passed",
+        "reason": null,
+        "ms": 524.9920000000002,
+        "result": {
+          "engines": {
+            "encoder": "native-canvas",
+            "fallbackFrom": []
+          },
+          "name": "swatch.jpg",
+          "format": "JPEG",
+          "mime": "image/jpeg",
+          "width": 128,
+          "height": 80,
+          "size": 1085
+        }
+      },
+      {
+        "input": "WEBP",
+        "output": "WEBP",
+        "status": "passed",
+        "reason": null,
+        "ms": 490.0153330000012,
+        "result": {
+          "engines": {
+            "encoder": "native-canvas",
+            "fallbackFrom": []
+          },
+          "name": "swatch.webp",
+          "format": "WEBP",
+          "mime": "image/webp",
+          "width": 128,
+          "height": 80,
+          "size": 786
+        }
+      },
+      {
+        "input": "WEBP",
+        "output": "BMP",
+        "status": "passed",
+        "reason": null,
+        "ms": 505.69829200000095,
+        "result": {
+          "engines": {
+            "encoder": "builtin-image",
+            "fallbackFrom": []
+          },
+          "name": "swatch.bmp",
+          "format": "BMP",
+          "mime": "image/bmp",
+          "width": 128,
+          "height": 80,
+          "size": 41082
+        }
+      },
+      {
+        "input": "WEBP",
+        "output": "ICO",
+        "status": "passed",
+        "reason": null,
+        "ms": 522.9674169999998,
+        "result": {
+          "engines": {
+            "encoder": "builtin-image",
+            "fallbackFrom": []
+          },
+          "name": "swatch.ico",
+          "format": "ICO",
+          "mime": "image/x-icon",
+          "width": 256,
+          "height": 256,
+          "size": 4305
+        }
+      },
+      {
+        "input": "WEBP",
+        "output": "TIFF",
+        "status": "passed",
+        "reason": null,
+        "ms": 496.6518750000032,
+        "result": {
+          "engines": {
+            "encoder": "builtin-image",
+            "fallbackFrom": []
+          },
+          "name": "swatch.tiff",
+          "format": "TIFF",
+          "mime": "image/tiff",
+          "width": 128,
+          "height": 80,
+          "size": 41138
+        }
+      },
+      {
+        "input": "AVIF",
+        "output": "PNG",
+        "status": "passed",
+        "reason": null,
+        "ms": 521.893082999999,
+        "result": {
+          "engines": {
+            "encoder": "native-canvas",
+            "fallbackFrom": []
+          },
+          "name": "swatch.png",
+          "format": "PNG",
+          "mime": "image/png",
+          "width": 128,
+          "height": 80,
+          "size": 675
+        }
+      },
+      {
+        "input": "AVIF",
+        "output": "JPEG",
+        "status": "passed",
+        "reason": null,
+        "ms": 524.7568329999995,
+        "result": {
+          "engines": {
+            "encoder": "native-canvas",
+            "fallbackFrom": []
+          },
+          "name": "swatch.jpg",
+          "format": "JPEG",
+          "mime": "image/jpeg",
+          "width": 128,
+          "height": 80,
+          "size": 1087
+        }
+      },
+      {
+        "input": "AVIF",
+        "output": "WEBP",
+        "status": "passed",
+        "reason": null,
+        "ms": 506.16891699999906,
+        "result": {
+          "engines": {
+            "encoder": "native-canvas",
+            "fallbackFrom": []
+          },
+          "name": "swatch.webp",
+          "format": "WEBP",
+          "mime": "image/webp",
+          "width": 128,
+          "height": 80,
+          "size": 772
+        }
+      },
+      {
+        "input": "AVIF",
+        "output": "BMP",
+        "status": "passed",
+        "reason": null,
+        "ms": 525.3149999999987,
+        "result": {
+          "engines": {
+            "encoder": "builtin-image",
+            "fallbackFrom": []
+          },
+          "name": "swatch.bmp",
+          "format": "BMP",
+          "mime": "image/bmp",
+          "width": 128,
+          "height": 80,
+          "size": 41082
+        }
+      },
+      {
+        "input": "AVIF",
+        "output": "ICO",
+        "status": "passed",
+        "reason": null,
+        "ms": 539.242624999999,
+        "result": {
+          "engines": {
+            "encoder": "builtin-image",
+            "fallbackFrom": []
+          },
+          "name": "swatch.ico",
+          "format": "ICO",
+          "mime": "image/x-icon",
+          "width": 256,
+          "height": 256,
+          "size": 3586
+        }
+      },
+      {
+        "input": "AVIF",
+        "output": "TIFF",
+        "status": "passed",
+        "reason": null,
+        "ms": 525.5506669999995,
+        "result": {
+          "engines": {
+            "encoder": "builtin-image",
+            "fallbackFrom": []
+          },
+          "name": "swatch.tiff",
+          "format": "TIFF",
+          "mime": "image/tiff",
+          "width": 128,
+          "height": 80,
+          "size": 41138
+        }
+      },
+      {
+        "input": "BMP",
+        "output": "PNG",
+        "status": "passed",
+        "reason": null,
+        "ms": 508.4838750000017,
+        "result": {
+          "engines": {
+            "encoder": "native-canvas",
+            "fallbackFrom": []
+          },
+          "name": "swatch.png",
+          "format": "PNG",
+          "mime": "image/png",
+          "width": 2,
+          "height": 2,
+          "size": 97
+        }
+      },
+      {
+        "input": "BMP",
+        "output": "JPEG",
+        "status": "passed",
+        "reason": null,
+        "ms": 517.9258340000015,
+        "result": {
+          "engines": {
+            "encoder": "native-canvas",
+            "fallbackFrom": []
+          },
+          "name": "swatch.jpg",
+          "format": "JPEG",
+          "mime": "image/jpeg",
+          "width": 2,
+          "height": 2,
+          "size": 827
+        }
+      },
+      {
+        "input": "BMP",
+        "output": "WEBP",
+        "status": "passed",
+        "reason": null,
+        "ms": 524.3502079999998,
+        "result": {
+          "engines": {
+            "encoder": "native-canvas",
+            "fallbackFrom": []
+          },
+          "name": "swatch.webp",
+          "format": "WEBP",
+          "mime": "image/webp",
+          "width": 2,
+          "height": 2,
+          "size": 554
+        }
+      },
+      {
+        "input": "BMP",
+        "output": "BMP",
+        "status": "passed",
+        "reason": null,
+        "ms": 540.2619999999988,
+        "result": {
+          "engines": {
+            "encoder": "builtin-image",
+            "fallbackFrom": []
+          },
+          "name": "swatch.bmp",
+          "format": "BMP",
+          "mime": "image/bmp",
+          "width": 2,
+          "height": 2,
+          "size": 138
+        }
+      },
+      {
+        "input": "BMP",
+        "output": "ICO",
+        "status": "passed",
+        "reason": null,
+        "ms": 521.6482080000023,
+        "result": {
+          "engines": {
+            "encoder": "builtin-image",
+            "fallbackFrom": []
+          },
+          "name": "swatch.ico",
+          "format": "ICO",
+          "mime": "image/x-icon",
+          "width": 256,
+          "height": 256,
+          "size": 4335
+        }
+      },
+      {
+        "input": "BMP",
+        "output": "TIFF",
+        "status": "passed",
+        "reason": null,
+        "ms": 524.5813330000019,
+        "result": {
+          "engines": {
+            "encoder": "builtin-image",
+            "fallbackFrom": []
+          },
+          "name": "swatch.tiff",
+          "format": "TIFF",
+          "mime": "image/tiff",
+          "width": 2,
+          "height": 2,
+          "size": 194
+        }
+      },
+      {
+        "input": "ICO",
+        "output": "PNG",
+        "status": "passed",
+        "reason": null,
+        "ms": 488.49800000000687,
+        "result": {
+          "engines": {
+            "encoder": "native-canvas",
+            "fallbackFrom": []
+          },
+          "name": "swatch.png",
+          "format": "PNG",
+          "mime": "image/png",
+          "width": 128,
+          "height": 80,
+          "size": 592
+        }
+      },
+      {
+        "input": "ICO",
+        "output": "JPEG",
+        "status": "passed",
+        "reason": null,
+        "ms": 538.2493329999998,
+        "result": {
+          "engines": {
+            "encoder": "native-canvas",
+            "fallbackFrom": []
+          },
+          "name": "swatch.jpg",
+          "format": "JPEG",
+          "mime": "image/jpeg",
+          "width": 128,
+          "height": 80,
+          "size": 958
+        }
+      },
+      {
+        "input": "ICO",
+        "output": "WEBP",
+        "status": "passed",
+        "reason": null,
+        "ms": 560.7781250000044,
+        "result": {
+          "engines": {
+            "encoder": "native-canvas",
+            "fallbackFrom": []
+          },
+          "name": "swatch.webp",
+          "format": "WEBP",
+          "mime": "image/webp",
+          "width": 128,
+          "height": 80,
+          "size": 690
+        }
+      },
+      {
+        "input": "ICO",
+        "output": "BMP",
+        "status": "passed",
+        "reason": null,
+        "ms": 543.7789580000026,
+        "result": {
+          "engines": {
+            "encoder": "builtin-image",
+            "fallbackFrom": []
+          },
+          "name": "swatch.bmp",
+          "format": "BMP",
+          "mime": "image/bmp",
+          "width": 128,
+          "height": 80,
+          "size": 41082
+        }
+      },
+      {
+        "input": "ICO",
+        "output": "ICO",
+        "status": "passed",
+        "reason": null,
+        "ms": 539.9578329999931,
+        "result": {
+          "engines": {
+            "encoder": "builtin-image",
+            "fallbackFrom": []
+          },
+          "name": "swatch.ico",
+          "format": "ICO",
+          "mime": "image/x-icon",
+          "width": 256,
+          "height": 256,
+          "size": 3185
+        }
+      },
+      {
+        "input": "ICO",
+        "output": "TIFF",
+        "status": "passed",
+        "reason": null,
+        "ms": 539.468667000001,
+        "result": {
+          "engines": {
+            "encoder": "builtin-image",
+            "fallbackFrom": []
+          },
+          "name": "swatch.tiff",
+          "format": "TIFF",
+          "mime": "image/tiff",
+          "width": 128,
+          "height": 80,
+          "size": 41138
+        }
+      },
+      {
+        "input": "SVG",
+        "output": "PNG",
+        "status": "passed",
+        "reason": null,
+        "ms": 522.5817909999969,
+        "result": {
+          "engines": {
+            "encoder": "native-canvas",
+            "fallbackFrom": []
+          },
+          "name": "swatch.png",
+          "format": "PNG",
+          "mime": "image/png",
+          "width": 128,
+          "height": 80,
+          "size": 561
+        }
+      },
+      {
+        "input": "SVG",
+        "output": "JPEG",
+        "status": "passed",
+        "reason": null,
+        "ms": 553.9801250000019,
+        "result": {
+          "engines": {
+            "encoder": "native-canvas",
+            "fallbackFrom": []
+          },
+          "name": "swatch.jpg",
+          "format": "JPEG",
+          "mime": "image/jpeg",
+          "width": 128,
+          "height": 80,
+          "size": 822
+        }
+      },
+      {
+        "input": "SVG",
+        "output": "WEBP",
+        "status": "passed",
+        "reason": null,
+        "ms": 526.0844579999975,
+        "result": {
+          "engines": {
+            "encoder": "native-canvas",
+            "fallbackFrom": []
+          },
+          "name": "swatch.webp",
+          "format": "WEBP",
+          "mime": "image/webp",
+          "width": 128,
+          "height": 80,
+          "size": 590
+        }
+      },
+      {
+        "input": "SVG",
+        "output": "BMP",
+        "status": "passed",
+        "reason": null,
+        "ms": 508.50545799999963,
+        "result": {
+          "engines": {
+            "encoder": "builtin-image",
+            "fallbackFrom": []
+          },
+          "name": "swatch.bmp",
+          "format": "BMP",
+          "mime": "image/bmp",
+          "width": 128,
+          "height": 80,
+          "size": 41082
+        }
+      },
+      {
+        "input": "SVG",
+        "output": "ICO",
+        "status": "passed",
+        "reason": null,
+        "ms": 656.3636659999975,
+        "result": {
+          "engines": {
+            "encoder": "builtin-image",
+            "fallbackFrom": []
+          },
+          "name": "swatch.ico",
+          "format": "ICO",
+          "mime": "image/x-icon",
+          "width": 256,
+          "height": 256,
+          "size": 2940
+        }
+      },
+      {
+        "input": "SVG",
+        "output": "TIFF",
+        "status": "passed",
+        "reason": null,
+        "ms": 510.2037500000006,
+        "result": {
+          "engines": {
+            "encoder": "builtin-image",
+            "fallbackFrom": []
+          },
+          "name": "swatch.tiff",
+          "format": "TIFF",
+          "mime": "image/tiff",
+          "width": 128,
+          "height": 80,
+          "size": 41138
+        }
+      },
+      {
+        "input": "GIF",
+        "output": "PNG",
+        "status": "passed",
+        "reason": null,
+        "ms": 604.6348750000034,
+        "result": {
+          "engines": {
+            "encoder": "native-canvas",
+            "fallbackFrom": []
+          },
+          "name": "swatch.png",
+          "format": "PNG",
+          "mime": "image/png",
+          "width": 128,
+          "height": 80,
+          "size": 589
+        }
+      },
+      {
+        "input": "GIF",
+        "output": "JPEG",
+        "status": "passed",
+        "reason": null,
+        "ms": 507.1436659999963,
+        "result": {
+          "engines": {
+            "encoder": "native-canvas",
+            "fallbackFrom": []
+          },
+          "name": "swatch.jpg",
+          "format": "JPEG",
+          "mime": "image/jpeg",
+          "width": 128,
+          "height": 80,
+          "size": 948
+        }
+      },
+      {
+        "input": "GIF",
+        "output": "WEBP",
+        "status": "passed",
+        "reason": null,
+        "ms": 508.1070000000036,
+        "result": {
+          "engines": {
+            "encoder": "native-canvas",
+            "fallbackFrom": []
+          },
+          "name": "swatch.webp",
+          "format": "WEBP",
+          "mime": "image/webp",
+          "width": 128,
+          "height": 80,
+          "size": 680
+        }
+      },
+      {
+        "input": "GIF",
+        "output": "BMP",
+        "status": "passed",
+        "reason": null,
+        "ms": 525.1877079999977,
+        "result": {
+          "engines": {
+            "encoder": "builtin-image",
+            "fallbackFrom": []
+          },
+          "name": "swatch.bmp",
+          "format": "BMP",
+          "mime": "image/bmp",
+          "width": 128,
+          "height": 80,
+          "size": 41082
+        }
+      },
+      {
+        "input": "GIF",
+        "output": "ICO",
+        "status": "passed",
+        "reason": null,
+        "ms": 528.2045829999988,
+        "result": {
+          "engines": {
+            "encoder": "builtin-image",
+            "fallbackFrom": []
+          },
+          "name": "swatch.ico",
+          "format": "ICO",
+          "mime": "image/x-icon",
+          "width": 256,
+          "height": 256,
+          "size": 3173
+        }
+      },
+      {
+        "input": "GIF",
+        "output": "TIFF",
+        "status": "passed",
+        "reason": null,
+        "ms": 507.83170800000516,
+        "result": {
+          "engines": {
+            "encoder": "builtin-image",
+            "fallbackFrom": []
+          },
+          "name": "swatch.tiff",
+          "format": "TIFF",
+          "mime": "image/tiff",
+          "width": 128,
+          "height": 80,
+          "size": 41138
+        }
+      },
+      {
+        "input": "TIFF",
+        "output": "PNG",
+        "status": "passed",
+        "reason": null,
+        "ms": 505.002833999999,
+        "result": {
+          "engines": {
+            "encoder": "native-canvas",
+            "fallbackFrom": []
+          },
+          "name": "swatch.png",
+          "format": "PNG",
+          "mime": "image/png",
+          "width": 128,
+          "height": 80,
+          "size": 592
+        }
+      },
+      {
+        "input": "TIFF",
+        "output": "JPEG",
+        "status": "passed",
+        "reason": null,
+        "ms": 505.1132090000028,
+        "result": {
+          "engines": {
+            "encoder": "native-canvas",
+            "fallbackFrom": []
+          },
+          "name": "swatch.jpg",
+          "format": "JPEG",
+          "mime": "image/jpeg",
+          "width": 128,
+          "height": 80,
+          "size": 958
+        }
+      },
+      {
+        "input": "TIFF",
+        "output": "WEBP",
+        "status": "passed",
+        "reason": null,
+        "ms": 534.059874999999,
+        "result": {
+          "engines": {
+            "encoder": "native-canvas",
+            "fallbackFrom": []
+          },
+          "name": "swatch.webp",
+          "format": "WEBP",
+          "mime": "image/webp",
+          "width": 128,
+          "height": 80,
+          "size": 690
+        }
+      },
+      {
+        "input": "TIFF",
+        "output": "BMP",
+        "status": "passed",
+        "reason": null,
+        "ms": 505.46354200000496,
+        "result": {
+          "engines": {
+            "encoder": "builtin-image",
+            "fallbackFrom": []
+          },
+          "name": "swatch.bmp",
+          "format": "BMP",
+          "mime": "image/bmp",
+          "width": 128,
+          "height": 80,
+          "size": 41082
+        }
+      },
+      {
+        "input": "TIFF",
+        "output": "ICO",
+        "status": "passed",
+        "reason": null,
+        "ms": 521.9579999999987,
+        "result": {
+          "engines": {
+            "encoder": "builtin-image",
+            "fallbackFrom": []
+          },
+          "name": "swatch.ico",
+          "format": "ICO",
+          "mime": "image/x-icon",
+          "width": 256,
+          "height": 256,
+          "size": 3185
+        }
+      },
+      {
+        "input": "TIFF",
+        "output": "TIFF",
+        "status": "passed",
+        "reason": null,
+        "ms": 527.2988750000004,
+        "result": {
+          "engines": {
+            "encoder": "builtin-image",
+            "fallbackFrom": []
+          },
+          "name": "swatch.tiff",
+          "format": "TIFF",
+          "mime": "image/tiff",
+          "width": 128,
+          "height": 80,
+          "size": 41138
+        }
+      },
+      {
+        "input": "WAV",
+        "output": "WAV",
+        "status": "passed",
+        "reason": null,
+        "ms": 746.5534160000025,
+        "result": {
+          "name": "music.wav",
+          "format": "WAV",
+          "mime": "audio/wav",
+          "engines": {
+            "decoder": "builtin-pcm-decode",
+            "encoder": "builtin-pcm-encode",
+            "fallbackFrom": []
+          },
+          "size": 384044
+        }
+      },
+      {
+        "input": "WAV",
+        "output": "AIFF",
+        "status": "passed",
+        "reason": null,
+        "ms": 541.0045000000027,
+        "result": {
+          "name": "music.aiff",
+          "format": "AIFF",
+          "mime": "audio/aiff",
+          "engines": {
+            "decoder": "builtin-pcm-decode",
+            "encoder": "builtin-pcm-encode",
+            "fallbackFrom": []
+          },
+          "size": 384054
+        }
+      },
+      {
+        "input": "WAV",
+        "output": "MP3",
+        "status": "passed",
+        "reason": null,
+        "ms": 979.9193330000053,
+        "result": {
+          "name": "music.mp3",
+          "format": "MP3",
+          "mime": "audio/mpeg",
+          "engines": {
+            "decoder": "builtin-pcm-decode",
+            "encoder": "wasm-libav-encode",
+            "fallbackFrom": []
+          },
+          "size": 49580
+        }
+      },
+      {
+        "input": "WAV",
+        "output": "FLAC",
+        "status": "passed",
+        "reason": null,
+        "ms": 941.5443749999977,
+        "result": {
+          "name": "music.flac",
+          "format": "FLAC",
+          "mime": "audio/flac",
+          "engines": {
+            "decoder": "builtin-pcm-decode",
+            "encoder": "wasm-libav-encode",
+            "fallbackFrom": []
+          },
+          "size": 83450
+        }
+      },
+      {
+        "input": "WAV",
+        "output": "OGG",
+        "status": "passed",
+        "reason": null,
+        "ms": 1030.8994170000005,
+        "result": {
+          "name": "music.ogg",
+          "format": "OGG",
+          "mime": "audio/ogg",
+          "engines": {
+            "decoder": "builtin-pcm-decode",
+            "encoder": "wasm-libav-encode",
+            "fallbackFrom": []
+          },
+          "size": 19074
+        }
+      },
+      {
+        "input": "WAV",
+        "output": "OPUS",
+        "status": "passed",
+        "reason": null,
+        "ms": 975.4093749999956,
+        "result": {
+          "name": "music.opus",
+          "format": "OPUS",
+          "mime": "audio/opus",
+          "engines": {
+            "decoder": "builtin-pcm-decode",
+            "encoder": "wasm-libav-encode",
+            "fallbackFrom": []
+          },
+          "size": 75533
+        }
+      },
+      {
+        "input": "WAV",
+        "output": "AAC",
+        "status": "passed",
+        "reason": null,
+        "ms": 923.2807500000054,
+        "result": {
+          "name": "music.aac",
+          "format": "AAC",
+          "mime": "audio/aac",
+          "engines": {
+            "decoder": "builtin-pcm-decode",
+            "encoder": "webcodecs-aac-encode",
+            "fallbackFrom": []
+          },
+          "size": 21566
+        }
+      },
+      {
+        "input": "WAV",
+        "output": "M4A",
+        "status": "passed",
+        "reason": null,
+        "ms": 559.6017500000016,
+        "result": {
+          "name": "music.m4a",
+          "format": "M4A",
+          "mime": "audio/mp4",
+          "engines": {
+            "decoder": "builtin-pcm-decode",
+            "encoder": "webcodecs-aac-encode",
+            "fallbackFrom": []
+          },
+          "size": 21917
+        }
+      },
+      {
+        "input": "AIFF",
+        "output": "WAV",
+        "status": "passed",
+        "reason": null,
+        "ms": 727.7832499999931,
+        "result": {
+          "name": "music.wav",
+          "format": "WAV",
+          "mime": "audio/wav",
+          "engines": {
+            "decoder": "builtin-pcm-decode",
+            "encoder": "builtin-pcm-encode",
+            "fallbackFrom": []
+          },
+          "size": 384044
+        }
+      },
+      {
+        "input": "AIFF",
+        "output": "AIFF",
+        "status": "passed",
+        "reason": null,
+        "ms": 555.0729169999977,
+        "result": {
+          "name": "music.aiff",
+          "format": "AIFF",
+          "mime": "audio/aiff",
+          "engines": {
+            "decoder": "builtin-pcm-decode",
+            "encoder": "builtin-pcm-encode",
+            "fallbackFrom": []
+          },
+          "size": 384054
+        }
+      },
+      {
+        "input": "AIFF",
+        "output": "MP3",
+        "status": "passed",
+        "reason": null,
+        "ms": 987.3611249999958,
+        "result": {
+          "name": "music.mp3",
+          "format": "MP3",
+          "mime": "audio/mpeg",
+          "engines": {
+            "decoder": "builtin-pcm-decode",
+            "encoder": "wasm-libav-encode",
+            "fallbackFrom": []
+          },
+          "size": 49580
+        }
+      },
+      {
+        "input": "AIFF",
+        "output": "FLAC",
+        "status": "passed",
+        "reason": null,
+        "ms": 923.212750000006,
+        "result": {
+          "name": "music.flac",
+          "format": "FLAC",
+          "mime": "audio/flac",
+          "engines": {
+            "decoder": "builtin-pcm-decode",
+            "encoder": "wasm-libav-encode",
+            "fallbackFrom": []
+          },
+          "size": 83450
+        }
+      },
+      {
+        "input": "AIFF",
+        "output": "OGG",
+        "status": "passed",
+        "reason": null,
+        "ms": 990.5608329999959,
+        "result": {
+          "name": "music.ogg",
+          "format": "OGG",
+          "mime": "audio/ogg",
+          "engines": {
+            "decoder": "builtin-pcm-decode",
+            "encoder": "wasm-libav-encode",
+            "fallbackFrom": []
+          },
+          "size": 19074
+        }
+      },
+      {
+        "input": "AIFF",
+        "output": "OPUS",
+        "status": "passed",
+        "reason": null,
+        "ms": 992.5187500000029,
+        "result": {
+          "name": "music.opus",
+          "format": "OPUS",
+          "mime": "audio/opus",
+          "engines": {
+            "decoder": "builtin-pcm-decode",
+            "encoder": "wasm-libav-encode",
+            "fallbackFrom": []
+          },
+          "size": 75533
+        }
+      },
+      {
+        "input": "AIFF",
+        "output": "AAC",
+        "status": "passed",
+        "reason": null,
+        "ms": 965.3107909999962,
+        "result": {
+          "name": "music.aac",
+          "format": "AAC",
+          "mime": "audio/aac",
+          "engines": {
+            "decoder": "builtin-pcm-decode",
+            "encoder": "webcodecs-aac-encode",
+            "fallbackFrom": []
+          },
+          "size": 21566
+        }
+      },
+      {
+        "input": "AIFF",
+        "output": "M4A",
+        "status": "passed",
+        "reason": null,
+        "ms": 560.6536249999917,
+        "result": {
+          "name": "music.m4a",
+          "format": "M4A",
+          "mime": "audio/mp4",
+          "engines": {
+            "decoder": "builtin-pcm-decode",
+            "encoder": "webcodecs-aac-encode",
+            "fallbackFrom": []
+          },
+          "size": 21917
+        }
+      },
+      {
+        "input": "MP3",
+        "output": "WAV",
+        "status": "passed",
+        "reason": null,
+        "ms": 726.5330419999955,
+        "result": {
+          "name": "music.wav",
+          "format": "WAV",
+          "mime": "audio/wav",
+          "engines": {
+            "decoder": "wasm-libav-decode",
+            "encoder": "builtin-pcm-encode",
+            "fallbackFrom": []
+          },
+          "size": 384044
+        }
+      },
+      {
+        "input": "MP3",
+        "output": "AIFF",
+        "status": "passed",
+        "reason": null,
+        "ms": 577.099000000002,
+        "result": {
+          "name": "music.aiff",
+          "format": "AIFF",
+          "mime": "audio/aiff",
+          "engines": {
+            "decoder": "wasm-libav-decode",
+            "encoder": "builtin-pcm-encode",
+            "fallbackFrom": []
+          },
+          "size": 384054
+        }
+      },
+      {
+        "input": "MP3",
+        "output": "MP3",
+        "status": "passed",
+        "reason": null,
+        "ms": 1141.7235419999924,
+        "result": {
+          "name": "music.mp3",
+          "format": "MP3",
+          "mime": "audio/mpeg",
+          "engines": {
+            "decoder": "wasm-libav-decode",
+            "encoder": "wasm-libav-encode",
+            "fallbackFrom": []
+          },
+          "size": 49580
+        }
+      },
+      {
+        "input": "MP3",
+        "output": "FLAC",
+        "status": "passed",
+        "reason": null,
+        "ms": 1025.3667920000007,
+        "result": {
+          "name": "music.flac",
+          "format": "FLAC",
+          "mime": "audio/flac",
+          "engines": {
+            "decoder": "wasm-libav-decode",
+            "encoder": "wasm-libav-encode",
+            "fallbackFrom": []
+          },
+          "size": 93184
+        }
+      },
+      {
+        "input": "MP3",
+        "output": "OGG",
+        "status": "passed",
+        "reason": null,
+        "ms": 1062.5652919999993,
+        "result": {
+          "name": "music.ogg",
+          "format": "OGG",
+          "mime": "audio/ogg",
+          "engines": {
+            "decoder": "wasm-libav-decode",
+            "encoder": "wasm-libav-encode",
+            "fallbackFrom": []
+          },
+          "size": 19573
+        }
+      },
+      {
+        "input": "MP3",
+        "output": "OPUS",
+        "status": "passed",
+        "reason": null,
+        "ms": 1010.8924160000024,
+        "result": {
+          "name": "music.opus",
+          "format": "OPUS",
+          "mime": "audio/opus",
+          "engines": {
+            "decoder": "wasm-libav-decode",
+            "encoder": "wasm-libav-encode",
+            "fallbackFrom": []
+          },
+          "size": 68327
+        }
+      },
+      {
+        "input": "MP3",
+        "output": "AAC",
+        "status": "passed",
+        "reason": null,
+        "ms": 2119.553291000004,
+        "result": {
+          "name": "music.aac",
+          "format": "AAC",
+          "mime": "audio/aac",
+          "engines": {
+            "decoder": "wasm-libav-decode",
+            "encoder": "webcodecs-aac-encode",
+            "fallbackFrom": []
+          },
+          "size": 24524
+        }
+      },
+      {
+        "input": "MP3",
+        "output": "M4A",
+        "status": "passed",
+        "reason": null,
+        "ms": 706.7772090000071,
+        "result": {
+          "name": "music.m4a",
+          "format": "M4A",
+          "mime": "audio/mp4",
+          "engines": {
+            "decoder": "wasm-libav-decode",
+            "encoder": "webcodecs-aac-encode",
+            "fallbackFrom": []
+          },
+          "size": 24875
+        }
+      },
+      {
+        "input": "FLAC",
+        "output": "WAV",
+        "status": "passed",
+        "reason": null,
+        "ms": 878.0390410000109,
+        "result": {
+          "name": "music.wav",
+          "format": "WAV",
+          "mime": "audio/wav",
+          "engines": {
+            "decoder": "wasm-libav-decode",
+            "encoder": "builtin-pcm-encode",
+            "fallbackFrom": []
+          },
+          "size": 384044
+        }
+      },
+      {
+        "input": "FLAC",
+        "output": "AIFF",
+        "status": "passed",
+        "reason": null,
+        "ms": 571.5807500000083,
+        "result": {
+          "name": "music.aiff",
+          "format": "AIFF",
+          "mime": "audio/aiff",
+          "engines": {
+            "decoder": "wasm-libav-decode",
+            "encoder": "builtin-pcm-encode",
+            "fallbackFrom": []
+          },
+          "size": 384054
+        }
+      },
+      {
+        "input": "FLAC",
+        "output": "MP3",
+        "status": "passed",
+        "reason": null,
+        "ms": 1025.4809999999998,
+        "result": {
+          "name": "music.mp3",
+          "format": "MP3",
+          "mime": "audio/mpeg",
+          "engines": {
+            "decoder": "wasm-libav-decode",
+            "encoder": "wasm-libav-encode",
+            "fallbackFrom": []
+          },
+          "size": 49580
+        }
+      },
+      {
+        "input": "FLAC",
+        "output": "FLAC",
+        "status": "passed",
+        "reason": null,
+        "ms": 940.5345830000006,
+        "result": {
+          "name": "music.flac",
+          "format": "FLAC",
+          "mime": "audio/flac",
+          "engines": {
+            "decoder": "wasm-libav-decode",
+            "encoder": "wasm-libav-encode",
+            "fallbackFrom": []
+          },
+          "size": 83450
+        }
+      },
+      {
+        "input": "FLAC",
+        "output": "OGG",
+        "status": "passed",
+        "reason": null,
+        "ms": 994.5445420000033,
+        "result": {
+          "name": "music.ogg",
+          "format": "OGG",
+          "mime": "audio/ogg",
+          "engines": {
+            "decoder": "wasm-libav-decode",
+            "encoder": "wasm-libav-encode",
+            "fallbackFrom": []
+          },
+          "size": 19074
+        }
+      },
+      {
+        "input": "FLAC",
+        "output": "OPUS",
+        "status": "passed",
+        "reason": null,
+        "ms": 1047.45133299999,
+        "result": {
+          "name": "music.opus",
+          "format": "OPUS",
+          "mime": "audio/opus",
+          "engines": {
+            "decoder": "wasm-libav-decode",
+            "encoder": "wasm-libav-encode",
+            "fallbackFrom": []
+          },
+          "size": 75533
+        }
+      },
+      {
+        "input": "FLAC",
+        "output": "AAC",
+        "status": "passed",
+        "reason": null,
+        "ms": 977.453125,
+        "result": {
+          "name": "music.aac",
+          "format": "AAC",
+          "mime": "audio/aac",
+          "engines": {
+            "decoder": "wasm-libav-decode",
+            "encoder": "webcodecs-aac-encode",
+            "fallbackFrom": []
+          },
+          "size": 21566
+        }
+      },
+      {
+        "input": "FLAC",
+        "output": "M4A",
+        "status": "passed",
+        "reason": null,
+        "ms": 626.5048339999921,
+        "result": {
+          "name": "music.m4a",
+          "format": "M4A",
+          "mime": "audio/mp4",
+          "engines": {
+            "decoder": "wasm-libav-decode",
+            "encoder": "webcodecs-aac-encode",
+            "fallbackFrom": []
+          },
+          "size": 21917
+        }
+      },
+      {
+        "input": "OGG",
+        "output": "WAV",
+        "status": "passed",
+        "reason": null,
+        "ms": 775.4772090000042,
+        "result": {
+          "name": "music.wav",
+          "format": "WAV",
+          "mime": "audio/wav",
+          "engines": {
+            "decoder": "wasm-libav-decode",
+            "encoder": "builtin-pcm-encode",
+            "fallbackFrom": []
+          },
+          "size": 384044
+        }
+      },
+      {
+        "input": "OGG",
+        "output": "AIFF",
+        "status": "passed",
+        "reason": null,
+        "ms": 649.4725420000032,
+        "result": {
+          "name": "music.aiff",
+          "format": "AIFF",
+          "mime": "audio/aiff",
+          "engines": {
+            "decoder": "wasm-libav-decode",
+            "encoder": "builtin-pcm-encode",
+            "fallbackFrom": []
+          },
+          "size": 384054
+        }
+      },
+      {
+        "input": "OGG",
+        "output": "MP3",
+        "status": "passed",
+        "reason": null,
+        "ms": 1177.796583000003,
+        "result": {
+          "name": "music.mp3",
+          "format": "MP3",
+          "mime": "audio/mpeg",
+          "engines": {
+            "decoder": "wasm-libav-decode",
+            "encoder": "wasm-libav-encode",
+            "fallbackFrom": []
+          },
+          "size": 49580
+        }
+      },
+      {
+        "input": "OGG",
+        "output": "FLAC",
+        "status": "passed",
+        "reason": null,
+        "ms": 984.055457999988,
+        "result": {
+          "name": "music.flac",
+          "format": "FLAC",
+          "mime": "audio/flac",
+          "engines": {
+            "decoder": "wasm-libav-decode",
+            "encoder": "wasm-libav-encode",
+            "fallbackFrom": []
+          },
+          "size": 85645
+        }
+      },
+      {
+        "input": "OGG",
+        "output": "OGG",
+        "status": "passed",
+        "reason": null,
+        "ms": 972.9384579999896,
+        "result": {
+          "name": "music.ogg",
+          "format": "OGG",
+          "mime": "audio/ogg",
+          "engines": {
+            "decoder": "wasm-libav-decode",
+            "encoder": "wasm-libav-encode",
+            "fallbackFrom": []
+          },
+          "size": 17227
+        }
+      },
+      {
+        "input": "OGG",
+        "output": "OPUS",
+        "status": "passed",
+        "reason": null,
+        "ms": 991.9549159999879,
+        "result": {
+          "name": "music.opus",
+          "format": "OPUS",
+          "mime": "audio/opus",
+          "engines": {
+            "decoder": "wasm-libav-decode",
+            "encoder": "wasm-libav-encode",
+            "fallbackFrom": []
+          },
+          "size": 70040
+        }
+      },
+      {
+        "input": "OGG",
+        "output": "AAC",
+        "status": "passed",
+        "reason": null,
+        "ms": 975.9999169999937,
+        "result": {
+          "name": "music.aac",
+          "format": "AAC",
+          "mime": "audio/aac",
+          "engines": {
+            "decoder": "wasm-libav-decode",
+            "encoder": "webcodecs-aac-encode",
+            "fallbackFrom": []
+          },
+          "size": 19885
+        }
+      },
+      {
+        "input": "OGG",
+        "output": "M4A",
+        "status": "passed",
+        "reason": null,
+        "ms": 668.3284589999967,
+        "result": {
+          "name": "music.m4a",
+          "format": "M4A",
+          "mime": "audio/mp4",
+          "engines": {
+            "decoder": "wasm-libav-decode",
+            "encoder": "webcodecs-aac-encode",
+            "fallbackFrom": []
+          },
+          "size": 20236
+        }
+      },
+      {
+        "input": "OPUS",
+        "output": "WAV",
+        "status": "passed",
+        "reason": null,
+        "ms": 696.8160420000058,
+        "result": {
+          "name": "music.wav",
+          "format": "WAV",
+          "mime": "audio/wav",
+          "engines": {
+            "decoder": "wasm-libav-decode",
+            "encoder": "builtin-pcm-encode",
+            "fallbackFrom": []
+          },
+          "size": 384044
+        }
+      },
+      {
+        "input": "OPUS",
+        "output": "AIFF",
+        "status": "passed",
+        "reason": null,
+        "ms": 644.6480830000073,
+        "result": {
+          "name": "music.aiff",
+          "format": "AIFF",
+          "mime": "audio/aiff",
+          "engines": {
+            "decoder": "wasm-libav-decode",
+            "encoder": "builtin-pcm-encode",
+            "fallbackFrom": []
+          },
+          "size": 384054
+        }
+      },
+      {
+        "input": "OPUS",
+        "output": "MP3",
+        "status": "passed",
+        "reason": null,
+        "ms": 1861.509333000009,
+        "result": {
+          "name": "music.mp3",
+          "format": "MP3",
+          "mime": "audio/mpeg",
+          "engines": {
+            "decoder": "wasm-libav-decode",
+            "encoder": "wasm-libav-encode",
+            "fallbackFrom": []
+          },
+          "size": 49580
+        }
+      },
+      {
+        "input": "OPUS",
+        "output": "FLAC",
+        "status": "passed",
+        "reason": null,
+        "ms": 983.9079159999965,
+        "result": {
+          "name": "music.flac",
+          "format": "FLAC",
+          "mime": "audio/flac",
+          "engines": {
+            "decoder": "wasm-libav-decode",
+            "encoder": "wasm-libav-encode",
+            "fallbackFrom": []
+          },
+          "size": 89614
+        }
+      },
+      {
+        "input": "OPUS",
+        "output": "OGG",
+        "status": "passed",
+        "reason": null,
+        "ms": 1021.958375000002,
+        "result": {
+          "name": "music.ogg",
+          "format": "OGG",
+          "mime": "audio/ogg",
+          "engines": {
+            "decoder": "wasm-libav-decode",
+            "encoder": "wasm-libav-encode",
+            "fallbackFrom": []
+          },
+          "size": 20285
+        }
+      },
+      {
+        "input": "OPUS",
+        "output": "OPUS",
+        "status": "passed",
+        "reason": null,
+        "ms": 997.6626669999969,
+        "result": {
+          "name": "music.opus",
+          "format": "OPUS",
+          "mime": "audio/opus",
+          "engines": {
+            "decoder": "wasm-libav-decode",
+            "encoder": "wasm-libav-encode",
+            "fallbackFrom": []
+          },
+          "size": 65834
+        }
+      },
+      {
+        "input": "OPUS",
+        "output": "AAC",
+        "status": "passed",
+        "reason": null,
+        "ms": 972.2809590000106,
+        "result": {
+          "name": "music.aac",
+          "format": "AAC",
+          "mime": "audio/aac",
+          "engines": {
+            "decoder": "wasm-libav-decode",
+            "encoder": "webcodecs-aac-encode",
+            "fallbackFrom": []
+          },
+          "size": 21825
+        }
+      },
+      {
+        "input": "OPUS",
+        "output": "M4A",
+        "status": "passed",
+        "reason": null,
+        "ms": 662.1856659999903,
+        "result": {
+          "name": "music.m4a",
+          "format": "M4A",
+          "mime": "audio/mp4",
+          "engines": {
+            "decoder": "wasm-libav-decode",
+            "encoder": "webcodecs-aac-encode",
+            "fallbackFrom": []
+          },
+          "size": 22176
+        }
+      },
+      {
+        "input": "AAC",
+        "output": "WAV",
+        "status": "passed",
+        "reason": null,
+        "ms": 742.6365000000078,
+        "result": {
+          "name": "music.wav",
+          "format": "WAV",
+          "mime": "audio/wav",
+          "engines": {
+            "decoder": "webcodecs-aac-decode",
+            "encoder": "builtin-pcm-encode",
+            "fallbackFrom": []
+          },
+          "size": 389164
+        }
+      },
+      {
+        "input": "AAC",
+        "output": "AIFF",
+        "status": "passed",
+        "reason": null,
+        "ms": 573.3392919999897,
+        "result": {
+          "name": "music.aiff",
+          "format": "AIFF",
+          "mime": "audio/aiff",
+          "engines": {
+            "decoder": "webcodecs-aac-decode",
+            "encoder": "builtin-pcm-encode",
+            "fallbackFrom": []
+          },
+          "size": 389174
+        }
+      },
+      {
+        "input": "AAC",
+        "output": "MP3",
+        "status": "passed",
+        "reason": null,
+        "ms": 1029.4536660000012,
+        "result": {
+          "name": "music.mp3",
+          "format": "MP3",
+          "mime": "audio/mpeg",
+          "engines": {
+            "decoder": "webcodecs-aac-decode",
+            "encoder": "wasm-libav-encode",
+            "fallbackFrom": []
+          },
+          "size": 50156
+        }
+      },
+      {
+        "input": "AAC",
+        "output": "FLAC",
+        "status": "passed",
+        "reason": null,
+        "ms": 1074.6389999999956,
+        "result": {
+          "name": "music.flac",
+          "format": "FLAC",
+          "mime": "audio/flac",
+          "engines": {
+            "decoder": "webcodecs-aac-decode",
+            "encoder": "wasm-libav-encode",
+            "fallbackFrom": []
+          },
+          "size": 94108
+        }
+      },
+      {
+        "input": "AAC",
+        "output": "OGG",
+        "status": "passed",
+        "reason": null,
+        "ms": 1024.065041999973,
+        "result": {
+          "name": "music.ogg",
+          "format": "OGG",
+          "mime": "audio/ogg",
+          "engines": {
+            "decoder": "webcodecs-aac-decode",
+            "encoder": "wasm-libav-encode",
+            "fallbackFrom": []
+          },
+          "size": 21522
+        }
+      },
+      {
+        "input": "AAC",
+        "output": "OPUS",
+        "status": "passed",
+        "reason": null,
+        "ms": 1007.5095000000147,
+        "result": {
+          "name": "music.opus",
+          "format": "OPUS",
+          "mime": "audio/opus",
+          "engines": {
+            "decoder": "webcodecs-aac-decode",
+            "encoder": "wasm-libav-encode",
+            "fallbackFrom": []
+          },
+          "size": 71072
+        }
+      },
+      {
+        "input": "AAC",
+        "output": "AAC",
+        "status": "passed",
+        "reason": null,
+        "ms": 908.2201669999922,
+        "result": {
+          "name": "music.aac",
+          "format": "AAC",
+          "mime": "audio/aac",
+          "engines": {
+            "decoder": "webcodecs-aac-decode",
+            "encoder": "webcodecs-aac-encode",
+            "fallbackFrom": []
+          },
+          "size": 22424
+        }
+      },
+      {
+        "input": "AAC",
+        "output": "M4A",
+        "status": "passed",
+        "reason": null,
+        "ms": 559.8349589999998,
+        "result": {
+          "name": "music.m4a",
+          "format": "M4A",
+          "mime": "audio/mp4",
+          "engines": {
+            "decoder": "webcodecs-aac-decode",
+            "encoder": "webcodecs-aac-encode",
+            "fallbackFrom": []
+          },
+          "size": 22772
+        }
+      },
+      {
+        "input": "M4A",
+        "output": "WAV",
+        "status": "passed",
+        "reason": null,
+        "ms": 759.9302909999969,
+        "result": {
+          "name": "music.wav",
+          "format": "WAV",
+          "mime": "audio/wav",
+          "engines": {
+            "decoder": "webcodecs-aac-decode",
+            "encoder": "builtin-pcm-encode",
+            "fallbackFrom": []
+          },
+          "size": 384044
+        }
+      },
+      {
+        "input": "M4A",
+        "output": "AIFF",
+        "status": "passed",
+        "reason": null,
+        "ms": 542.5186669999966,
+        "result": {
+          "name": "music.aiff",
+          "format": "AIFF",
+          "mime": "audio/aiff",
+          "engines": {
+            "decoder": "webcodecs-aac-decode",
+            "encoder": "builtin-pcm-encode",
+            "fallbackFrom": []
+          },
+          "size": 384054
+        }
+      },
+      {
+        "input": "M4A",
+        "output": "MP3",
+        "status": "passed",
+        "reason": null,
+        "ms": 1039.8988750000135,
+        "result": {
+          "name": "music.mp3",
+          "format": "MP3",
+          "mime": "audio/mpeg",
+          "engines": {
+            "decoder": "webcodecs-aac-decode",
+            "encoder": "wasm-libav-encode",
+            "fallbackFrom": []
+          },
+          "size": 49580
+        }
+      },
+      {
+        "input": "M4A",
+        "output": "FLAC",
+        "status": "passed",
+        "reason": null,
+        "ms": 973.0681249999907,
+        "result": {
+          "name": "music.flac",
+          "format": "FLAC",
+          "mime": "audio/flac",
+          "engines": {
+            "decoder": "webcodecs-aac-decode",
+            "encoder": "wasm-libav-encode",
+            "fallbackFrom": []
+          },
+          "size": 92936
+        }
+      },
+      {
+        "input": "M4A",
+        "output": "OGG",
+        "status": "passed",
+        "reason": null,
+        "ms": 1098.4722089999996,
+        "result": {
+          "name": "music.ogg",
+          "format": "OGG",
+          "mime": "audio/ogg",
+          "engines": {
+            "decoder": "webcodecs-aac-decode",
+            "encoder": "wasm-libav-encode",
+            "fallbackFrom": []
+          },
+          "size": 20492
+        }
+      },
+      {
+        "input": "M4A",
+        "output": "OPUS",
+        "status": "passed",
+        "reason": null,
+        "ms": 1045.3061659999948,
+        "result": {
+          "name": "music.opus",
+          "format": "OPUS",
+          "mime": "audio/opus",
+          "engines": {
+            "decoder": "webcodecs-aac-decode",
+            "encoder": "wasm-libav-encode",
+            "fallbackFrom": []
+          },
+          "size": 69662
+        }
+      },
+      {
+        "input": "M4A",
+        "output": "AAC",
+        "status": "passed",
+        "reason": null,
+        "ms": 905.0184579999768,
+        "result": {
+          "name": "music.aac",
+          "format": "AAC",
+          "mime": "audio/aac",
+          "engines": {
+            "decoder": "webcodecs-aac-decode",
+            "encoder": "webcodecs-aac-encode",
+            "fallbackFrom": []
+          },
+          "size": 21848
+        }
+      },
+      {
+        "input": "M4A",
+        "output": "M4A",
+        "status": "passed",
+        "reason": null,
+        "ms": 559.1553330000024,
+        "result": {
+          "name": "music.m4a",
+          "format": "M4A",
+          "mime": "audio/mp4",
+          "engines": {
+            "decoder": "webcodecs-aac-decode",
+            "encoder": "webcodecs-aac-encode",
+            "fallbackFrom": []
+          },
+          "size": 22199
+        }
+      },
+      {
+        "input": "ZIP",
+        "output": "ZIP",
+        "status": "passed",
+        "reason": null,
+        "ms": 551.6096669999824,
+        "result": {
+          "temporaryFile": "convert-83eb6915-ee00-401a-83e8-42ca2e4c41d6",
+          "name": "deflated.zip",
+          "format": "ZIP",
+          "mime": "application/zip",
+          "resources": {
+            "mode": "opfs",
+            "bytesWritten": 268,
+            "maxChunkBytes": 62,
+            "retainedBytes": 0
+          },
+          "size": 268
+        }
+      },
+      {
+        "input": "ZIP",
+        "output": "TAR",
+        "status": "passed",
+        "reason": null,
+        "ms": 512.425499999983,
+        "result": {
+          "temporaryFile": "convert-5e0d0309-87e8-4fe6-91c7-d2cf91c60a9d",
+          "name": "deflated.tar",
+          "format": "TAR",
+          "mime": "application/x-tar",
+          "resources": {
+            "mode": "opfs",
+            "bytesWritten": 2560,
+            "maxChunkBytes": 1024,
+            "retainedBytes": 0
+          },
+          "size": 2560
+        }
+      },
+      {
+        "input": "ZIP",
+        "output": "TAR.GZ",
+        "status": "passed",
+        "reason": null,
+        "ms": 816.2395829999878,
+        "result": {
+          "temporaryFile": "convert-08611d58-3093-4064-9d19-0fbb4aeeb6bf",
+          "name": "deflated.tar.gz",
+          "format": "TAR.GZ",
+          "mime": "application/gzip",
+          "resources": {
+            "mode": "opfs",
+            "bytesWritten": 144,
+            "maxChunkBytes": 134,
+            "retainedBytes": 0
+          },
+          "size": 144
+        }
+      },
+      {
+        "input": "ZIP",
+        "output": "GZIP",
+        "status": "passed",
+        "reason": null,
+        "ms": 538.6673329999903,
+        "result": {
+          "temporaryFile": "convert-180299f4-51d9-485b-9c57-c62bbdadcbb6",
+          "name": "deflated.gz",
+          "format": "GZIP",
+          "mime": "application/gzip",
+          "resources": {
+            "mode": "opfs",
+            "bytesWritten": 34,
+            "maxChunkBytes": 24,
+            "retainedBytes": 0
+          },
+          "size": 34
+        }
+      },
+      {
+        "input": "TAR",
+        "output": "ZIP",
+        "status": "passed",
+        "reason": null,
+        "ms": 538.6323749999865,
+        "result": {
+          "temporaryFile": "convert-74d15ae6-8a80-4e1c-bcd6-bb7d4dcad919",
+          "name": "sample.zip",
+          "format": "ZIP",
+          "mime": "application/zip",
+          "resources": {
+            "mode": "opfs",
+            "bytesWritten": 268,
+            "maxChunkBytes": 62,
+            "retainedBytes": 0
+          },
+          "size": 268
+        }
+      },
+      {
+        "input": "TAR",
+        "output": "TAR",
+        "status": "passed",
+        "reason": null,
+        "ms": 524.383124999993,
+        "result": {
+          "temporaryFile": "convert-a98287a0-9410-4fde-8d62-30f8c0524927",
+          "name": "sample.tar",
+          "format": "TAR",
+          "mime": "application/x-tar",
+          "resources": {
+            "mode": "opfs",
+            "bytesWritten": 2560,
+            "maxChunkBytes": 1024,
+            "retainedBytes": 0
+          },
+          "size": 2560
+        }
+      },
+      {
+        "input": "TAR",
+        "output": "TAR.GZ",
+        "status": "passed",
+        "reason": null,
+        "ms": 514.3462500000023,
+        "result": {
+          "temporaryFile": "convert-5a6f97ec-363e-4236-9001-508d7854e6b0",
+          "name": "sample.tar.gz",
+          "format": "TAR.GZ",
+          "mime": "application/gzip",
+          "resources": {
+            "mode": "opfs",
+            "bytesWritten": 144,
+            "maxChunkBytes": 134,
+            "retainedBytes": 0
+          },
+          "size": 144
+        }
+      },
+      {
+        "input": "TAR",
+        "output": "GZIP",
+        "status": "passed",
+        "reason": null,
+        "ms": 568.5141669999866,
+        "result": {
+          "temporaryFile": "convert-eaaf8f4e-8e45-44b8-993a-d38a57c1c753",
+          "name": "sample.gz",
+          "format": "GZIP",
+          "mime": "application/gzip",
+          "resources": {
+            "mode": "opfs",
+            "bytesWritten": 34,
+            "maxChunkBytes": 24,
+            "retainedBytes": 0
+          },
+          "size": 34
+        }
+      },
+      {
+        "input": "TAR.GZ",
+        "output": "ZIP",
+        "status": "passed",
+        "reason": null,
+        "ms": 505.4964579999796,
+        "result": {
+          "temporaryFile": "convert-cd7267a7-b032-43f2-9b72-e0cc7d330581",
+          "name": "sample.zip",
+          "format": "ZIP",
+          "mime": "application/zip",
+          "resources": {
+            "mode": "opfs",
+            "bytesWritten": 268,
+            "maxChunkBytes": 62,
+            "retainedBytes": 0
+          },
+          "size": 268
+        }
+      },
+      {
+        "input": "TAR.GZ",
+        "output": "TAR",
+        "status": "passed",
+        "reason": null,
+        "ms": 524.5595830000238,
+        "result": {
+          "temporaryFile": "convert-e881b85f-1774-4b0c-abc1-49c85ee1be62",
+          "name": "sample.tar",
+          "format": "TAR",
+          "mime": "application/x-tar",
+          "resources": {
+            "mode": "opfs",
+            "bytesWritten": 2560,
+            "maxChunkBytes": 1024,
+            "retainedBytes": 0
+          },
+          "size": 2560
+        }
+      },
+      {
+        "input": "TAR.GZ",
+        "output": "TAR.GZ",
+        "status": "passed",
+        "reason": null,
+        "ms": 521.1920419999806,
+        "result": {
+          "temporaryFile": "convert-d40cd7a4-654e-47a4-8959-3dacc8ed73ab",
+          "name": "sample.tar.gz",
+          "format": "TAR.GZ",
+          "mime": "application/gzip",
+          "resources": {
+            "mode": "opfs",
+            "bytesWritten": 144,
+            "maxChunkBytes": 134,
+            "retainedBytes": 0
+          },
+          "size": 144
+        }
+      },
+      {
+        "input": "TAR.GZ",
+        "output": "GZIP",
+        "status": "passed",
+        "reason": null,
+        "ms": 540.6163339999912,
+        "result": {
+          "temporaryFile": "convert-53884ccf-f142-4035-8cdb-e6a927fb862c",
+          "name": "sample.gz",
+          "format": "GZIP",
+          "mime": "application/gzip",
+          "resources": {
+            "mode": "opfs",
+            "bytesWritten": 34,
+            "maxChunkBytes": 24,
+            "retainedBytes": 0
+          },
+          "size": 34
+        }
+      },
+      {
+        "input": "GZIP",
+        "output": "ZIP",
+        "status": "passed",
+        "reason": null,
+        "ms": 527.3597920000029,
+        "result": {
+          "temporaryFile": "convert-0054243f-d661-4f70-ae5a-18a61fe098eb",
+          "name": "hello.txt.zip",
+          "format": "ZIP",
+          "mime": "application/zip",
+          "resources": {
+            "mode": "opfs",
+            "bytesWritten": 148,
+            "maxChunkBytes": 55,
+            "retainedBytes": 0
+          },
+          "size": 148
+        }
+      },
+      {
+        "input": "GZIP",
+        "output": "TAR",
+        "status": "passed",
+        "reason": null,
+        "ms": 525.0319580000069,
+        "result": {
+          "temporaryFile": "convert-788bb902-1b09-4234-b386-fe41eb4b625f",
+          "name": "hello.txt.tar",
+          "format": "TAR",
+          "mime": "application/x-tar",
+          "resources": {
+            "mode": "opfs",
+            "bytesWritten": 2048,
+            "maxChunkBytes": 1024,
+            "retainedBytes": 0
+          },
+          "size": 2048
+        }
+      },
+      {
+        "input": "GZIP",
+        "output": "TAR.GZ",
+        "status": "passed",
+        "reason": null,
+        "ms": 510.4080419999955,
+        "result": {
+          "temporaryFile": "convert-ffcfb960-c8ad-4315-b51b-40f3b7d5914f",
+          "name": "hello.txt.tar.gz",
+          "format": "TAR.GZ",
+          "mime": "application/gzip",
+          "resources": {
+            "mode": "opfs",
+            "bytesWritten": 101,
+            "maxChunkBytes": 91,
+            "retainedBytes": 0
+          },
+          "size": 101
+        }
+      },
+      {
+        "input": "GZIP",
+        "output": "GZIP",
+        "status": "passed",
+        "reason": null,
+        "ms": 509.8653329999943,
+        "result": {
+          "temporaryFile": "convert-bb99d810-da82-47c6-b6ff-090dd3346125",
+          "name": "hello.txt.gz",
+          "format": "GZIP",
+          "mime": "application/gzip",
+          "resources": {
+            "mode": "opfs",
+            "bytesWritten": 34,
+            "maxChunkBytes": 24,
+            "retainedBytes": 0
+          },
+          "size": 34
+        }
+      }
+    ]
+  },
+  {
+    "browser": "firefox",
+    "startedAt": "2026-10-23T13:27:18.273Z",
+    "revision": "1b76781eaf20e27b1e964d6ff78258ab58132aa3",
+    "base": "http://127.0.0.1:4181",
+    "node": "v26.0.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "errors": [],
+    "external": [],
+    "uploads": [],
+    "executablePath": "/Users/agemizu/Library/Caches/ms-playwright/firefox-1553/firefox/Nightly.app/Contents/MacOS/firefox",
+    "unavailable": "Error: browserType.launch: Executable doesn't exist at /Users/agemizu/Library/Caches/ms-playwright/firefox-1553/firefox/Nightly.app/Contents/MacOS/firefox",
+    "summary": {
+      "total": 134,
+      "passed": 0,
+      "failed": 0,
+      "unsupported": 0,
+      "untested": 134,
+      "attempted": 0,
+      "successRate": null,
+      "coverage": 0,
+      "conversionMs": 0
+    },
+    "finishedAt": "2026-10-23T13:27:18.303Z",
+    "browserCapabilities": null,
+    "analyses": [],
+    "routes": [
+      {
+        "input": "PNG",
+        "output": "PNG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "PNG",
+        "output": "JPEG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "PNG",
+        "output": "WEBP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "PNG",
+        "output": "BMP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "PNG",
+        "output": "ICO",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "PNG",
+        "output": "TIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "JPEG",
+        "output": "PNG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "JPEG",
+        "output": "JPEG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "JPEG",
+        "output": "WEBP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "JPEG",
+        "output": "BMP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "JPEG",
+        "output": "ICO",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "JPEG",
+        "output": "TIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "WEBP",
+        "output": "PNG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "WEBP",
+        "output": "JPEG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "WEBP",
+        "output": "WEBP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "WEBP",
+        "output": "BMP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "WEBP",
+        "output": "ICO",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "WEBP",
+        "output": "TIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AVIF",
+        "output": "PNG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AVIF",
+        "output": "JPEG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AVIF",
+        "output": "WEBP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AVIF",
+        "output": "BMP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AVIF",
+        "output": "ICO",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AVIF",
+        "output": "TIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "BMP",
+        "output": "PNG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "BMP",
+        "output": "JPEG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "BMP",
+        "output": "WEBP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "BMP",
+        "output": "BMP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "BMP",
+        "output": "ICO",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "BMP",
+        "output": "TIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "ICO",
+        "output": "PNG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "ICO",
+        "output": "JPEG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "ICO",
+        "output": "WEBP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "ICO",
+        "output": "BMP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "ICO",
+        "output": "ICO",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "ICO",
+        "output": "TIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "SVG",
+        "output": "PNG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "SVG",
+        "output": "JPEG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "SVG",
+        "output": "WEBP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "SVG",
+        "output": "BMP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "SVG",
+        "output": "ICO",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "SVG",
+        "output": "TIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "GIF",
+        "output": "PNG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "GIF",
+        "output": "JPEG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "GIF",
+        "output": "WEBP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "GIF",
+        "output": "BMP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "GIF",
+        "output": "ICO",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "GIF",
+        "output": "TIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "TIFF",
+        "output": "PNG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "TIFF",
+        "output": "JPEG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "TIFF",
+        "output": "WEBP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "TIFF",
+        "output": "BMP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "TIFF",
+        "output": "ICO",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "TIFF",
+        "output": "TIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "WAV",
+        "output": "WAV",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "WAV",
+        "output": "AIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "WAV",
+        "output": "MP3",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "WAV",
+        "output": "FLAC",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "WAV",
+        "output": "OGG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "WAV",
+        "output": "OPUS",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "WAV",
+        "output": "AAC",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "WAV",
+        "output": "M4A",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AIFF",
+        "output": "WAV",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AIFF",
+        "output": "AIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AIFF",
+        "output": "MP3",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AIFF",
+        "output": "FLAC",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AIFF",
+        "output": "OGG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AIFF",
+        "output": "OPUS",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AIFF",
+        "output": "AAC",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AIFF",
+        "output": "M4A",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "MP3",
+        "output": "WAV",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "MP3",
+        "output": "AIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "MP3",
+        "output": "MP3",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "MP3",
+        "output": "FLAC",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "MP3",
+        "output": "OGG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "MP3",
+        "output": "OPUS",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "MP3",
+        "output": "AAC",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "MP3",
+        "output": "M4A",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "FLAC",
+        "output": "WAV",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "FLAC",
+        "output": "AIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "FLAC",
+        "output": "MP3",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "FLAC",
+        "output": "FLAC",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "FLAC",
+        "output": "OGG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "FLAC",
+        "output": "OPUS",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "FLAC",
+        "output": "AAC",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "FLAC",
+        "output": "M4A",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "OGG",
+        "output": "WAV",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "OGG",
+        "output": "AIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "OGG",
+        "output": "MP3",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "OGG",
+        "output": "FLAC",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "OGG",
+        "output": "OGG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "OGG",
+        "output": "OPUS",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "OGG",
+        "output": "AAC",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "OGG",
+        "output": "M4A",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "OPUS",
+        "output": "WAV",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "OPUS",
+        "output": "AIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "OPUS",
+        "output": "MP3",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "OPUS",
+        "output": "FLAC",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "OPUS",
+        "output": "OGG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "OPUS",
+        "output": "OPUS",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "OPUS",
+        "output": "AAC",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "OPUS",
+        "output": "M4A",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AAC",
+        "output": "WAV",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AAC",
+        "output": "AIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AAC",
+        "output": "MP3",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AAC",
+        "output": "FLAC",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AAC",
+        "output": "OGG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AAC",
+        "output": "OPUS",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AAC",
+        "output": "AAC",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AAC",
+        "output": "M4A",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "M4A",
+        "output": "WAV",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "M4A",
+        "output": "AIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "M4A",
+        "output": "MP3",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "M4A",
+        "output": "FLAC",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "M4A",
+        "output": "OGG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "M4A",
+        "output": "OPUS",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "M4A",
+        "output": "AAC",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "M4A",
+        "output": "M4A",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "ZIP",
+        "output": "ZIP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "ZIP",
+        "output": "TAR",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "ZIP",
+        "output": "TAR.GZ",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "ZIP",
+        "output": "GZIP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "TAR",
+        "output": "ZIP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "TAR",
+        "output": "TAR",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "TAR",
+        "output": "TAR.GZ",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "TAR",
+        "output": "GZIP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "TAR.GZ",
+        "output": "ZIP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "TAR.GZ",
+        "output": "TAR",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "TAR.GZ",
+        "output": "TAR.GZ",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "TAR.GZ",
+        "output": "GZIP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "GZIP",
+        "output": "ZIP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "GZIP",
+        "output": "TAR",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "GZIP",
+        "output": "TAR.GZ",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "GZIP",
+        "output": "GZIP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      }
+    ]
+  },
+  {
+    "browser": "webkit",
+    "startedAt": "2026-10-23T13:27:18.303Z",
+    "revision": "1b76781eaf20e27b1e964d6ff78258ab58132aa3",
+    "base": "http://127.0.0.1:4181",
+    "node": "v26.0.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "errors": [],
+    "external": [],
+    "uploads": [],
+    "executablePath": "/Users/agemizu/Library/Caches/ms-playwright/webkit-2368/pw_run.sh",
+    "unavailable": "Error: browserType.launch: Executable doesn't exist at /Users/agemizu/Library/Caches/ms-playwright/webkit-2368/pw_run.sh",
+    "summary": {
+      "total": 134,
+      "passed": 0,
+      "failed": 0,
+      "unsupported": 0,
+      "untested": 134,
+      "attempted": 0,
+      "successRate": null,
+      "coverage": 0,
+      "conversionMs": 0
+    },
+    "finishedAt": "2026-10-23T13:27:18.318Z",
+    "browserCapabilities": null,
+    "analyses": [],
+    "routes": [
+      {
+        "input": "PNG",
+        "output": "PNG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "PNG",
+        "output": "JPEG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "PNG",
+        "output": "WEBP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "PNG",
+        "output": "BMP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "PNG",
+        "output": "ICO",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "PNG",
+        "output": "TIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "JPEG",
+        "output": "PNG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "JPEG",
+        "output": "JPEG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "JPEG",
+        "output": "WEBP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "JPEG",
+        "output": "BMP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "JPEG",
+        "output": "ICO",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "JPEG",
+        "output": "TIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "WEBP",
+        "output": "PNG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "WEBP",
+        "output": "JPEG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "WEBP",
+        "output": "WEBP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "WEBP",
+        "output": "BMP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "WEBP",
+        "output": "ICO",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "WEBP",
+        "output": "TIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AVIF",
+        "output": "PNG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AVIF",
+        "output": "JPEG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AVIF",
+        "output": "WEBP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AVIF",
+        "output": "BMP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AVIF",
+        "output": "ICO",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AVIF",
+        "output": "TIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "BMP",
+        "output": "PNG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "BMP",
+        "output": "JPEG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "BMP",
+        "output": "WEBP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "BMP",
+        "output": "BMP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "BMP",
+        "output": "ICO",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "BMP",
+        "output": "TIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "ICO",
+        "output": "PNG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "ICO",
+        "output": "JPEG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "ICO",
+        "output": "WEBP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "ICO",
+        "output": "BMP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "ICO",
+        "output": "ICO",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "ICO",
+        "output": "TIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "SVG",
+        "output": "PNG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "SVG",
+        "output": "JPEG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "SVG",
+        "output": "WEBP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "SVG",
+        "output": "BMP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "SVG",
+        "output": "ICO",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "SVG",
+        "output": "TIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "GIF",
+        "output": "PNG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "GIF",
+        "output": "JPEG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "GIF",
+        "output": "WEBP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "GIF",
+        "output": "BMP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "GIF",
+        "output": "ICO",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "GIF",
+        "output": "TIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "TIFF",
+        "output": "PNG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "TIFF",
+        "output": "JPEG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "TIFF",
+        "output": "WEBP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "TIFF",
+        "output": "BMP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "TIFF",
+        "output": "ICO",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "TIFF",
+        "output": "TIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "WAV",
+        "output": "WAV",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "WAV",
+        "output": "AIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "WAV",
+        "output": "MP3",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "WAV",
+        "output": "FLAC",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "WAV",
+        "output": "OGG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "WAV",
+        "output": "OPUS",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "WAV",
+        "output": "AAC",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "WAV",
+        "output": "M4A",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AIFF",
+        "output": "WAV",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AIFF",
+        "output": "AIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AIFF",
+        "output": "MP3",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AIFF",
+        "output": "FLAC",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AIFF",
+        "output": "OGG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AIFF",
+        "output": "OPUS",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AIFF",
+        "output": "AAC",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AIFF",
+        "output": "M4A",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "MP3",
+        "output": "WAV",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "MP3",
+        "output": "AIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "MP3",
+        "output": "MP3",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "MP3",
+        "output": "FLAC",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "MP3",
+        "output": "OGG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "MP3",
+        "output": "OPUS",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "MP3",
+        "output": "AAC",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "MP3",
+        "output": "M4A",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "FLAC",
+        "output": "WAV",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "FLAC",
+        "output": "AIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "FLAC",
+        "output": "MP3",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "FLAC",
+        "output": "FLAC",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "FLAC",
+        "output": "OGG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "FLAC",
+        "output": "OPUS",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "FLAC",
+        "output": "AAC",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "FLAC",
+        "output": "M4A",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "OGG",
+        "output": "WAV",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "OGG",
+        "output": "AIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "OGG",
+        "output": "MP3",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "OGG",
+        "output": "FLAC",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "OGG",
+        "output": "OGG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "OGG",
+        "output": "OPUS",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "OGG",
+        "output": "AAC",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "OGG",
+        "output": "M4A",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "OPUS",
+        "output": "WAV",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "OPUS",
+        "output": "AIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "OPUS",
+        "output": "MP3",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "OPUS",
+        "output": "FLAC",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "OPUS",
+        "output": "OGG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "OPUS",
+        "output": "OPUS",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "OPUS",
+        "output": "AAC",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "OPUS",
+        "output": "M4A",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AAC",
+        "output": "WAV",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AAC",
+        "output": "AIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AAC",
+        "output": "MP3",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AAC",
+        "output": "FLAC",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AAC",
+        "output": "OGG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AAC",
+        "output": "OPUS",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AAC",
+        "output": "AAC",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "AAC",
+        "output": "M4A",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "M4A",
+        "output": "WAV",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "M4A",
+        "output": "AIFF",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "M4A",
+        "output": "MP3",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "M4A",
+        "output": "FLAC",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "M4A",
+        "output": "OGG",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "M4A",
+        "output": "OPUS",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "M4A",
+        "output": "AAC",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "M4A",
+        "output": "M4A",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "ZIP",
+        "output": "ZIP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "ZIP",
+        "output": "TAR",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "ZIP",
+        "output": "TAR.GZ",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "ZIP",
+        "output": "GZIP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "TAR",
+        "output": "ZIP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "TAR",
+        "output": "TAR",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "TAR",
+        "output": "TAR.GZ",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "TAR",
+        "output": "GZIP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "TAR.GZ",
+        "output": "ZIP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "TAR.GZ",
+        "output": "TAR",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "TAR.GZ",
+        "output": "TAR.GZ",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "TAR.GZ",
+        "output": "GZIP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "GZIP",
+        "output": "ZIP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "GZIP",
+        "output": "TAR",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "GZIP",
+        "output": "TAR.GZ",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      },
+      {
+        "input": "GZIP",
+        "output": "GZIP",
+        "status": "untested",
+        "reason": "Browser unavailable; see unavailable"
+      }
+    ]
+  }
+]
