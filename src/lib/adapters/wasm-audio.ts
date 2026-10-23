@@ -77,7 +77,7 @@ export async function encodeWasm(pcm:Pcm,format:string,bitrate:number,quality?:n
 			const count=Math.min(size,frames-start);let data:Float32Array|Int16Array|Float32Array[];
 			if(sample_fmt===lib.AV_SAMPLE_FMT_FLTP)data=Array.from({length:pcm.channels},(_,ch)=>Float32Array.from({length:count},(_,i)=>pcm.samples[(start+i)*pcm.channels+ch]));
 			else if(sample_fmt===lib.AV_SAMPLE_FMT_S16)data=Int16Array.from(pcm.samples.subarray(start*pcm.channels,(start+count)*pcm.channels),quantizePcm16);
-			else data=pcm.samples.slice(start*pcm.channels,(start+count)*pcm.channels);
+			else data=pcm.samples.subarray(start*pcm.channels,(start+count)*pcm.channels);
 			const packets=await lib.ff_encode_multi(c,frame,pkt,[{data,format:sample_fmt,sample_rate:pcm.sampleRate,channels:pcm.channels,channel_layout,nb_samples:count,pts:start}]);
 			await lib.ff_write_multi(oc,pkt,packets);onProgress?.((start+count)/frames);
 		}

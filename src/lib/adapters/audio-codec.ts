@@ -27,7 +27,7 @@ export function availableAudioOutputs(verified:readonly string[]=[],context?:Eng
 		const probe=async(formats:readonly string[])=>{
 			for(const format of formats.filter(format=>!result.includes(format)))try {
 				await runCodec(audioEncoders,pcm,{format,quality:90,bitrate:192,mode:'bitrate',sampleRate:48000,channels:2,duration:pcm.samples.length/2/48000},job,async bytes=>{
-					const def=audioFormats.find(f=>f.id===format)!,file=new File([bytes.slice()],`probe.${def.extension}`,{type:def.mime});
+					const def=audioFormats.find(f=>f.id===format)!,file=new File([bytes as Uint8Array<ArrayBuffer>],`probe.${def.extension}`,{type:def.mime});
 					const {pcm:decoded,format:actual}=await readAudio(file,true,undefined,job);
 					if(actual!==format||decoded.channels!==2||decoded.sampleRate!==48000||Math.abs(decoded.samples.length-pcm.samples.length)>=48000*.1*2)throw new Error('Codec probe failed verification.');
 				});
@@ -55,7 +55,7 @@ async function single(request:ConversionRequest,stage:StageReporter,job:EngineCo
 	let verifiedBlob:Blob|undefined;
 	const {engineId:encoder,fallbackFrom}=await runCodec(audioEncoders,converted,{format,quality:request.quality,bitrate,mode,sampleRate:converted.sampleRate,channels:converted.channels,duration:converted.samples.length/converted.channels/converted.sampleRate},job,async bytes=>{
 		if(bytes.length>64*1024**2)throw new Error('Safety limit: audio output exceeds 64 MiB.');
-		stage('verifying',95);const candidate=new Blob([bytes.slice()],{type:def.mime});
+		stage('verifying',95);const candidate=new Blob([bytes as Uint8Array<ArrayBuffer>],{type:def.mime});
 		const {pcm:verified,format:actual}=await readAudio(new File([candidate],name,{type:def.mime}),true,undefined,{...job,stage:()=>stage('verifying',95)});
 		const duration=converted.samples.length/converted.channels/converted.sampleRate,actualDuration=verified.samples.length/verified.channels/verified.sampleRate;
 		if(actual!==format||verified.channels!==converted.channels||verified.sampleRate!==converted.sampleRate||Math.abs(actualDuration-duration)>(['WAV','AIFF','FLAC'].includes(format)?1/converted.sampleRate:.08))throw new EngineFallbackError('unsupported','Encoded audio codec, duration, channels or sample rate failed verification.');
@@ -83,6 +83,6 @@ export const audioCodec:EngineAdapter={
 			entries.push({name:`${i+1}-${result.name}`,data,directory:false,mtime:0});stage('encoding',(i+1)/files.length*95);
 		}
 		stage('encoding');const bytes=await encodeZip(entries,false);stage('verifying',95);await decodeZip(bytes);
-		return {blob:new Blob([bytes.slice()],{type:'application/zip'}),name:'converted-audio.zip',format:'ZIP',mime:'application/zip'};
+		return {blob:new Blob([bytes as Uint8Array<ArrayBuffer>],{type:'application/zip'}),name:'converted-audio.zip',format:'ZIP',mime:'application/zip'};
 	}
 };
