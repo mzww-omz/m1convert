@@ -1,6 +1,6 @@
 # Verification history
 
-Latest results and current safety policy: [Phase 4 constraint audit](phase-4-constraints.md). [Checking latency verification](#checking-latency-verification) and the Phase 2 / continuous-development / compressed-audio records below are historical; their limits and counts describe those earlier commits.
+Latest architecture and verification: [Phase 5 engines](phase-5-engines.md). Current safety policy: [Phase 4 constraint audit](phase-4-constraints.md), plus Phase 5's stricter optional PNG-WASM budget. [Checking latency verification](#checking-latency-verification) and the Phase 2 / continuous-development / compressed-audio records below are historical; their limits and counts describe those earlier commits.
 
 # Phase 2 verification — extended image formats
 

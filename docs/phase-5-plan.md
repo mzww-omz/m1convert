@@ -28,6 +28,10 @@ Execute inline with tests first. Keep adapter routing (`registry.ts`) and Worker
    - Run Node tests, typecheck, build and existing image/archive/audio/checking browser suites sequentially.
    - Document architecture/API extension steps, capability limitations, engine evaluation (licenses, package/runtime sizes, compatibility and measured local timings), deployment/replacement assets, remaining limits; commit.
 
+## Execution record
+
+Implemented inline. Registry/capability unit checks, real Native→PNG WASM fallback, WebCodecs/libav selection, static output and existing regressions are recorded in [phase-5-engines.md](phase-5-engines.md). `adapter-auto` was replaced with the matching static adapter and root layout prerendering to make static hosting an actual tested deliverable, not just an architecture claim. No UI, new format, multi-hop graph or threaded codec was added.
+
 ## Review focus
 
 - A corrupt/unsafe source must fail before fallback; do not turn structural failures into compatibility failures.

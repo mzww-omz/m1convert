@@ -86,6 +86,8 @@ See the **[Phase 4 constraint audit](docs/phase-4-constraints.md)** for every re
 | --- | --- |
 | Format definitions and signature matchers | `src/lib/formats.ts` |
 | Format / conversion registries and planner | `src/lib/registry.ts` |
+| Codec capabilities, lazy selection, safe fallback and shared context | `src/lib/codec-registry.ts` |
+| Native / builtin / WebCodecs / WASM definitions and image implementations | `src/lib/engines/` |
 | Pre-decode image structure, EXIF and budget checks | `src/lib/image-format.ts` |
 | Shared worker RGBA/Canvas pipeline and verified capabilities | `src/lib/adapters/canvas-codec.ts` |
 | Lazy image validation / binary codecs | `src/lib/adapters/{avif,bmp,ico,svg,gif,tiff}.ts` |
@@ -103,7 +105,11 @@ See the **[Phase 4 constraint audit](docs/phase-4-constraints.md)** for every re
 | Result Blob URLs, filenames and downloads | `src/lib/results.ts` |
 | Existing persistent animated frame | `src/lib/MorphSurface.svelte` (unchanged) |
 
-To add an engine:
+**Phase 5:** image encoding and audio decode/encode use a shared `CodecEngine<Input, Output, Options>` registry. Native Canvas is preferred; PNG has a real single-thread jSquash WASM fallback. WebCodecs AAC and existing libav WASM use the same selection/context API. Capabilities are exposed in analysis and via `engineCapabilities`; results include the selected engine IDs. Only typed compatibility/availability failures retry, and every candidate must pass output verification. UI, MorphSurface and Worker scheduling are unchanged.
+
+For another engine handling an existing format, add a lazy descriptor in `engines/image.ts` or `engines/audio.ts`; do not modify the UI. See **[Phase 5 architecture, capability contract, licensing/size evaluation and measurements](docs/phase-5-engines.md)**. FFmpeg.wasm and wasm-vips were evaluated but are **not implemented or advertised**.
+
+To add a new format adapter:
 
 1. Implement `EngineAdapter.inspect(file, stage)` and `run(request, stage)` in a new adapter module. Analysis returns detected format/MIME, actual supported output IDs and an optional safe thumbnail. Dimensions are optional in the shared contract; image adapters return them. Keep validation, format-specific limits, capability probes, accurate progress and result verification in the adapter.
 2. Add a lightweight `AdapterDefinition` to `adapters` in `registry.ts`: `id`, contributed `formats` (ID, MIME, extension aliases, quality support and signature matcher), `inputs`, `outputs`, and `load: async () => (await import('./adapters/new-codec.ts')).adapter`.
@@ -116,6 +122,10 @@ The planner currently returns one direct step. Its steps-list contract allows la
 
 Successful image/audio encoder probes are reused within the current page, while every file and every conversion output is still validated. Workers and WASM heaps are not kept alive. Failed probes are retried; runtime errors invalidate remembered capabilities. First audio discovery overlaps independent native/WASM probes. Local repeated-WAV analysis dropped from 224–270 ms to 16–18 ms; first-time downloads and large-file decoding still take time. See [measurements and safety details](docs/checking-performance.md).
 
+## Static hosting
+
+`npm run build` produces a complete static site in **`build/`** using `adapter-static`. Serve that directory, including `vendor/` and `legal/`, with module-JS and `application/wasm` MIME types. No Node conversion server, CDN, SharedArrayBuffer or COOP/COEP headers are required. Use HTTPS or localhost for WebCodecs. `npm run sync:audio-assets` and `npm run sync:png-assets` restore the pinned local codec assets/notices; they overwrite custom library replacements.
+
 ## Verification
 
 Node 22.18+ is needed for native TypeScript stripping in unit tests. All test toolchain packages are already present in the repository dependencies.
@@ -124,6 +134,7 @@ Node 22.18+ is needed for native TypeScript stripping in unit tests. All test to
 npm test
 npm run check
 npm run build
+npm run test:static
 ```
 
 With the local server running and an existing Playwright + Chromium installation:
@@ -133,6 +144,8 @@ npm run test:browser
 npm run test:categories
 npm run test:audio
 npm run test:checking
+npm run test:phase4
+npm run test:phase5
 ```
 
 For an installation outside this repository:
@@ -144,7 +157,7 @@ TEST_URL=http://localhost:5173 \
 npm run test:browser
 ```
 
-No browser/package is downloaded automatically. For production verification, build first, start `npm run preview -- --port 4174 --strictPort`, and set `TEST_URL` accordingly.
+No browser/package is downloaded automatically. For production verification, build first, start `npm run preview -- --port 4174 --strictPort` (or serve `build/` with a plain static HTTP server), and set `TEST_URL` accordingly. Run browser suites sequentially to avoid competing heavy-conversion jobs.
 
 The browser suite exercises the original nine and extended real conversions (including BMP 24-bit input, all ICO output sizes/selected frames, AVIF input and rejected unsafe SVG), downloaded-file bytes and decoding, dimensions/transparency/JPEG background, both quality controls, all eight EXIF orientations, unsupported encoders, validation/errors/retry, high-entropy 16-megapixel cancellation, worker/URL cleanup, input methods, rapid operations, focus, reduced motion, touch emulation, 320px/tablet/resizing and actual frame geometry/timing. Fixtures in `tests/fixtures/` contain opaque, semi-transparent and transparent regions. `swatch.avif` is an 8-bit still with alpha generated locally from the PNG fixture using installed ImageMagick; conversion at runtime never uses that tool. Controller unit tests compile the real runes module with the existing Svelte/TypeScript toolchain.
 
