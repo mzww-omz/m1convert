@@ -1,7 +1,5 @@
 import type { EngineAdapter } from '../engine-types.ts';
-import { archiveFormats } from '../archive-formats.ts';
 import { ascii } from '../formats.ts';
-import { outputName } from '../results.ts';
 
 const MAX = 64 * 1024 ** 2, COUNT = 1000, NAME_BYTES = 1024 ** 2;
 const utf8 = new TextEncoder(), decoder = new TextDecoder('utf-8', {fatal:true});
@@ -37,7 +35,7 @@ export function validateEntries(entries:readonly Entry[]) {
 // Read streams incrementally: never materialize an unbounded decompression result.
 export async function transform(bytes:Uint8Array, format:'gzip'|'deflate-raw', decompress:boolean, limit=MAX):Promise<Uint8Array> {
 	let stream:ReadableStream<Uint8Array>;
-	try { stream=new Blob([bytes.slice()]).stream().pipeThrough(decompress ? new DecompressionStream(format) : new CompressionStream(format)); }
+	try { stream=new Blob([bytes as Uint8Array<ArrayBuffer>]).stream().pipeThrough(decompress ? new DecompressionStream(format) : new CompressionStream(format)); }
 	catch { return fail(`This browser does not support ${format} ${decompress?'decompression':'compression'}.`); }
 	const reader=stream.getReader(), chunks:Uint8Array[]=[]; let size=0;
 	try {
@@ -52,13 +50,13 @@ export async function transform(bytes:Uint8Array, format:'gzip'|'deflate-raw', d
 	const out=new Uint8Array(size); let p=0; for(const chunk of chunks) { out.set(chunk,p); p+=chunk.length; } return out;
 }
 const crcTable=Uint32Array.from({length:256},(_,n)=>{ for(let k=0;k<8;k++) n=(n&1)?0xedb88320^(n>>>1):n>>>1; return n>>>0; });
-export function crc32(b:Uint8Array) { let n=0xffffffff; for(const v of b) n=crcTable[(n^v)&255]^(n>>>8); return (n^0xffffffff)>>>0; }
-function tarString(b:Uint8Array,p:number,n:number) {
+export function crc32(b:Uint8Array,previous=0) { let n=(previous^0xffffffff)>>>0; for(const v of b) n=crcTable[(n^v)&255]^(n>>>8); return (n^0xffffffff)>>>0; }
+export function tarString(b:Uint8Array,p:number,n:number) {
 	const part=b.subarray(p,p+n), end=part.indexOf(0);
 	if(end>=0 && part.subarray(end).some(v=>v!==0)) fail('Corrupt TAR string.');
 	return decoder.decode(end<0?part:part.subarray(0,end));
 }
-function octal(b:Uint8Array,p:number,n:number) {
+export function octal(b:Uint8Array,p:number,n:number) {
 	const s=ascii(b,p,n).replace(/[\0 ]+$/,'').replace(/^ +/,'');
 	if(!/^[0-7]*$/.test(s)) fail('Unsupported or corrupt TAR numeric field.');
 	const value=parseInt(s||'0',8); if(!Number.isSafeInteger(value)) fail('Invalid TAR size.'); return value;
@@ -88,7 +86,7 @@ export function decodeTar(b:Uint8Array):Entry[] {
 	}
 	return fail('Truncated TAR end marker.');
 }
-function tarName(name:string) {
+export function tarName(name:string) {
 	if(utf8.encode(name).length<=100) return {name,prefix:''};
 	for(let split=name.lastIndexOf('/',name.length-2);split>0;split=name.lastIndexOf('/',split-1)) {
 		if(utf8.encode(name.slice(0,split)).length<=155 && utf8.encode(name.slice(split+1)).length<=100)
@@ -188,53 +186,8 @@ export async function encodeZip(entries:readonly Entry[], compressed:boolean):Pr
 	const end=new Uint8Array(22), ev=view(end); ev.setUint32(0,0x06054b50,true); ev.setUint16(8,entries.length,true); ev.setUint16(10,entries.length,true); ev.setUint32(12,centralSize,true); ev.setUint32(16,offset,true);
 	const result=new Uint8Array(offset+centralSize+22); let p=0; for(const b of [...local,...central,end]) { result.set(b,p); p+=b.length; } return result;
 }
-function supported(format:'gzip'|'deflate-raw',decompress=false) { try { if(decompress) new DecompressionStream(format); else new CompressionStream(format); return true; } catch { return false; } }
-async function read(file:File, output=false) {
-	if(!file.size) fail('Archive input is empty.');
-	if(file.size>MAX) fail('Safety limit: archive exceeds the 64 MiB buffer budget. Split it into smaller archives.');
-	const b=new Uint8Array(await file.arrayBuffer()), definition=archiveFormats.find(f=>f.matches(b));
-	if(!definition) fail('Unsupported archive contents.');
-	let entries:Entry[], format=definition.id;
-	if(format==='ZIP') entries=await decodeZip(b);
-	else if(format==='TAR') entries=decodeTar(b);
-	else {
-		const expanded=await transform(b,'gzip',true,MAX);
-		if(archiveFormats.find(f=>f.id==='TAR')!.matches(expanded)) { entries=decodeTar(expanded); format='TAR.GZ'; }
-		else {
-			const name=file.name.replace(/\.gz$/i,'')||'file'; entries=[{name,data:expanded,directory:false,mtime:0}];
-		}
-	}
-	validateEntries(entries); return {entries,format,mime:definition.mime};
-}
-function outputs(entries:Entry[]) {
-	const tar=tarSize(entries)<=MAX && entries.every(e=>tarName(e.name));
-	return ['ZIP',...(tar?['TAR']:[]),...(supported('gzip')&&supported('gzip',true)?[...(tar?['TAR.GZ']:[]),...(entries.filter(e=>!e.directory).length===1?['GZIP']:[])]:[])];
-}
+export function supported(format:'gzip'|'deflate-raw',decompress=false) { try { if(decompress) new DecompressionStream(format); else new CompressionStream(format); return true; } catch { return false; } }
 export const archiveCodec:EngineAdapter={
-	async inspect(file,stage) {
-		stage('reading'); const {entries,format,mime}=await read(file); stage('verifying');
-		return {info:{format,mime,category:'archive',entries:entries.length},outputs:outputs(entries),preview:null,
-			warnings:entries.some(e=>utf8.encode(e.name).length>255)?['Compatibility warning: long archive paths may not extract on every operating system. ZIP preserves the original paths.']:[]};
-	},
-	async run(request,stage) {
-		stage('reading'); const {entries}=await read(request.file); const format=request.format;
-		if(!outputs(entries).includes(format)) fail('This archive output needs one file or is unsupported by this browser.');
-		if(request.archive && !['store','deflate'].includes(request.archive.compression)) fail('Invalid ZIP compression setting.');
-		stage('encoding'); let bytes:Uint8Array;
-		if(format==='ZIP') bytes=await encodeZip(entries,request.archive?.compression!=='store'&&supported('deflate-raw')&&supported('deflate-raw',true));
-		else if(format==='TAR') bytes=encodeTar(entries);
-		else if(format==='TAR.GZ') bytes=await transform(encodeTar(entries),'gzip',false);
-		else bytes=await transform(entries.find(e=>!e.directory)!.data,'gzip',false);
-		const def=archiveFormats.find(f=>f.id===format)!, blob=new Blob([bytes.slice()],{type:def.mime});
-		const name=outputName(request.file.name.replace(/\.(tar\.gz|tgz)$/i,'.tar'),format);
-		stage('verifying');
-		if(format==='GZIP') {
-			const decoded=await transform(bytes,'gzip',true),expected=entries.find(e=>!e.directory)!.data;
-			if(decoded.length!==expected.length || !decoded.every((v,i)=>v===expected[i])) fail('GZIP output verification failed.');
-		} else {
-			const verified=await read(new File([blob],name,{type:def.mime}),true);
-			if(verified.entries.length!==entries.length || entries.some((e,i)=>e.name!==verified.entries[i].name || e.data.length!==verified.entries[i].data.length || !e.data.every((v,j)=>v===verified.entries[i].data[j]))) fail('Archive output verification failed.');
-		}
-		return {blob,name,format,mime:def.mime};
-	}
+	inspect:async(...args)=>(await import('./archive-stream.ts')).streamArchiveCodec.inspect(...args),
+	run:async(...args)=>(await import('./archive-stream.ts')).streamArchiveCodec.run(...args)
 };

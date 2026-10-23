@@ -1,6 +1,6 @@
 import { initialState, transition, type Event, type State } from './machine';
 import { imageEngine, type ConversionEngine } from './engine';
-import { ResultManager } from './results';
+import { ResultManager, discardResult } from './results';
 
 export class Converter {
 	state: State = $state({ ...initialState });
@@ -43,6 +43,7 @@ export class Converter {
 			const result = await this.engine.run({ file: state.file, format: state.format, quality: state.quality, ...(state.frame === undefined ? {} : {frame:state.frame}), ...(state.analysis?.info.category==='audio' ? {audio:{...state.audio},files:state.files?Array.from(state.files):undefined} : {}), ...(state.analysis?.info.category==='archive' ? {archive:{...state.archive}} : {}) }, controller.signal,
 				progress => this.send({ type: 'TICK', runId: state.runId, progress: progress.percent, stage: progress.stage }));
 			if (!controller.signal.aborted) this.send({ type: 'DONE', runId: state.runId, result });
+			else discardResult(result);
 		} catch (error) {
 			if (!controller.signal.aborted) this.send({ type: 'FAIL', runId: state.runId, message: this.message(error) });
 		}

@@ -88,6 +88,13 @@ test('worker failure, message decode errors, timeout and unsupported environment
   await assert.rejects(createWorkerEngine(() => { throw new Error('Workers unavailable'); }).run(request, new AbortController().signal, () => {}), /Workers unavailable/);
 });
 
+test('genuinely streaming jobs outlive the short buffered-codec deadline',async()=>{
+ let worker;
+ const engine=createWorkerEngine(()=>worker=new WorkerPort((_,port)=>{port.emit({type:'streaming'});setTimeout(()=>port.emit({type:'converted',result:{blob:new Blob(['ok'])}}),40);}),20);
+ const result=await engine.run(request,new AbortController().signal,()=>{});
+ assert.equal(await result.blob.text(),'ok');assert.equal(worker.terminated,true);
+});
+
 test('output MIME and magic bytes must both agree; PNG fallback cannot masquerade as WebP', async () => {
   const png = await readFile(new URL('./fixtures/swatch.png', import.meta.url));
   await verifyOutput(new Blob([png], { type: 'image/png' }), 'PNG');

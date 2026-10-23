@@ -21,11 +21,19 @@ const stage = (value: Stage, percent?:number) => {
 port.onmessage = async ({ data }) => {
 	if (data.type !== 'inspect' && data.type !== 'convert') return;
 	try {
-		const context={signal:new AbortController().signal,stage};
+		let lastActivity=0,activityBytes=0,streaming=false;
+		const context={signal:new AbortController().signal,stage,
+			streaming:()=>{if(!streaming){streaming=true;port.postMessage({type:'streaming'});}},
+			activity:(bytes:number)=>{activityBytes+=bytes;if(performance.now()-lastActivity>=100){port.postMessage({type:'activity',bytes:activityBytes});activityBytes=0;lastActivity=performance.now();}},
+			temporary:(name:string)=>new Promise<void>(resolve=>{
+				const ready=(event:MessageEvent)=>{if(event.data.type==='temporary-ready'&&event.data.name===name){self.removeEventListener('message',ready);resolve();}};
+				self.addEventListener('message',ready);port.postMessage({type:'temporary',name});
+			})
+		};
 		const file = data.type === 'inspect' ? data.file : data.request.file;
-		if (file.size > LIMITS.maxFileBytes) throw new Error('Safety limit: file exceeds the 64 MiB input buffer budget. Split or reduce the source file.');
 		const input = detectFormat(new Uint8Array(await file.slice(0, 4096).arrayBuffer()));
 		if (!input) throw new Error('This file is not supported. Choose a supported image, PCM audio or archive.');
+		if(file.size>LIMITS.maxFileBytes&&(input.mime.startsWith('image/')||input.mime.startsWith('audio/')))throw new Error('This image/audio engine needs a full input buffer (64 MiB budget). Split the source; streaming archives have a separate disk-backed path.');
 		const definition = data.type === 'inspect'
 			? adapters.find(a => a.inputs.includes(input.id))
 			: adapters.find(a => a.id === planConversion(input.id, data.request.format).steps[0].adapter);
@@ -38,6 +46,6 @@ port.onmessage = async ({ data }) => {
 		}
 		else port.postMessage({ type: 'converted', result: await adapter.run(data.request, stage,context) });
 	} catch (error) {
-		port.postMessage({ type: 'error', message: error instanceof Error ? error.message : 'File processing failed. Try again.' });
+		port.postMessage({ type: 'error', message: error instanceof RangeError ? 'The selected engine could not allocate its working memory. No lower-quality output was substituted. Close other tabs or use a smaller source.' : error instanceof Error ? error.message : 'File processing failed. Try again.' });
 	}
 };

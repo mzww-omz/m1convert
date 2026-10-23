@@ -15,6 +15,8 @@ export interface ConversionResult {
 	width?: number;
 	height?: number;
 	engines?: {decoder?:string;encoder?:string;fallbackFrom?:string[]};
+	temporaryFile?:string;
+	resources?:{mode:string;bytesWritten:number;maxChunkBytes:number;retainedBytes:number};
 }
 export interface AssetInfo { format: string; mime: string; width?: number; height?: number; frames?: {width:number;height:number}[]; frame?:number; category?:'audio'|'archive'; entries?:number; sampleRate?:number; channels?:number; duration?:number; codec?:string }
 export interface Analysis { info: AssetInfo; outputs: string[]; preview: Blob | null; warnings?:string[]; codecEngines?:EngineCapability[]; environment?:EngineEnvironment }
@@ -28,8 +30,11 @@ export interface ConversionEngine {
 	run(request: ConversionRequest, signal: AbortSignal, onProgress: (progress: Progress) => void): Promise<ConversionResult>;
 }
 export type VerifiedOutputs = Partial<Record<'image'|'audio',string[]>>;
-export type WorkerRequest = { type: 'inspect'; file: File; verifiedOutputs?:VerifiedOutputs } | { type: 'convert'; request: ConversionRequest };
+export type WorkerRequest = {type:'temporary-ready';name:string} | { type: 'inspect'; file: File; verifiedOutputs?:VerifiedOutputs } | { type: 'convert'; request: ConversionRequest };
 export type WorkerReply =
+	| { type:'temporary'; name:string }
+	| { type:'streaming' }
+	| { type:'activity'; bytes:number }
 	| { type: 'rasterize'; svg: string }
 	| { type: 'stage'; stage: Stage; percent?:number }
 	| { type: 'analyzed'; analysis: Analysis }

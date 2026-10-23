@@ -1,3 +1,4 @@
+import {releaseTemporary} from './stream-output.ts';
 import { adapters, formatById } from './registry.ts';
 
 export function outputName(name: string, formatId: string): string {
@@ -7,14 +8,20 @@ export function outputName(name: string, formatId: string): string {
 	return `${base || 'converted'}.${format.extension}`;
 }
 
+export function discardResult(result:{temporaryFile?:string}) {
+	if(result.temporaryFile)void releaseTemporary(result.temporaryFile).catch(()=>console.warn('Temporary output cleanup failed; clear this site’s browser storage.'));
+}
+
 export class ResultManager {
 	url = '';
 	private name = '';
+	private temporaryFile:string|undefined;
 
-	set(result: { blob: Blob; name: string }) {
+	set(result: { blob: Blob; name: string; temporaryFile?:string }) {
 		this.clear();
 		this.url = URL.createObjectURL(result.blob);
 		this.name = result.name;
+		this.temporaryFile=result.temporaryFile;
 	}
 
 	download() {
@@ -29,6 +36,7 @@ export class ResultManager {
 
 	clear() {
 		if (this.url) URL.revokeObjectURL(this.url);
+		discardResult({temporaryFile:this.temporaryFile});this.temporaryFile=undefined;
 		this.url = '';
 		this.name = '';
 	}
