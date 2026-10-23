@@ -15,6 +15,7 @@
 		"test:phase7": "node tests/phase7-browser.mjs",
 		"test:compatibility": "node tests/compatibility-browser.mjs",
 		"test:phase8.2": "node tests/phase8-2-browser.mjs",
+		"test:phase8.3": "node tests/phase8-3-browser.mjs",
 		"benchmark:phase7": "node scripts/benchmark-phase7.mjs",
 		"test:static": "node tests/static-build.mjs",
 		"test:audio": "node tests/audio-browser.mjs && node tests/audio-lifecycle-browser.mjs",
