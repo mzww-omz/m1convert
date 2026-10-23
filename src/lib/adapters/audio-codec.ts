@@ -22,7 +22,7 @@ export async function readAudio(file:File,output=false,onDecode?:()=>void,contex
 }
 export function availableAudioOutputs(verified:readonly string[]=[],context?:EngineContext) {
 	if(!outputs)outputs=(async()=>{
-		const result=['WAV',...compressedOutputs.filter(format=>verified.includes(format))],pcm:Pcm={sampleRate:48000,channels:2,samples:Float32Array.from({length:8192},(_,i)=>.2*Math.sin(i*.1))};
+		const result=['WAV','AIFF',...compressedOutputs.filter(format=>verified.includes(format))],pcm:Pcm={sampleRate:48000,channels:2,samples:Float32Array.from({length:8192},(_,i)=>.2*Math.sin(i*.1))};
 		const job:EngineContext=context??{signal:new AbortController().signal,stage:()=>{}};
 		const probe=async(formats:readonly string[])=>{
 			for(const format of formats.filter(format=>!result.includes(format)))try {
@@ -36,14 +36,14 @@ export function availableAudioOutputs(verified:readonly string[]=[],context?:Eng
 		};
 		// Libav uses one virtual filesystem per worker: do not run its probes concurrently.
 		await Promise.all([probe(['MP3','FLAC','OGG','OPUS']),probe(['AAC','M4A'])]);
-		return ['WAV',...compressedOutputs].filter(format=>result.includes(format));
+		return ['WAV','AIFF',...compressedOutputs].filter(format=>result.includes(format));
 	})().catch(error=>{outputs=undefined;throw error;});return outputs;
 }
 async function single(request:ConversionRequest,stage:StageReporter,job:EngineContext) {
 	job.signal.throwIfAborted();
 	stage('reading');const {pcm,engineId:decoder}=await readAudio(request.file,false,()=>stage('decoding'),job);stage('decoding');
 	const settings=request.audio??{sampleRate:0,channels:0},format=request.format;
-	if(!['WAV',...compressedOutputs].includes(format))throw new Error('Unsupported audio output format.');
+	if(!['WAV','AIFF',...compressedOutputs].includes(format))throw new Error('Unsupported audio output format.');
 	const bitrate=settings.bitrate??192,mode=settings.mode??'bitrate';
 	if(!Number.isFinite(request.quality)||request.quality<1||request.quality>100)throw new Error('Audio quality must be 1–100.');
 	let rate=settings.sampleRate||pcm.sampleRate;
@@ -58,7 +58,7 @@ async function single(request:ConversionRequest,stage:StageReporter,job:EngineCo
 		stage('verifying',95);const candidate=new Blob([bytes.slice()],{type:def.mime});
 		const {pcm:verified,format:actual}=await readAudio(new File([candidate],name,{type:def.mime}),true,undefined,{...job,stage:()=>stage('verifying',95)});
 		const duration=converted.samples.length/converted.channels/converted.sampleRate,actualDuration=verified.samples.length/verified.channels/verified.sampleRate;
-		if(actual!==format||verified.channels!==converted.channels||verified.sampleRate!==converted.sampleRate||Math.abs(actualDuration-duration)>(['WAV','FLAC'].includes(format)?1/converted.sampleRate:.08))throw new EngineFallbackError('unsupported','Encoded audio codec, duration, channels or sample rate failed verification.');
+		if(actual!==format||verified.channels!==converted.channels||verified.sampleRate!==converted.sampleRate||Math.abs(actualDuration-duration)>(['WAV','AIFF','FLAC'].includes(format)?1/converted.sampleRate:.08))throw new EngineFallbackError('unsupported','Encoded audio codec, duration, channels or sample rate failed verification.');
 		verifiedBlob=candidate;
 	});
 	return {blob:verifiedBlob!,name,format,mime:def.mime,engines:{decoder,encoder,fallbackFrom}};

@@ -107,6 +107,19 @@ export function encodeWav(pcm:Pcm):Uint8Array {
 	for(let i=0;i<pcm.samples.length;i++) v.setInt16(44+i*2,quantizePcm16(pcm.samples[i]),true);
 	return b;
 }
+export function encodeAiff(pcm:Pcm):Uint8Array {
+	bounds(pcm.sampleRate,pcm.channels,pcm.samples.length/pcm.channels);
+	const b=new Uint8Array(54+pcm.samples.length*2),v=new DataView(b.buffer);
+	const str=(p:number,s:string)=>b.set(new TextEncoder().encode(s),p);
+	str(0,'FORM');v.setUint32(4,b.length-8);str(8,'AIFF');str(12,'COMM');v.setUint32(16,18);
+	v.setUint16(20,pcm.channels);v.setUint32(22,pcm.samples.length/pcm.channels);v.setUint16(26,16);
+	// Positive integer Hz is exactly representable in AIFF's 80-bit extended field.
+	const exponent=Math.floor(Math.log2(pcm.sampleRate)),mantissa=pcm.sampleRate*2**(31-exponent);
+	v.setUint16(28,16383+exponent);v.setUint32(30,mantissa);v.setUint32(34,0);
+	str(38,'SSND');v.setUint32(42,8+pcm.samples.length*2);
+	for(let i=0;i<pcm.samples.length;i++)v.setInt16(54+i*2,quantizePcm16(pcm.samples[i]));
+	return b;
+}
 async function read(file:File) {
 	if(!file.size) fail('Audio input is empty.');
 	if(file.size>MAX_BYTES) fail('Safety limit: audio exceeds the 64 MiB input buffer budget. Split the source into smaller files.');
@@ -121,7 +134,7 @@ export const pcmCodec:EngineAdapter={
 		return {info:{format:format.id,mime:format.mime,category:'audio',sampleRate:pcm.sampleRate,channels:pcm.channels,duration:pcm.samples.length/pcm.channels/pcm.sampleRate},outputs:await availableAudioOutputs(verifiedOutputs,context),preview:null};
 	},
 	async run(request,stage,context) {
-		if(request.format!=='WAV') fail('This audio output format is not supported.');
+		if(!['WAV','AIFF'].includes(request.format)) fail('This audio output format is not supported.');
 		return (await import('./audio-codec.ts')).audioCodec.run(request,stage,context);
 	}
 };

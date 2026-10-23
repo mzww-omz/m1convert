@@ -24,7 +24,7 @@ export function audioBitrates(format:string,rate:number):number[] {
 }
 export function validateAudioEncoding(format:string,rate:number,bitrate:number,mode:string,duration=0) {
 	if(!['bitrate','quality'].includes(mode))throw new Error('Invalid audio quality mode.');
-	if(['WAV','FLAC'].includes(format)||mode==='quality'&&['MP3','OGG'].includes(format))return;
+	if(['WAV','AIFF','FLAC'].includes(format)||mode==='quality'&&['MP3','OGG'].includes(format))return;
 	if(!Number.isSafeInteger(bitrate)||bitrate<1||bitrate>2147483)throw new Error('Invalid audio bitrate: use a positive kbps value representable by the encoder.');
 	if(format==='MP3'&&!audioBitrates(format,rate).includes(bitrate))throw new Error('MP3 bitrate is incompatible with the sample rate. Choose a listed bitrate or use VBR quality.');
 	if(format==='OPUS'&&(bitrate<6||bitrate>510))throw new Error('Opus bitrate must be 6–510 kbps. Choose a lower bitrate.');

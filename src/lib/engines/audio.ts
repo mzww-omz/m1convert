@@ -30,9 +30,9 @@ export const audioDecoders:readonly CodecEngine<AudioDecodeInput,Pcm,AudioDecode
 	load:async()=>{const {decodeWasm}=await import('../adapters/wasm-audio.ts');return {run:(input,q)=>decodeWasm(input.bytes,q.format)};}
 }];
 export const audioEncoders:readonly CodecEngine<Pcm,Uint8Array,AudioEncodeOptions>[]=[{
-	capability:{id:'builtin-pcm-encode',kind:'builtin',operation:'encode',formats:['WAV'],quality:{WAV:'lossless'},containers:['PCM16 WAV'],requirements:[],limits:[...limits,'PCM16 quantization; WAV 32-bit byte rate capacity']},
+	capability:{id:'builtin-pcm-encode',kind:'builtin',operation:'encode',formats:['WAV','AIFF'],quality:{WAV:'lossless',AIFF:'lossless'},containers:['PCM16 WAV','PCM16 AIFF'],requirements:[],limits:[...limits,'PCM16 quantization; WAV 32-bit byte rate capacity']},
 	supports:optionReason,
-	load:async()=>{const {encodeWav}=await import('../adapters/pcm.ts');return {run:async pcm=>encodeWav(pcm)};}
+	load:async()=>{const {encodeWav,encodeAiff}=await import('../adapters/pcm.ts');return {run:async (pcm,q)=>q.format==='AIFF'?encodeAiff(pcm):encodeWav(pcm)};}
 },{
 	capability:{id:'webcodecs-aac-encode',kind:'webcodecs',operation:'encode',formats:['AAC','M4A'],quality:{AAC:'bitrate',M4A:'bitrate'},containers:['ADTS','MP4 AAC-LC'],requirements:['audioEncoder','audioDecoder'],limits:[...limits,'Exact rate/channels/bitrate queried at runtime; target bitrate may use VBR']},
 	supports:async q=>{
