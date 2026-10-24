@@ -2,6 +2,7 @@ node_modules
 
 # Generated browser QA
 /artifacts/
+/.playwright-cli/
 
 # Output
 .output

@@ -17,7 +17,7 @@ await page.addInitScript(()=>{
 });
 const output=()=>page.getByRole('combobox',{name:'Output format'});
 const settled=()=>page.waitForFunction(()=>document.querySelector('[data-phase=details]')&&!document.querySelector('.surface-content.hidden')&&getComputedStyle(document.querySelector('.surface-content')).opacity==='1');
-const upload=async name=>{await page.locator('input[type=file]').setInputFiles({name,mimeType:'',buffer:await readFile(new URL('./fixtures/'+name,import.meta.url))});await output().waitFor();await settled();await page.waitForFunction(()=>!document.querySelector('select').disabled);};
+const upload=async name=>{await page.locator('input[type=file]').setInputFiles({name,mimeType:'',buffer:await readFile(new URL('./fixtures/'+name,import.meta.url))});await output().waitFor();await settled();await page.waitForFunction(()=>!document.querySelector('select').disabled);const settings=page.getByRole('button',{name:'Settings',exact:true});if(await settings.getAttribute('aria-expanded')!=='true')await settings.click();};
 const convert=async format=>{
  await output().selectOption(format);await page.getByRole('button',{name:'Convert',exact:true}).click();
  await Promise.race([page.getByRole('button',{name:'Download',exact:true}).waitFor(),page.locator('.error-message').waitFor().then(async()=>{throw new Error(await page.locator('.error-message').innerText());})]);
