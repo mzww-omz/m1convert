@@ -1,10 +1,20 @@
 # Convert
 
-Minimal appearance, fluid interaction. A fully client-side image, PCM audio and ZIP / TAR / GZIP converter built on Svelte 5, TypeScript, SvelteKit and Vite. Files never leave the browser. No conversion service, CDN or telemetry. Audio WASM is pinned, lazily loaded and self-hosted with license notices and corresponding sources.
+Minimal appearance, fluid interaction. A fully client-side image, audio and archive converter built on Svelte 5, TypeScript, SvelteKit and Vite. Files never leave the browser. No conversion service, CDN or telemetry. Audio WASM is pinned, lazily loaded and self-hosted with license notices and corresponding sources.
+
+## Phase 9 - additional codecs and formats
+
+- **JPEG XL (.jxl):** image input and output using lazy single-thread WASM. PNG -> JXL -> PNG tested in Chromium.
+- **HEIC/HEIF:** HEVC-coded single-image input (output PNG/JPEG/WebP/JXL/BMP/ICO/TIFF, subject to verified encoders). Tested with two real HEIC images, including a 3992 x 2992 photograph. HEIC/HEIF output is not implemented.
+- **7z, RAR3/RAR5, XZ/TAR.XZ, BZip2/TAR.BZ2, Zstandard/TAR.ZST:** input support. ZIP/TAR/TAR.GZ and conditional single-file GZIP remain the archive outputs. Six fixture variants were converted to ZIP and checked in Chromium.
+- All new archive inputs are bounded to 64 MiB compressed and 64 MiB extracted data. Source paths and payloads are validated; filesystem extraction, password decoding and retention of libarchive-only modification dates are not supported.
+- Animated images, multi-image HEIF, video and document conversion remain future work.
+
+**The earlier 134-route Phase 8 matrix is a baseline, not the full Phase 9 claim.** Phase 9's larger registry is *not* yet a fully tested all-pairs matrix. See [Phase 9 implementation, licenses, tests and exact limitations](docs/phase-9.md). Run `npm run test:phase9`.
 
 ## Supported conversions
 
-### Images
+### Images (Phase 8 baseline; Phase 9 additions listed above)
 
 | Input → Output | PNG | JPEG | WebP | BMP | ICO | TIFF | AVIF |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -26,7 +36,7 @@ Same-format re-encoding is supported. Output choices are restricted to encoders 
 - Animated GIF/PNG/WebP/AVIF, video and documents are **not supported**. Animated images are rejected rather than silently flattened.
 - Browser Canvas uses its native color conversion and an 8-bit RGBA pipeline. This is not an archival, 16-bit/HDR, color-profile-preserving or metadata-preserving converter.
 
-### Audio and archives
+### Audio and archives (Phase 8 baseline)
 
 | Input | Output | Verified format pairs |
 | --- | --- | --- |
@@ -34,14 +44,16 @@ Same-format re-encoding is supported. Output choices are restricted to encoders 
 | Uncompressed AIFF | Same eight audio outputs | 8 |
 | ZIP (store/deflate), POSIX USTAR TAR, TAR.GZ, GZIP | ZIP, TAR, TAR.GZ, single-file GZIP | 16 |
 
-**134 total verified format pairs in Chromium**: 54 image + 64 audio + 16 archive. Phase 6 adds eight AIFF output pairs and expands the accepted TIFF subset; TIFF variants are not counted as new format pairs. All previous 72 paths remain. AAC/M4A require verified native WebCodecs; unsupported browser codecs are hidden. Counts exclude presets and batch packaging; routes depend on browser support and actual file structure. GZIP output needs exactly one regular file; TAR destinations require USTAR-representable names and size. No unsupported codec is advertised.
+**Phase 8 baseline: 134 verified format pairs in Chromium**: 54 image + 64 audio + 16 archive. Phase 6 adds eight AIFF output pairs and expands the accepted TIFF subset; TIFF variants are not counted as new format pairs. All previous 72 paths remain. AAC/M4A require verified native WebCodecs; unsupported browser codecs are hidden. Counts exclude presets and batch packaging; routes depend on browser support and actual file structure. GZIP output needs exactly one regular file; TAR destinations require USTAR-representable names and size. No unsupported codec is advertised.
 
 Audio exposes sample-rate/channel settings, target bitrate and MP3/Vorbis VBR quality. Source metadata (title/artist/cover art/etc.) is removed; newly generated encoder identification and codec delay information may remain. WAV/AIFF/FLAC output is PCM16, not archival precision preservation. Opus uses 48000 Hz; incompatible explicit MP3/Opus UI settings are adjusted visibly on format changes. Multiple supported audio files are converted sequentially with shared settings and downloaded as one real ZIP (32 files / 32 MiB total). ZIP offers Store or Deflate, not fictitious numeric levels. Archives retain bytes, directories and file times where possible; GZIP output drops directory entries and does not store the original filename. No filesystem extraction occurs. All jobs use the existing cancellable worker/deadline lifecycle.
 
-See **[compressed-audio matrix, licensing, payload sizes and limits](docs/compressed-audio.md)** and [archive/image details](docs/continuous-development.md). Compressed audio is capped at **8 million interleaved decoded samples** (about **83 seconds at 48 kHz stereo**); it is a bounded clip converter, not a long-form streaming transcoder. AAC/M4A are native AAC-LC paths, not a bundled AAC WASM fallback. WMA, ALAC, video/multiple audio streams, fragmented MP4 and 7z/RAR/BZIP2/XZ are not implemented.
+See **[compressed-audio matrix, licensing, payload sizes and limits](docs/compressed-audio.md)** and [archive/image details](docs/continuous-development.md). Compressed audio is capped at **8 million interleaved decoded samples** (about **83 seconds at 48 kHz stereo**); it is a bounded clip converter, not a long-form streaming transcoder. AAC/M4A are native AAC-LC paths, not a bundled AAC WASM fallback. WMA, ALAC, video/multiple audio streams, and fragmented MP4 are not implemented. 7z/RAR/BZIP2/XZ/Zstandard have new **input-only** paths (see Phase 9).
 
 ### Extended image format boundaries
 
+- **JPEG XL:** lazy pinned jSquash WASM input/output. Output quality is configurable and the resulting codestream is re-decoded. Segmented, animated and multi-frame JXL are not supported.
+- **HEIC/HEIF:** HEVC-coded single still images through lazy libheif WASM. Multi-image sequences and HEIC encoding remain unsupported. LGPL-3.0 and HEVC distribution constraints apply.
 - **GIF:** bounded single-frame GIF87a/GIF89a with native decoding. Multiple frames/looping extensions are rejected; there is no GIF encoder or silent flattening.
 - **TIFF:** classic little/big-endian, single-page, chunky unsigned 8/16-bit RGB/unassociated-alpha RGBA or WhiteIsZero/BlackIsZero grayscale; uncompressed or PackBits, orientation 1 only. Checks strip sizes/offsets, bounded PackBits runs, directory fields and overlap before pixel allocation. ICC profiles/transfer functions, predictors and reversed fill order are rejected. **16-bit input is rounded to RGBA8**, not preserved or HDR tone-mapped. No LZW/Deflate/JPEG compression, palette, BigTIFF, associated-alpha or multi-page input. Output is real uncompressed RGBA8 TIFF with metadata removed.
 
@@ -69,7 +81,7 @@ All categories require module Workers. Images additionally require worker-side `
 ## Safety and resource limits
 
 - Whole-buffer image/audio engines: **64 MiB** encoded input/output. Audio batches retain **32 files / 32 MiB total** and **8 million interleaved decoded samples**. These are not streaming codecs.
-- Archives: range-read input and streamed data; no global 64 MiB upload rejection. Expanded entries and each disk output are capped at **2 GiB**, additionally limited by available OPFS quota. Without usable disk storage, each accumulated Blob/spool stays within **64 MiB**; large compressible TAR→GZIP can still succeed without OPFS.
+- Archives: existing ZIP/TAR/GZIP use range-read input and streamed data; new 7z/RAR/XZ/BZip2 WASM input and Zstandard JS input have **64 MiB compressed + 64 MiB expanded** limits. Expanded entries and each disk output are capped at **2 GiB**, additionally limited by available OPFS quota. Without usable disk storage, each accumulated Blob/spool stays within **64 MiB**; large compressible TAR→GZIP can still succeed without OPFS.
 - No independent 8192px-side or 16-million-pixel cap: valid image dimensions are evaluated against the combined memory budget and actual browser codec capabilities.
 - Image working-buffer estimate: **256 MiB** (`12 × pixels + 2 × input bytes`; TIFF/PNG WASM use a more conservative `20 × pixels + 2 × input bytes`). Native browser decoder/encoder internals are not a hard OS memory sandbox; real peak process memory can exceed this estimate.
 - One active worker per converter. Buffered codecs retain a **30-second** deadline. Streaming archives have a **10-minute absolute / 120-second inactivity** deadline; actual I/O renews inactivity, not the absolute limit. Cancel, replacement, reset, errors and deadlines terminate the worker. Late callbacks are ignored.
@@ -100,6 +112,7 @@ See the **[Phase 4 constraint audit](docs/phase-4-constraints.md)** for every re
 | Self-hosted codec / license and source assets | `static/vendor/`, `static/legal/` |
 | Buffered archive helpers and lazy streaming adapter | `src/lib/adapters/archive.ts` |
 | Range-read ZIP/TAR, CRC, streams and exact output verification | `src/lib/adapters/archive-stream.ts` |
+| Lazy 7z/RAR/XZ/BZip2 reader, bounded Zstd stream, JXL and HEIC codecs | `src/lib/adapters/{archive-extra,jxl,heic}.ts`, `src/lib/engines/jxl.ts` |
 | OPFS/bounded Blob sinks, temporary-file cleanup and cross-tab leases | `src/lib/stream-output.ts` |
 | Cancellable async SVG bitmap bridge | `src/lib/adapters/{worker-svg,svg-raster}.ts`, `scheduler.ts` |
 | Adapter selection and worker protocol | `src/lib/conversion.worker.ts`, `engine-types.ts` |
