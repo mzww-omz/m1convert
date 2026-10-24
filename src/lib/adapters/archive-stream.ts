@@ -147,7 +147,8 @@ async function readArchive(blob:Blob,name:string,job:EngineContext) {
 }
 function outputs(entries:StreamEntry[]) {
 	const tar=entries.every(e=>tarName(e.name))&&1024+entries.reduce((n,e)=>n+512+Math.ceil(e.size/512)*512,0)<=STREAM_LIMIT;
-	return ['ZIP',...(tar?['TAR']:[]),...(supported('gzip')&&supported('gzip',true)?[...(tar?['TAR.GZ']:[]),...(entries.filter(e=>!e.directory).length===1?['GZIP']:[])]:[])];
+	const wasmTar=typeof Worker!=='undefined'&&tar&&entries.length>0&&entries.every(e=>!e.directory)&&entries.reduce((n,e)=>n+e.size,0)<=64*1024**2;
+	return ['ZIP',...(tar?['TAR']:[]),...(supported('gzip')&&supported('gzip',true)?[...(tar?['TAR.GZ']:[]),...(entries.filter(e=>!e.directory).length===1?['GZIP']:[])]:[]),...(wasmTar?['TAR.XZ','TAR.BZ2']:[])];
 }
 async function* tarChunks(entries:StreamEntry[],job:EngineContext,onBytes:(n:number)=>void) {
 	for(const entry of entries) {
@@ -203,12 +204,18 @@ export const streamArchiveCodec:EngineAdapter={
 		const total=entries.reduce((n,e)=>n+e.size,0);let processed=0;
 		const onBytes=(n:number)=>{processed+=n;stage('encoding',total?processed/total*85:85);};
 		try {
-			let stream:ReadableStream<Bytes>;
-			if(format==='ZIP')stream=fromGenerator(zipChunks(entries,request.archive?.compression!=='store'&&supported('deflate-raw')&&supported('deflate-raw',true),job,onBytes));
-			else if(format==='GZIP')stream=fromGenerator((async function*(){for await(const b of chunks(entries.find(e=>!e.directory)!.open(),job)){onBytes(b.length);yield b;}})());
-			else stream=fromGenerator(tarChunks(entries,job,onBytes));
-			if(['GZIP','TAR.GZ'].includes(format))stream=stream.pipeThrough(new CompressionStream('gzip'));
-			for await(const b of chunks(stream,job))await sink.write(b);
+			if(format==='TAR.XZ'||format==='TAR.BZ2') {
+				const {writeTarCompressed}=await import('./archive-write-extra.ts');
+				const encoded=await writeTarCompressed(entries,format,name,job);
+				for await(const b of chunks(blobStream(encoded,job),job))await sink.write(b);
+			} else {
+				let stream:ReadableStream<Bytes>;
+				if(format==='ZIP')stream=fromGenerator(zipChunks(entries,request.archive?.compression!=='store'&&supported('deflate-raw')&&supported('deflate-raw',true),job,onBytes));
+				else if(format==='GZIP')stream=fromGenerator((async function*(){for await(const b of chunks(entries.find(e=>!e.directory)!.open(),job)){onBytes(b.length);yield b;}})());
+				else stream=fromGenerator(tarChunks(entries,job,onBytes));
+				if(['GZIP','TAR.GZ'].includes(format))stream=stream.pipeThrough(new CompressionStream('gzip'));
+				for await(const b of chunks(stream,job))await sink.write(b);
+			}
 			const output=await sink.finish();stage('verifying',85);processed=0;
 			const onVerified=(n:number)=>{processed+=n;stage('verifying',85+(total?processed/total*14:14));};
 			if(format==='GZIP') {

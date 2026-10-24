@@ -7,6 +7,8 @@ export const archiveFormats: readonly FormatDefinition[] = [
 	{ id:'GZIP', mime:'application/gzip', extension:'gz', extensions:['gz','tgz'], quality:false,
 		matches:b=>b[0]===31 && b[1]===139 },
 	{ id:'TAR.GZ', mime:'application/gzip', extension:'tar.gz', extensions:['gz','tgz'], quality:false, matches:()=>false },
+	{ id:'TAR.XZ', mime:'application/x-xz', extension:'tar.xz', extensions:['xz','txz'], quality:false, matches:()=>false },
+	{ id:'TAR.BZ2', mime:'application/x-bzip2', extension:'tar.bz2', extensions:['bz2','tbz2'], quality:false, matches:()=>false },
 	{ id:'7Z', mime:'application/x-7z-compressed', extension:'7z', extensions:['7z'], quality:false,
 		matches:b=>[0x37,0x7a,0xbc,0xaf,0x27,0x1c].every((v,i)=>b[i]===v) },
 	{ id:'RAR', mime:'application/vnd.rar', extension:'rar', extensions:['rar'], quality:false,

@@ -17,7 +17,7 @@ export const adapters: readonly AdapterDefinition[] = [{
 	inputs: imageFormats.map(f => f.id), outputs: imageOutputs.map(f => f.id),
 	load: async () => (await import('./adapters/canvas-codec.ts')).canvasCodec
 }, {
-	id:'archive', formats:archiveFormats, inputs:archiveFormats.map(f=>f.id), outputs:['ZIP','TAR','TAR.GZ','GZIP'],
+	id:'archive', formats:archiveFormats, inputs:archiveFormats.filter(f=>!['TAR.XZ','TAR.BZ2'].includes(f.id)).map(f=>f.id), outputs:['ZIP','TAR','TAR.GZ','GZIP','TAR.XZ','TAR.BZ2'],
 	load:async ()=>(await import('./adapters/archive.ts')).archiveCodec
 }, {
 	id:'pcm', formats:audioFormats.slice(0,2), inputs:['WAV','AIFF'], outputs:['WAV','AIFF'],
