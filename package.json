@@ -7,6 +7,7 @@
 		"dev": "vite dev",
 		"test": "node --test tests/*.test.mjs",
 		"test:browser": "node tests/browser.mjs",
+		"test:utility": "node tests/utility-browser.mjs",
 		"test:categories": "node tests/categories-browser.mjs",
 		"test:checking": "node tests/checking-browser.mjs",
 		"test:phase4": "node tests/phase4-browser.mjs",

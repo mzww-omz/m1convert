@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import MorphSurface from '#lib/MorphSurface.svelte';
+	import Icon from '#lib/Icon.svelte';
+	import { fileIcon } from '#lib/file-icon.ts';
 	import { Converter } from '#lib/converter.svelte.ts';
 	import { formatBytes } from '#lib/machine.ts';
 	import { formatById } from '#lib/registry.ts';
@@ -84,7 +86,7 @@
 					<div class="details panel">
 						<div class="file-row">
 							<div class="file-information">
-								<h2 class="filename" title={view.file?.name} tabindex="-1" data-focus>{view.file?.name}</h2>
+								<div class="filename-with-icon"><Icon name={fileIcon(view.analysis?.info.mime || view.file?.type || '', view.analysis?.info.category, view.file?.name)} size={16} /><h2 class="filename" title={view.file?.name} tabindex="-1" data-focus>{view.file?.name}</h2></div>
 								<p class="meta">{view.analysis?.info.mime || (view.analysisError ? 'Unverified format' : 'Checking format…')} <span aria-hidden="true">·</span> {formatBytes(view.file?.size ?? 0)}{#if view.analysis?.info.category === 'audio'} · {view.analysis.info.sampleRate} Hz · {view.analysis.info.channels === 1 ? 'Mono' : 'Stereo'}{:else if view.analysis?.info.category === 'archive'} · {view.analysis.info.entries} entries{/if}</p>
 							</div>
 							<button class="text-button remove" aria-label="Remove file" onclick={() => { notice = ''; converter.send({ type: 'RESET' }); }}>Remove</button>
@@ -182,7 +184,7 @@
 				{:else if view.phase === 'complete'}
 					<div class="panel result-panel">
 						<h2 tabindex="-1" data-focus>Complete</h2>
-						<div class="result-file"><p class="filename" title={view.result?.name}>{view.result?.name}</p><p class="meta">{view.result?.mime} <span aria-hidden="true">·</span> {formatBytes(view.result?.blob.size ?? 0)}{#if view.result?.width && view.result.height} · {view.result.width} × {view.result.height}{/if}</p></div>
+						<div class="result-file"><div class="filename-with-icon"><Icon name={fileIcon(view.result?.mime ?? '', undefined, view.result?.name)} size={16} /><p class="filename" title={view.result?.name}>{view.result?.name}</p></div><p class="meta">{view.result?.mime} <span aria-hidden="true">·</span> {formatBytes(view.result?.blob.size ?? 0)}{#if view.result?.width && view.result.height} · {view.result.width} × {view.result.height}{/if}</p></div>
 						<button class="primary download" onclick={() => converter.download()}>Download</button>
 						<p class="engine-note">{view.analysis?.info.category === 'archive' ? 'File contents and paths kept. Some archive metadata is not retained.' : view.files?.length ? 'Converted audio files are inside the ZIP. Original metadata is removed.' : 'Saved without original metadata.'}</p>
 						<div class="result-actions"><button class="text-button" onclick={() => converter.send({ type: 'AGAIN' })}>Convert Again</button><button class="text-button" onclick={() => { notice = ''; converter.send({ type: 'RESET' }); }}>New File</button></div>

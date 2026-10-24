@@ -1,4 +1,11 @@
-Convert codecs — third-party notices and corresponding sources
+Convert — third-party notices and corresponding sources
+
+Material Icon Theme 5.39.0: 16 unmodified official file-format SVGs, MIT License.
+Copyright (c) 2025 Material Extensions
+Project: https://github.com/material-extensions/vscode-material-icon-theme
+Source revision: 1a9d4b3d478d7fd1c49a86ea371ec6a8b505b097
+Local license: /icons/LICENSE
+Asset provenance: /icons/README.md
 
 This application uses unmodified libav.js 6.10.9.0 (obsolete variant).
 Wrapper/build project: https://github.com/Yahweasel/libav.js/tree/v6.10.9.0

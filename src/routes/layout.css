@@ -37,6 +37,9 @@ h1 { font-size: 23px; line-height: 1.3; font-weight: 550; letter-spacing: -0.8px
 .panel { padding: 28px; font-size: 13px; }
 .file-row { display: flex; gap: 16px; justify-content: space-between; align-items: flex-start; }
 .file-information { min-width: 0; flex: 1; }
+.filename-with-icon { display: flex; align-items: flex-start; gap: 7px; }
+.filename-with-icon > .icon { flex: none; margin-top: 3px; opacity: .65; }
+.filename-with-icon > .filename { flex: 1; min-width: 0; }
 .filename { overflow-wrap: anywhere; font-weight: 500; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .meta { color: var(--muted); font-size: 11px; margin-top: 5px; line-height: 1.6; overflow-wrap: anywhere; }
 .meta span { padding: 0 5px; }
