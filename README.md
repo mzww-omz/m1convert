@@ -98,6 +98,7 @@ See the **[Phase 4 constraint audit](docs/phase-4-constraints.md)** for every re
 | Bounded compressed-container/stream validation | `src/lib/audio-validation.ts` |
 | Lazy LGPL WASM / native AAC bridges | `src/lib/adapters/{wasm-audio,native-aac}.ts` |
 | Self-hosted codec / license and source assets | `static/vendor/`, `static/legal/` |
+| Material Icon Theme file icons (MIT), source and attribution | [`static/icons/README.md`](static/icons/README.md), [`LICENSE`](static/icons/LICENSE) |
 | Buffered archive helpers and lazy streaming adapter | `src/lib/adapters/archive.ts` |
 | Range-read ZIP/TAR, CRC, streams and exact output verification | `src/lib/adapters/archive-stream.ts` |
 | OPFS/bounded Blob sinks, temporary-file cleanup and cross-tab leases | `src/lib/stream-output.ts` |

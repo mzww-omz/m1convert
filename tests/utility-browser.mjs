@@ -94,14 +94,14 @@ try {
     await phase('upload');
     await page.locator('input[type=file]').setInputFiles([file('one.wav', wav), file('two.wav', wav)]);
     await phase('details');
-    await expectIcon('audio_file');
+    await expectIcon('audio');
     assert.ok(await page.getByRole('combobox', { name: 'Sample rate', exact: true }).isVisible());
     assert.ok(await page.getByText(/2 files selected/).isVisible());
     await capture(size, 'batch');
     await page.getByRole('combobox', { name: 'Output format' }).selectOption('WAV');
     await page.getByRole('button', { name: 'Convert', exact: true }).click();
     await phase('complete');
-    await expectIcon('folder_zip');
+    await expectIcon('zip');
     const pending = page.waitForEvent('download');
     await page.getByRole('button', { name: 'Download', exact: true }).click();
     const saved = await pending;
@@ -114,13 +114,18 @@ try {
   await phase('details');
   assert.equal(await page.locator('[data-surface]').evaluate(el => getComputedStyle(el).transitionDuration), '0s');
   for (const [input, expected] of [
-    [file('archive.zip', zip), 'folder_zip'],
-    [file('clip.mp4', Buffer.from('unsupported video'), 'video/mp4'), 'video_file'],
-    [file('notes.pdf', Buffer.from('unsupported document'), 'application/pdf'), 'draft']
+    [file('archive.TAR.GZ', Buffer.from('unsupported archive')), 'zip'],
+    [file('archive.zip', zip), 'zip'],
+    [file('clip.mp4', Buffer.from('unsupported video'), 'video/mp4'), 'video'],
+    [file('notes.PDF', Buffer.from('unsupported document'), 'application/pdf'), 'pdf'],
+    [file('drawing.SVG', Buffer.from('unsupported svg')), 'svg'],
+    [file('notes.XYZ', Buffer.from('unknown format')), 'file']
   ]) {
     await page.locator('input[type=file]').setInputFiles(input);
     await phase('details');
     await expectIcon(expected);
+    assert.equal(await page.locator('.filename-with-icon .filename').textContent(), input.name);
+    assert.ok(await page.evaluate(() => document.querySelector('[data-surface]') === window.originalSurface));
   }
   await page.locator('input[type=file]').setInputFiles(file('long-name-'.repeat(30) + '.png'));
   await phase('details');
