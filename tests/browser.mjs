@@ -57,8 +57,6 @@ const readyDetails = async () => {
   await phase('details');
   await page.waitForFunction(() => !!document.querySelector('select:not(:disabled)'));
   await page.getByRole('button', { name: 'Convert', exact: true }).waitFor();
-  const settings = page.getByRole('button', { name: 'Settings', exact: true });
-  if (await settings.getAttribute('aria-expanded') !== 'true') await settings.click();
 };
 const newFile = async () => { await page.getByRole('button', { name: 'New File' }).click(); await phase('upload'); };
 async function download() {
@@ -399,7 +397,7 @@ try {
   await upload(); await readyDetails(); await page.waitForTimeout(500);
   const metrics = await page.evaluate(() => {
     const s = window.samples, intervals = s.slice(1).map((v, i) => v.time - s[i].time).sort((a, b) => a - b);
-    return { frames: s.length, medianMs: intervals[Math.floor(intervals.length / 2)], p95Ms: intervals[Math.floor(intervals.length * .95)], intermediateWidths: new Set(s.filter(v => v.width > 245 && v.width < 435).map(v => Math.round(v.width))).size, centerDriftX: Math.max(...s.map(v => v.x)) - Math.min(...s.map(v => v.x)), centerDriftY: Math.max(...s.map(v => v.y)) - Math.min(...s.map(v => v.y)) };
+    return { frames: s.length, medianMs: intervals[Math.floor(intervals.length / 2)], p95Ms: intervals[Math.floor(intervals.length * .95)], intermediateWidths: new Set(s.filter(v => v.width > 285 && v.width < 555).map(v => Math.round(v.width))).size, centerDriftX: Math.max(...s.map(v => v.x)) - Math.min(...s.map(v => v.x)), centerDriftY: Math.max(...s.map(v => v.y)) - Math.min(...s.map(v => v.y)) };
   });
   assert.ok(metrics.intermediateWidths >= 5);
   assert.ok(metrics.centerDriftX < 2 && metrics.centerDriftY < 2);

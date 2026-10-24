@@ -1,4 +1,6 @@
-# Compact utility UI
+# Compact utility UI (withdrawn)
+
+The macOS-style redesign below is historical, not the current design. The subsequent user request restores `a05aa55`'s text-first UI, retaining only small file-type icons. See `DESIGN.md` for current rules.
 
 ## Scope and plan
 
@@ -58,3 +60,19 @@ BROWSER=webkit npm run test:utility
 `artifacts/utility/{chromium,firefox,webkit}/` contains full-page and Surface captures for all eight views. Existing suites write their usual `artifacts/phase1`, `artifacts/audio`, `artifacts/continuous` and phase-specific reports. Generated artifacts are gitignored. The only new assets are 15 local Sharp SVGs and their license/source attribution.
 
 Not checked: physical mobile devices, VoiceOver/other screen readers, actual Safari, a formal WCAG audit, or deployment behavior. Browser mobile/touch and keyboard checks are not substitutes for those. No package installs, pushes or deployments were performed.
+
+## Subsequent restoration
+
+The user withdrew this redesign. History/diff inspection identified only four redesign commits (`8417b07`, `3bad5dd`, `5bc5f9e`, `cfe99f4`), with a clean working tree and no later engine changes. Restoration used file-scoped `git restore --source=a05aa55`, never `git reset --hard` or a whole-history reset.
+
+- Page, layout CSS and MorphSurface are restored to the original text-first design. MorphSurface is byte-identical to `a05aa55`; page/CSS differences from that baseline are only input/output filename icons and three icon-layout rules.
+- Removed the icon-button component and action SVGs. Retained local file-type assets/license, adding the Sharp video-file glyph. Icons are subdued, 16px and decorative. Unsupported video/document inputs remain unsupported; no routes or limits changed.
+- Existing engine, machine, registry, worker, adapter, cancellation and cleanup code are unchanged. Existing browser test assertions are retained; only redesign-specific settings toggles, batch headings and compact morph thresholds were restored. The additional utility browser suite remains, adapted to the restored text buttons, visible settings, original Surface geometry and file-type indicators rather than superseded add/remove/tooltips.
+- `npm test`: 113 passed, 0 failed/skipped (including two new file-icon tests). `npm run check`: 0 errors/warnings. `npm run build` and `npm run test:static`: passed.
+- `node tests/browser.mjs`: passed real image conversions, quality/EXIF validation, keyboard/drop/paste/touch emulation, errors/retry, real Cancel, Reduced Motion, morph continuity/DOM identity and Worker/URL cleanup. Final measured morph: 10 intermediate widths; 0.0078125px center drift on each axis.
+- `node tests/categories-browser.mjs`: passed 16 archive routes, audio settings/batch ZIP, cancellation and resource cleanup.
+- `BROWSERS=chromium node tests/compatibility-browser.mjs`: 134/134 actual routes passed, no failed/unsupported routes. The full Firefox/WebKit matrices were not rerun.
+- `BROWSER=<chromium|firefox|webkit> node tests/utility-browser.mjs`: passed on all three installed browsers (155.0.8059.85 / 156.0 / 26.6), covering restored desktop/mobile states, text controls, filename icons, original dimensions/corners, keyboard picker, real ZIP contents, Cancel/retry, long names, unsupported video/document inputs, Reduced Motion and unchanged Surface identity. Firefox's subpixel square comparison required a 0.01px test tolerance; no application workaround was added.
+- Captures: `artifacts/restored-ui/{chromium,firefox,webkit}/`. Restored Ready/Complete and mobile layouts were visually inspected. The earlier redesign images/results above remain historical only.
+
+The filename-icon unit test was run failing before its implementation, then passed. No non-UI fixes/tests were rolled back, dependencies installed, pushes or deployments performed. Physical devices, assistive technology and actual Safari were not tested.

@@ -11,7 +11,7 @@ await page.addInitScript(()=>{
 });
 const base=process.env.TEST_URL||'http://localhost:5173',select=()=>page.getByRole('combobox',{name:'Output format'});
 const ready=()=>page.waitForFunction(()=>{const c=document.querySelector('.surface-content'),s=document.querySelector('select');return c&&!c.classList.contains('hidden')&&getComputedStyle(c).opacity==='1'&&s&&!s.disabled;});
-const upload=async path=>{await page.locator('input[type=file]').setInputFiles(path);await page.getByRole('heading',{name:path.split('/').at(-1),exact:true}).waitFor();await ready();const settings=page.getByRole('button',{name:'Settings',exact:true});if(await settings.getAttribute('aria-expanded')!=='true')await settings.click();};
+const upload=async path=>{await page.locator('input[type=file]').setInputFiles(path);await page.getByRole('heading',{name:path.split('/').at(-1),exact:true}).waitFor();await ready();};
 const cancel=async()=>{await page.getByRole('button',{name:'Cancel',exact:true}).click();await ready();assert.equal(await page.evaluate(()=>window.active),0);assert.equal(await page.evaluate(()=>window.liveUrls.size),0);};
 try {
  await page.goto(base);await page.locator('[data-ready=true]').waitFor();await upload('tests/fixtures/audio/music.wav');await select().selectOption('MP3');

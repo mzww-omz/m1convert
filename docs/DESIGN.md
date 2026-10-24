@@ -1,15 +1,12 @@
 # Convert UI
 
-A compact, white, macOS-style utility. The workflow—not explanatory copy—is the interface.
+The text-first Convert UI from `a05aa55` is the visual baseline. The subsequent macOS-style utility redesign has been withdrawn.
 
-- Keep the header to a small conversion mark, Convert and mzww.net.
-- One persistent MorphSurface owns upload, details, progress, complete and error. Keep its ResizeObserver, width/height transition, focus handoff and Reduced Motion behavior.
-- Use system fonts, neutral 1px borders and 4–6px radii. No gradients, decorative shadows, external fonts or icon CDN.
-- Local Material Symbols Sharp SVGs live in `static/icons/`, with Apache-2.0 attribution. `IconButton` supplies an accessible name, associated hover/focus tooltip, Escape dismissal and a 44px target. Icons are decorative to assistive technology.
-- Ready shows only input identity, size, actual output choices and Convert. Quality, sample rate, channels, bitrate, compression and source frame remain available through Settings.
-- Main operations use dark fill: Convert in Ready, download in Complete. Secondary operations share the same icon-button treatment.
-- Do not hide compatibility warnings, analysis failures, quality-loss warnings or recovery. Keep engine errors verbatim; only collapse implementation explanations and optional controls.
-- Batch audio is one real ZIP download, not imaginary per-file download buttons. Other multi-file selections retain the existing first-file conversion behavior, visibly explained in Ready. Add/remove must use the existing LOAD lifecycle, not a separate conversion queue.
-- Preserve native button/select/range keyboard behavior, focus rings, 320px layouts, readable long names, truthful progress and resource release.
+- Preserve the original header/footer, layout, spacing, settings, previews, text buttons and CSS.
+- Keep MorphSurface's original sizes, 3px corners, width/height transitions, persistent DOM node, focus handoff and Reduced Motion behavior.
+- The sole retained visual addition is a subdued 16px file-type icon next to input/output filenames. Local Material Symbols Sharp SVGs cover images, audio, video, archives and documents; they are decorative to assistive technology.
+- A video/document icon does not imply conversion support. Actual destinations and validation still come from the existing engine and registry. Verified MIME/category takes precedence over the input MIME type.
+- Do not reintroduce icon-only actions, a header logo, compact toolbar, collapsed settings or redesigned batch lists.
+- Preserve the conversion engines, all routes, error handling, cancellation, batch conversion and resource release.
 
-Run `npm run test:utility` with the existing Playwright module/executable environment. `BROWSER=firefox` or `BROWSER=webkit` selects an installed patched browser. See [UI redesign and verification](ui-redesign.md) for scope and observed results.
+`npm run test:utility` checks restored text controls, Surface sizes/identity, icons, desktop/mobile states, keyboard, batch downloads and recovery. `BROWSER=firefox` or `BROWSER=webkit` selects an existing installed patched browser. Historical redesign/rollback evidence is in [ui-redesign.md](ui-redesign.md).

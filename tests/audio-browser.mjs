@@ -16,7 +16,7 @@ await page.addInitScript(()=>{
 const base=process.env.TEST_URL||'http://localhost:5173',dir='artifacts/audio';await mkdir(dir,{recursive:true});
 const ready=()=>page.waitForFunction(()=>{const el=document.querySelector('.surface-content'),button=[...document.querySelectorAll('button')].find(b=>b.textContent.trim().startsWith('Convert'));return document.querySelector('[data-phase=details]')&&el&&!el.classList.contains('hidden')&&getComputedStyle(el).opacity==='1'&&button&&!button.disabled;});
 const fixture=async ext=>({name:'music.'+ext,mimeType:'',buffer:await readFile(new URL('./fixtures/audio/music.'+ext,import.meta.url))});
-const upload=async input=>{await page.locator('input[type=file]').setInputFiles(input);await page.getByRole('heading',{name:Array.isArray(input)?`${input.length} files`:input.name,exact:true}).waitFor();await ready();const settings=page.getByRole('button',{name:'Settings',exact:true});if(await settings.getAttribute('aria-expanded')!=='true')await settings.click();};
+const upload=async input=>{await page.locator('input[type=file]').setInputFiles(input);await page.getByRole('heading',{name:(Array.isArray(input)?input[0]:input).name,exact:true}).waitFor();await ready();};
 const output=()=>page.getByRole('combobox',{name:'Output format'});
 const again=async()=>{await page.getByRole('button',{name:'Convert Again',exact:true}).click();await ready();};
 const convert=async()=>{const start=performance.now();await page.getByRole('button',{name:'Convert',exact:true}).click();await Promise.race([page.getByRole('button',{name:'Download',exact:true}).waitFor(),page.locator('.error-message').waitFor().then(async()=>{throw Error(await page.locator('.error-message').innerText());})]);return performance.now()-start;};
