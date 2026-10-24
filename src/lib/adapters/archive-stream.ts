@@ -109,6 +109,18 @@ async function unGzip(blob:Blob,job:EngineContext) {
 		return (await sink.finish()).blob;
 	} catch(error){await sink.abort();throw error;}
 }
+async function unZstd(blob:Blob,job:EngineContext):Promise<Blob> {
+	const {Decompress}=await import('fzstd');
+	const pieces:Uint8Array<ArrayBuffer>[]=[];let total=0;
+	const decoder=new Decompress(chunk=>{
+		total+=chunk.byteLength;
+		if(total>64*1024**2)fail('Zstandard expansion exceeds the 64 MiB memory safety limit.');
+		pieces.push(chunk.slice());
+	});
+	for await(const chunk of chunks(blobStream(blob,job),job))decoder.push(chunk);
+	decoder.push(new Uint8Array(),true);
+	return new Blob(pieces,{type:'application/octet-stream'});
+}
 async function readArchive(blob:Blob,name:string,job:EngineContext) {
 	job.signal.throwIfAborted();job.streaming?.();
 	if(!blob.size)fail('Archive input is empty.');
@@ -116,6 +128,18 @@ async function readArchive(blob:Blob,name:string,job:EngineContext) {
 	if(!definition)fail('Unsupported archive contents.');
 	if(definition.id==='ZIP')return {entries:await readZip(blob,job),format:'ZIP',mime:definition.mime};
 	if(definition.id==='TAR')return {entries:await readTar(blob,job),format:'TAR',mime:definition.mime};
+	if(definition.id==='ZSTD') {
+		if(blob.size>64*1024**2)fail('Zstandard input exceeds the 64 MiB safety limit.');
+		const expanded=await unZstd(blob,job),header=await range(expanded,0,Math.min(4096,expanded.size),job);
+		if(archiveFormats.find(f=>f.id==='TAR')!.matches(header))return {entries:await readTar(expanded,job),format:'ZSTD',mime:definition.mime};
+		const filename=name.replace(/\.(?:zst|tzst)$/i,'')||'file';
+		const entries=[{name:filename,size:expanded.size,directory:false,mtime:0,open:()=>blobStream(expanded,job)}];metadata(entries);
+		return {entries,format:'ZSTD',mime:definition.mime};
+	}
+	if(['7Z','RAR','XZ','BZ2'].includes(definition.id)) {
+		const {readExtraArchive}=await import('./archive-extra.ts');
+		return {entries:await readExtraArchive(blob,name,job),format:definition.id,mime:definition.mime};
+	}
 	const expanded=await unGzip(blob,job),header=await range(expanded,0,Math.min(4096,expanded.size),job);
 	if(archiveFormats.find(f=>f.id==='TAR')!.matches(header))return {entries:await readTar(expanded,job),format:'TAR.GZ',mime:definition.mime};
 	const entries=[{name:name.replace(/\.gz$/i,'')||'file',size:expanded.size,directory:false,mtime:0,open:()=>blobStream(expanded,job)}];metadata(entries);
@@ -175,7 +199,7 @@ export const streamArchiveCodec:EngineAdapter={
 		const job=context??{signal:new AbortController().signal,stage};stage('reading');const {entries}=await readArchive(request.file,request.file.name,job),format=request.format;
 		if(!outputs(entries).includes(format))fail('This archive output needs one file or is unsupported by this browser.');
 		if(request.archive&&!['store','deflate'].includes(request.archive.compression))fail('Invalid ZIP compression setting.');
-		const def=archiveFormats.find(f=>f.id===format)!,name=outputName(request.file.name.replace(/\.(tar\.gz|tgz)$/i,'.tar'),format),sink=await createOutput(job,def.mime);
+		const def=archiveFormats.find(f=>f.id===format)!,name=outputName(request.file.name.replace(/\.(tar\.(?:gz|bz2|xz|zst)|tgz|tbz2|txz|tzst)$/i,'.tar'),format),sink=await createOutput(job,def.mime);
 		const total=entries.reduce((n,e)=>n+e.size,0);let processed=0;
 		const onBytes=(n:number)=>{processed+=n;stage('encoding',total?processed/total*85:85);};
 		try {
