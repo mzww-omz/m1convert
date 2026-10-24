@@ -22,4 +22,9 @@ export const imageEncoders:readonly CodecEngine<OffscreenCanvas,Blob,ImageEncode
 		requirements:['wasm','offscreenCanvas'],limits:['8-bit RGBA only','Single-thread; no SIMD/shared memory requirement','Conservative 20 bytes/pixel + 2 × source bytes <= 256 MiB','64 MiB encoded output']},
 	supports:q=>inputReason(q)??(q.width*q.height*20+q.encodedBytes*2>LIMITS.maxWorkingBytes?'Safety limit: PNG WASM working memory budget would be exceeded.':undefined),
 	load:async()=>({run:(await import('./png-wasm.ts')).encodePngImage})
+},{
+	capability:{id:'wasm-jxl',kind:'wasm',operation:'encode',formats:['JXL'],quality:{JXL:'percentage'},containers:['JPEG XL'],
+		requirements:['wasm','offscreenCanvas'],limits:['Still images only; 8-bit RGBA pipeline','32 bytes/pixel + 2 x input bytes <= 256 MiB','64 MiB encoded output']},
+	supports:q=>inputReason(q)??(q.width*q.height*32+q.encodedBytes*2>LIMITS.maxWorkingBytes?'Safety limit: JPEG XL WASM working memory budget would be exceeded.':undefined),
+	load:async()=>({run:(await import('./jxl.ts')).encodeJxlImage})
 }];
