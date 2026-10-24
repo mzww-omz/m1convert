@@ -5,14 +5,14 @@
 	let { state: model, dragging = false, children }: { state: State; dragging?: boolean; children: Snippet<[State]> } = $props();
 	let displayed = $state<State>(untrack(() => model));
 	let hidden = $state(false);
-	let height = $state(280);
+	let height = $state(240);
 	let viewport = $state(1024);
 	let reduced = false;
 	let targetPhase = untrack(() => model.phase);
 	let generation = 0;
 	let switching = false;
 	let content: HTMLDivElement;
-	const widths = { upload: 280, details: 560, progress: 440, complete: 480, error: 480 };
+	const widths = { upload: 240, details: 440, progress: 360, complete: 360, error: 400 };
 	let width = $derived(Math.min(widths[displayed.phase], viewport - 40));
 	const pause = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -71,7 +71,7 @@
 		position: relative;
 		flex: none;
 		border: 1px solid var(--line);
-		border-radius: 3px;
+		border-radius: 6px;
 		background: #fff;
 		overflow: clip;
 		box-sizing: content-box;

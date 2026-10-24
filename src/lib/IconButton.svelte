@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Icon from './Icon.svelte';
-	let { icon, label, onclick, primary = false, expanded, controls, below = false }: {
-		icon: string; label: string; onclick: () => void; primary?: boolean;
+	let { icon, label, tooltip = label, onclick, primary = false, expanded, controls, below = false }: {
+		icon: string; label: string; tooltip?: string; onclick: () => void; primary?: boolean;
 		expanded?: boolean; controls?: string; below?: boolean;
 	} = $props();
 	const id = $props.id();
@@ -15,5 +15,5 @@
 		onblur={() => { dismissed = false; }} onpointerleave={() => { dismissed = false; }}>
 		<Icon name={icon} />
 	</button>
-	<span class="tooltip" role="tooltip" {id}>{label}</span>
+	<span class="tooltip" role="tooltip" {id}>{tooltip}</span>
 </span>
