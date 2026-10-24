@@ -6,7 +6,7 @@ Minimal appearance, fluid interaction. A fully client-side image, audio and arch
 
 - **JPEG XL (.jxl):** image input and output using lazy single-thread WASM. PNG -> JXL -> PNG tested in Chromium.
 - **HEIC/HEIF:** HEVC-coded single-image input (output PNG/JPEG/WebP/JXL/BMP/ICO/TIFF, subject to verified encoders). Tested with two real HEIC images, including a 3992 x 2992 photograph. HEIC/HEIF output is not implemented.
-- **7z, RAR3/RAR5, XZ/TAR.XZ, BZip2/TAR.BZ2, Zstandard/TAR.ZST:** input support. ZIP/TAR/TAR.GZ and conditional single-file GZIP remain the archive outputs. Six fixture variants were converted to ZIP and checked in Chromium.
+- **7z, RAR3/RAR5, XZ/TAR.XZ, BZip2/TAR.BZ2, Zstandard/TAR.ZST:** input support. ZIP/TAR/TAR.GZ and conditional single-file GZIP remain available as outputs; **TAR.XZ and TAR.BZ2 outputs** now work for archives with regular files only, representable TAR paths and up to 64 MiB of expanded file data. Six fixture variants were converted to ZIP; RAR3 -> TAR.XZ / TAR.BZ2 -> ZIP round trips were checked in Chromium.
 - All new archive inputs are bounded to 64 MiB compressed and 64 MiB extracted data. Source paths and payloads are validated; filesystem extraction, password decoding and retention of libarchive-only modification dates are not supported.
 - Animated images, multi-image HEIF, video and document conversion remain future work.
 
@@ -48,7 +48,7 @@ Same-format re-encoding is supported. Output choices are restricted to encoders 
 
 Audio exposes sample-rate/channel settings, target bitrate and MP3/Vorbis VBR quality. Source metadata (title/artist/cover art/etc.) is removed; newly generated encoder identification and codec delay information may remain. WAV/AIFF/FLAC output is PCM16, not archival precision preservation. Opus uses 48000 Hz; incompatible explicit MP3/Opus UI settings are adjusted visibly on format changes. Multiple supported audio files are converted sequentially with shared settings and downloaded as one real ZIP (32 files / 32 MiB total). ZIP offers Store or Deflate, not fictitious numeric levels. Archives retain bytes, directories and file times where possible; GZIP output drops directory entries and does not store the original filename. No filesystem extraction occurs. All jobs use the existing cancellable worker/deadline lifecycle.
 
-See **[compressed-audio matrix, licensing, payload sizes and limits](docs/compressed-audio.md)** and [archive/image details](docs/continuous-development.md). Compressed audio is capped at **8 million interleaved decoded samples** (about **83 seconds at 48 kHz stereo**); it is a bounded clip converter, not a long-form streaming transcoder. AAC/M4A are native AAC-LC paths, not a bundled AAC WASM fallback. WMA, ALAC, video/multiple audio streams, and fragmented MP4 are not implemented. 7z/RAR/BZIP2/XZ/Zstandard have new **input-only** paths (see Phase 9).
+See **[compressed-audio matrix, licensing, payload sizes and limits](docs/compressed-audio.md)** and [archive/image details](docs/continuous-development.md). Compressed audio is capped at **8 million interleaved decoded samples** (about **83 seconds at 48 kHz stereo**); it is a bounded clip converter, not a long-form streaming transcoder. AAC/M4A are native AAC-LC paths, not a bundled AAC WASM fallback. WMA, ALAC, video/multiple audio streams, and fragmented MP4 are not implemented. 7z, RAR and Zstandard are input-only; XZ and BZip2 additionally support TAR.XZ and TAR.BZ2 output when no explicit directories are present (see Phase 9).
 
 ### Extended image format boundaries
 
