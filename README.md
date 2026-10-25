@@ -2,9 +2,14 @@
 
 Minimal appearance, fluid interaction. A fully client-side image, audio, video and archive converter built on Svelte 5, TypeScript, SvelteKit and Vite. Files never leave the browser. No conversion service, CDN or telemetry. Audio WASM is pinned, lazily loaded and self-hosted with license notices and corresponding sources.
 
+## EPUB → HTML (Phase 11 extension)
+
+- **EPUB → HTML:** self-contained offline HTML preserving the EPUB spine reading order, safe XHTML elements, internal links, embedded images, local stylesheets/fonts, and title/language metadata where possible. Image-only books are supported. Unsafe markup and remote dependencies are removed.
+- **Layout limits:** HTML is reflowable; fixed-layout pages, exact EPUB-reader pagination, interactive content, inline SVG and DRM are unsupported. Local styles are best-effort and may interact after chapters are merged. See [scope and verification](docs/epub-html.md).
+
 ## Phase 11 - eBook, Netpbm images and Unix ar
 
-- **EPUB → TXT:** validated EPUB OCF ZIP/container/package/spine, then local XHTML chapter text extraction in reading order. **Text only:** images, CSS, fonts and page design are not retained. Strict bounded EPUB subset; no MOBI/AZW3 or EPUB→PDF/HTML yet.
+- **EPUB → TXT:** validated EPUB OCF ZIP/container/package/spine, then local XHTML chapter text extraction in reading order. **Text only:** images, CSS, fonts and page design are not retained. Strict bounded EPUB subset; no MOBI/AZW3 or EPUB→PDF yet.
 - **PBM / PGM / PPM:** Netpbm P1–P6 ASCII and binary still-image input; P4/P5/P6 binary outputs. Pixels are verified by re-decoding. RGB/transparency are flattened onto white for these opaque output formats; PBM applies monochrome threshold and PGM converts to grayscale.
 - **Unix ar (.ar/.a/.deb):** bounded archive input, including Debian ar-style packages and safe GNU/BSD long names, convertible into ZIP/TAR/compressed TAR when destination constraints allow. A `.deb` is converted as an archive of its members; nested package payloads are not installed or interpreted.
 
