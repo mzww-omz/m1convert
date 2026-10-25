@@ -19,7 +19,7 @@ export const adapters: readonly AdapterDefinition[] = [{
 	inputs: imageFormats.map(f => f.id), outputs: imageOutputs.map(f => f.id),
 	load: async () => (await import('./adapters/canvas-codec.ts')).canvasCodec
 }, {
-	id:'ebook', formats:ebookFormats, inputs:['EPUB'], outputs:['TXT'],
+	id:'ebook', formats:ebookFormats, inputs:['EPUB'], outputs:['TXT','HTML'],
 	load:async ()=>(await import('./adapters/epub.ts')).epubCodec
 }, {
 	id:'archive', formats:archiveFormats, inputs:archiveFormats.filter(f=>!['TAR.XZ','TAR.BZ2'].includes(f.id)).map(f=>f.id), outputs:['ZIP','TAR','TAR.GZ','GZIP','TAR.XZ','TAR.BZ2'],

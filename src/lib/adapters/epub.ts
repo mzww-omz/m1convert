@@ -2,6 +2,7 @@ import type { EngineAdapter } from '../engine-types.ts';
 import type { EngineContext } from '../codec-registry.ts';
 import { decodeZip, type Entry } from './archive.ts';
 import { outputName } from '../results.ts';
+import { makeStandaloneHtml } from './epub-html.ts';
 
 const MAX=64*1024**2, TEXT_MAX=16*1024**2;
 const utf8=new TextDecoder('utf-8',{fatal:true}),encoder=new TextEncoder();
@@ -58,7 +59,17 @@ function bodyText(document:string) {
 	return normalized;
 }
 
-async function readBook(file:File,job:EngineContext) {
+export interface EpubBook {
+	title:string;
+	language:string;
+	text:string;
+	chapters:number;
+	pages:{path:string;markup:string}[];
+	byName:Map<string,Entry>;
+	items:Map<string,{href:string;type:string}>;
+}
+
+async function readBook(file:File,job:EngineContext):Promise<EpubBook> {
 	job.signal.throwIfAborted();
 	if(!file.size||file.size>MAX)fail('EPUB must be nonempty and no larger than 64 MiB.');
 	const bytes=new Uint8Array(await file.arrayBuffer());
@@ -74,6 +85,10 @@ async function readBook(file:File,job:EngineContext) {
 	const path=resolve('',rootAttrs['full-path']??'');
 	const opf=read(byName.get(path)??fail('EPUB package document is missing.'));
 	xmlSafe(opf);
+	const titleMatch=/<(?:[\w.-]+:)?title\b[^>]*>([^<]{1,512})<\/(?:[\w.-]+:)?title\s*>/i.exec(opf);
+	const langMatch=/<(?:[\w.-]+:)?language\b[^>]*>([^<]{1,64})<\/(?:[\w.-]+:)?language\s*>/i.exec(opf);
+	const title=titleMatch?entities(titleMatch[1]).trim():'Converted EPUB';
+	const language=langMatch&&/^[a-z]{2,8}(?:-[a-z0-9]{1,8})*$/i.test(langMatch[1].trim())?langMatch[1].trim():'und';
 	const manifest=/<(?:[\w.-]+:)?manifest\b[^>]*>([\s\S]*?)<\/(?:[\w.-]+:)?manifest\s*>/i.exec(opf)?.[1];
 	const spine=/<(?:[\w.-]+:)?spine\b[^>]*>([\s\S]*?)<\/(?:[\w.-]+:)?spine\s*>/i.exec(opf)?.[1];
 	if(!manifest||!spine)fail('EPUB package is missing its manifest or spine.');
@@ -82,19 +97,20 @@ async function readBook(file:File,job:EngineContext) {
 		const a=attrs(item[1]);if(!a.id||!a.href||!a['media-type']||items.has(a.id))fail('Invalid or duplicate EPUB manifest item.');
 		items.set(a.id,{href:resolve(path,a.href),type:a['media-type']});
 	}
-	const chapters:string[]=[];
+	const chapters:string[]=[],pages:{path:string;markup:string}[]=[];
 	for(const itemref of spine.matchAll(/<(?:[\w.-]+:)?itemref\s+([^>]*?)\/?>/gi)){
 		job.signal.throwIfAborted();
 		const a=attrs(itemref[1]);if(a.linear==='no')continue;
 		const item=items.get(a.idref??'');if(!item||item.type!=='application/xhtml+xml')fail('EPUB spine references an unsupported or missing XHTML chapter.');
 		const entry=byName.get(item.href);if(!entry)fail('EPUB spine chapter is missing from the archive.');
-		const text=bodyText(read(entry));if(text)chapters.push(text);
+		const markup=read(entry);pages.push({path:item.href,markup});
+		const text=bodyText(markup);if(text)chapters.push(text);
 		if(chapters.join('\n\n').length>TEXT_MAX)fail('EPUB extracted text exceeds the 16 MiB budget.');
 	}
-	if(!chapters.length)fail('EPUB has no readable XHTML chapters in its reading order.');
-	const result=chapters.join('\n\n')+'\n';
+	if(!pages.length)fail('EPUB has no XHTML chapters in its reading order.');
+	const result=chapters.length?chapters.join('\n\n')+'\n':'';
 	if(encoder.encode(result).length>TEXT_MAX)fail('EPUB extracted text exceeds the 16 MiB budget.');
-	return {text:result,chapters:chapters.length};
+	return {title,language,text:result,chapters:pages.length,pages,byName,items};
 }
 
 export const epubCodec:EngineAdapter={
@@ -102,13 +118,21 @@ export const epubCodec:EngineAdapter={
 		const job=context??{signal:new AbortController().signal,stage};
 		stage('reading');const book=await readBook(file,job);stage('verifying');
 		return {info:{format:'EPUB',mime:'application/epub+zip',category:'ebook',entries:book.chapters},
-			outputs:['TXT'],preview:null,
-			warnings:['EPUB → TXT extracts readable text in spine order. Images, typography, CSS and page design are not preserved.']};
+			outputs:book.text?['TXT','HTML']:['HTML'],preview:null,
+			warnings:['EPUB → TXT extracts text only; HTML embeds safe images and CSS in one offline file. Exact pagination, interactive content, SVG and DRM are not preserved.']};
 	},
 	async run(request,stage,context){
-		if(request.format!=='TXT')fail('Only EPUB to TXT is implemented.');
+		if(request.format!=='TXT'&&request.format!=='HTML')fail('Only EPUB to TXT or HTML is implemented.');
 		const job=context??{signal:new AbortController().signal,stage};
 		stage('reading');const book=await readBook(request.file,job);stage('encoding');
+		if(request.format==='HTML'){
+			const html=makeStandaloneHtml(book,job.signal);
+			const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+			stage('verifying');
+			if(utf8.decode(new Uint8Array(await blob.arrayBuffer()))!==html)fail('EPUB HTML output verification failed.');
+			return {blob,name:outputName(request.file.name,'HTML'),format:'HTML',mime:'text/html'};
+		}
+		if(!book.text)fail('This EPUB has no extractable text. Choose HTML to retain image-only chapters.');
 		const blob=new Blob([book.text],{type:'text/plain'});
 		stage('verifying');
 		if(utf8.decode(new Uint8Array(await blob.arrayBuffer()))!==book.text)fail('EPUB text output verification failed.');
