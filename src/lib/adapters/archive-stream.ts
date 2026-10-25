@@ -121,11 +121,55 @@ async function unZstd(blob:Blob,job:EngineContext):Promise<Blob> {
 	decoder.push(new Uint8Array(),true);
 	return new Blob(pieces,{type:'application/octet-stream'});
 }
+async function readAr(blob:Blob,job:EngineContext):Promise<StreamEntry[]> {
+	const marker=await range(blob,0,Math.min(8,blob.size),job);
+	if(ascii(marker,0,8)!=='!<arch>\n')fail('Invalid Unix ar archive header.');
+	const entries:StreamEntry[]=[];let p=8;let names:Uint8Array|undefined;
+	const number=(value:string)=>{
+		const v=value.trim();if(!/^\d+$/.test(v))fail('Invalid Unix ar numeric metadata.');
+		const n=Number(v);if(!Number.isSafeInteger(n)||n<0)fail('Unix ar numeric metadata exceeds its safe range.');
+		return n;
+	};
+	while(p<blob.size) {
+		job.signal.throwIfAborted();
+		if(p+60>blob.size)fail('Truncated Unix ar entry header.');
+		const h=await range(blob,p,60,job);
+		if(h[58]!==96||h[59]!==10)fail('Invalid Unix ar entry marker.');
+		const raw=ascii(h,0,16).trim(),mtime=number(ascii(h,16,12)),size=number(ascii(h,48,10));
+		const start=p+60,end=start+size,next=end+(size%2);
+		if(end>blob.size||next>blob.size)fail('Truncated Unix ar entry data.');
+		if(size%2){const padding=await range(blob,end,1,job);if(padding[0]!==10)fail('Invalid Unix ar padding.');}
+		let name=raw,dataStart=start;
+		if(raw==='//') {
+			if(size>1024**2)fail('Unix ar filename table exceeds the 1 MiB budget.');
+			names=await range(blob,start,size,job);p=next;continue;
+		}
+		if(raw==='/'||raw==='/SYM64/'||raw==='__.SYMDEF'||raw==='__.SYMDEF SORTED'){p=next;continue;}
+		if(/^\/\d+$/.test(raw)){
+			if(!names)fail('Unix ar references a missing long-filename table.');
+			const offset=number(raw.slice(1));if(offset>=names.length)fail('Invalid Unix ar filename table offset.');
+			let e=offset;while(e<names.length&&names[e]!==10)e++;
+			if(e===names.length)fail('Unterminated Unix ar long filename.');
+			name=decoder.decode(names.subarray(offset,e)).replace(/\/$/,'');
+		} else if(/^#1\/\d+$/.test(raw)) {
+			const length=number(raw.slice(3));if(length>size||length>65535)fail('Invalid BSD ar extended filename length.');
+			name=decoder.decode(await range(blob,start,length,job));dataStart+=length;
+		} else name=raw.replace(/\/$/,'');
+		if(!name||name.includes('\0'))fail('Unsafe Unix ar filename.');
+		const dataSize=end-dataStart;
+		entries.push({name,directory:false,mtime,size:dataSize,open:()=>blobStream(blob.slice(dataStart,end),job)});
+		metadata(entries);
+		p=next;
+	}
+	if(!entries.length)fail('Unix ar archive contains no regular files.');
+	metadata(entries);return entries;
+}
 async function readArchive(blob:Blob,name:string,job:EngineContext) {
 	job.signal.throwIfAborted();job.streaming?.();
 	if(!blob.size)fail('Archive input is empty.');
 	const head=await range(blob,0,Math.min(4096,blob.size),job),definition=archiveFormats.find(f=>f.matches(head));
 	if(!definition)fail('Unsupported archive contents.');
+	if(definition.id==='AR')return {entries:await readAr(blob,job),format:'AR',mime:definition.mime};
 	if(definition.id==='ZIP')return {entries:await readZip(blob,job),format:'ZIP',mime:definition.mime};
 	if(definition.id==='TAR')return {entries:await readTar(blob,job),format:'TAR',mime:definition.mime};
 	if(definition.id==='ZSTD') {

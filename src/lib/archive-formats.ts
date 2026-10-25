@@ -1,5 +1,7 @@
 import { ascii, type FormatDefinition } from './formats.ts';
 export const archiveFormats: readonly FormatDefinition[] = [
+	{ id:'AR', mime:'application/x-archive', extension:'ar', extensions:['ar','a','deb'], quality:false,
+		matches:b=>ascii(b,0,8)==='!<arch>\n' },
 	{ id:'ZIP', mime:'application/zip', extension:'zip', extensions:['zip'], quality:false,
 		matches:b=>b[0]===80 && b[1]===75 && ((b[2]===3 && b[3]===4) || (b[2]===5 && b[3]===6)) },
 	{ id:'TAR', mime:'application/x-tar', extension:'tar', extensions:['tar'], quality:false,
