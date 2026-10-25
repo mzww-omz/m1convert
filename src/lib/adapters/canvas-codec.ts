@@ -33,6 +33,9 @@ async function decode(file: Blob, info: ImageInfo, bytes:Uint8Array<ArrayBuffer>
 	} else if (info.format === 'TIFF') {
 		const {decodeTiff}=await import('./tiff.ts');
 		bitmap=await rgbaBitmap(decodeTiff(bytes));
+	} else if (['PBM','PGM','PPM'].includes(info.format)) {
+		const {decodePnm}=await import('./pnm.ts');
+		bitmap=await rgbaBitmap(decodePnm(bytes));
 	} else if (info.format === 'BMP') {
 		const { decodeBmp }=await import('./bmp.ts');
 		bitmap=await rgbaBitmap(decodeBmp(bytes));

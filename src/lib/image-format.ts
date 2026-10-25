@@ -153,6 +153,7 @@ export async function readImage(file: File, output = false): Promise<{info:Image
 	else if (format.id === 'GIF') raw = { ...(await import('./adapters/gif.ts')).gifInfo(bytes), orientation:1 };
 	else if (format.id === 'TIFF') raw = { ...(await import('./adapters/tiff.ts')).tiffInfo(bytes), orientation:1 };
 	else if (format.id === 'BMP') raw = { ...(await import('./adapters/bmp.ts')).bmpInfo(bytes), orientation: 1 };
+	else if (['PBM','PGM','PPM'].includes(format.id)) raw = { ...(await import('./adapters/pnm.ts')).pnmInfo(bytes), orientation:1 };
 	else if (format.id === 'AVIF') raw = { ...(await import('./adapters/avif.ts')).avifInfo(bytes), orientation: 1 };
 	else if (format.id === 'SVG') raw = { ...(await import('./adapters/svg.ts')).svgInfo(bytes), orientation: 1 };
 	else {

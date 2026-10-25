@@ -40,7 +40,13 @@ export const imageFormats: readonly FormatDefinition[] = [
 	{ id:'GIF', mime:'image/gif', extension:'gif', extensions:['gif'], quality:false,
 		matches:b=>['GIF87a','GIF89a'].includes(ascii(b,0,6)) },
 	{ id:'TIFF', mime:'image/tiff', extension:'tiff', extensions:['tif','tiff'], quality:false,
-		matches:b=>(b[0]===73&&b[1]===73&&b[2]===42&&b[3]===0)||(b[0]===77&&b[1]===77&&b[2]===0&&b[3]===42) }
+		matches:b=>(b[0]===73&&b[1]===73&&b[2]===42&&b[3]===0)||(b[0]===77&&b[1]===77&&b[2]===0&&b[3]===42) },
+	{ id:'PBM', mime:'image/x-portable-bitmap', extension:'pbm', extensions:['pbm','pnm'], quality:false,
+		matches:b=>b.length>=3&&b[0]===80&&(b[1]===49||b[1]===52)&&[9,10,13,32,35].includes(b[2]) },
+	{ id:'PGM', mime:'image/x-portable-graymap', extension:'pgm', extensions:['pgm','pnm'], quality:false,
+		matches:b=>b.length>=3&&b[0]===80&&(b[1]===50||b[1]===53)&&[9,10,13,32,35].includes(b[2]) },
+	{ id:'PPM', mime:'image/x-portable-pixmap', extension:'ppm', extensions:['ppm','pnm'], quality:false,
+		matches:b=>b.length>=3&&b[0]===80&&(b[1]===51||b[1]===54)&&[9,10,13,32,35].includes(b[2]) }
 ];
 export const imageOutputs=imageFormats.filter(f=>!['SVG','GIF','HEIC'].includes(f.id));
 
