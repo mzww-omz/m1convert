@@ -4,7 +4,7 @@ const mimeAliases:Record<string,string[]> = {
  WAV:['audio/x-wav','audio/wave','audio/vnd.wave'], AIFF:['audio/x-aiff'], MP3:['audio/mp3'],
  FLAC:['audio/x-flac'], OGG:['application/ogg'], OPUS:['audio/ogg','application/ogg'],
  AAC:['audio/aacp','audio/x-aac'], M4A:['audio/x-m4a','video/mp4'],
- MP4:['application/mp4'], MOV:['video/mov','video/x-quicktime'], WEBM:['application/webm'], MKV:['video/mkv','application/x-matroska'],
+ MP4:['application/mp4'], MOV:['video/mov','video/x-quicktime'], WEBM:['application/webm'], MKV:['video/mkv','application/x-matroska'], EPUB:['application/zip','application/x-zip-compressed'], AR:['application/vnd.debian.binary-package','application/x-debian-package','application/x-ar'],
  ICO:['image/vnd.microsoft.icon'], BMP:['image/x-ms-bmp'], GZIP:['application/x-gzip'], 'TAR.GZ':['application/x-gzip']
 };
 // Call only after structural validation and successful decoding, never to authorize an input.
