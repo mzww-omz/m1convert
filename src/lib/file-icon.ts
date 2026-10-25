@@ -29,9 +29,10 @@ const mimeIcons: Record<string, string> = {
 	'application/vnd.ms-powerpoint': 'powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'powerpoint'
 };
 
-export function fileIcon(mime: string, category?: 'audio' | 'archive', filename = ''): string {
+export function fileIcon(mime: string, category?: 'audio' | 'archive' | 'video', filename = ''): string {
 	if (category === 'audio') return 'audio';
 	if (category === 'archive') return 'zip';
+	if (category === 'video') return 'video';
 	if (Object.hasOwn(mimeIcons, mime)) return mimeIcons[mime];
 	if (mime.startsWith('image/')) return 'image';
 	if (mime.startsWith('audio/')) return 'audio';
