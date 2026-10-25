@@ -145,7 +145,7 @@
 											<option value="deflate">Deflate (if available)</option><option value="store">Store (no compression)</option>
 										</select>
 									</label>
-								{:else}<div class="field format-note">Compression<span>{view.format === 'TAR' ? 'None' : 'Browser default'}</span></div>{/if}
+								{:else}<div class="field format-note">Compression<span>{view.format === 'TAR' ? 'None' : view.format === 'TAR.XZ' ? 'XZ' : view.format === 'TAR.BZ2' ? 'BZip2' : 'GZIP'}</span></div>{/if}
 							{:else if formatById(view.format)?.quality}
 								<label class="field quality">Quality <span class="quality-value">{view.quality}%</span>
 									<input type="range" min="1" max="100" value={view.quality} oninput={(event) => converter.send({ type: 'QUALITY', quality: +event.currentTarget.value })} />

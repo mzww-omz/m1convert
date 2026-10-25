@@ -46,5 +46,29 @@ Codec provenance declared by the package: GoogleChromeLabs/squoosh v1.12.0 (Apac
 Exact unmodified WASM: /vendor/png-3.1.1/codec/pkg/squoosh_png_bg.wasm
 It is a single-thread baseline codec, with no SharedArrayBuffer requirement. Only its 8-bit RGBA PNG encoder is exposed by Convert. The binary remains separately replaceable; sync:png-assets restores the pinned npm binary and notices.
 
-Source/license archives are offered as downloads, not fetched during conversion.
+Phase 9 codecs and archive readers:
+
+@jsquash/jxl 1.2.0: unmodified Apache-2.0 jSquash wrapper and libjxl codec (BSD-3-Clause upstream).
+License: /legal/JXL-LICENSE
+Wrapper/source: https://github.com/jamsinclair/jSquash
+Pinned npm archive: https://registry.npmjs.org/@jsquash/jxl/-/jxl-1.2.0.tgz
+Single-thread encode/decode WASM is loaded only on demand. JXL animations are not implemented.
+
+libheif-js 1.23.5: LGPL-3.0, unmodified Emscripten libheif HEVC decoder module.
+License: /legal/HEIF-LICENSE
+Build wrapper and sources: https://github.com/catdad-experiments/libheif-js/tree/v1.23.5
+Pinned npm archive: https://registry.npmjs.org/libheif-js/-/libheif-js-1.23.5.tgz
+Upstream native sources: https://github.com/strukturag/libheif and https://github.com/strukturag/libde265
+This project's source is public and the library may be replaced by rebuilding with a compatible modified library. No code signing restricts replacement. Review availability of complete corresponding native source/build instructions and LGPL compliance before public redistribution. HEVC patent/licensing obligations are separate from the open-source license.
+
+libarchive.js 2.0.2: MIT browser wrapper around libarchive's BSD-licensed source.
+License shipped next to the self-hosted binary: /vendor/libarchive/LICENSE
+Wrapper/build project: https://github.com/nika-begiashvili/libarchivejs
+Native library source: https://github.com/libarchive/libarchive
+
+fzstd 0.1.1: MIT, unmodified streaming JavaScript Zstandard decoder.
+License: /legal/ZSTD-LICENSE
+Source: https://github.com/101arrowz/fzstd
+
+The pinned libav source/license archives are hosted at this origin; other source links above are informational. None are fetched during conversion.
 AAC encoding/decoding, where exposed, is provided by runtime-verified native browser codecs. No GPL FFmpeg core or additional AAC WASM is bundled. Platform/patent obligations depend on distribution jurisdiction; this notice is technical provenance, not legal advice.

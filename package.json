@@ -16,6 +16,8 @@
 		"test:phase7": "node tests/phase7-browser.mjs",
 		"test:compatibility": "node tests/compatibility-browser.mjs",
 		"test:phase8.2": "node tests/phase8-2-browser.mjs",
+		"test:phase8.3": "node tests/phase8-3-browser.mjs",
+		"test:phase9": "node tests/phase9-jxl-browser.mjs && node tests/phase9-heic-browser.mjs && node tests/phase9-archive-browser.mjs && node tests/phase9-write-browser.mjs",
 		"benchmark:phase7": "node scripts/benchmark-phase7.mjs",
 		"test:static": "node tests/static-build.mjs",
 		"test:audio": "node tests/audio-browser.mjs && node tests/audio-lifecycle-browser.mjs",
@@ -44,8 +46,12 @@
 		"#lib/*": "./src/lib/*"
 	},
 	"dependencies": {
+		"@jsquash/jxl": "1.2.0",
 		"@jsquash/png": "3.1.1",
 		"@libav.js/variant-obsolete": "6.10.9",
+		"fzstd": "0.1.1",
+		"libarchive.js": "2.0.2",
+		"libheif-js": "1.23.5",
 		"mediabunny": "1.62.0"
 	}
 }

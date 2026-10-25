@@ -24,7 +24,13 @@ async function rgbaBitmap(rgba: {width:number;height:number;data:Uint8ClampedArr
 }
 async function decode(file: Blob, info: ImageInfo, bytes:Uint8Array<ArrayBuffer>, frameIndex = info.frame): Promise<ImageBitmap> {
 	let bitmap: ImageBitmap;
-	if (info.format === 'TIFF') {
+	if (info.format === 'HEIC') {
+		const {decodeHeic}=await import('./heic.ts');
+		bitmap=await rgbaBitmap(await decodeHeic(bytes));
+	} else if (info.format === 'JXL') {
+		const {decodeJxl}=await import('./jxl.ts');
+		bitmap=await rgbaBitmap(await decodeJxl(bytes));
+	} else if (info.format === 'TIFF') {
 		const {decodeTiff}=await import('./tiff.ts');
 		bitmap=await rgbaBitmap(decodeTiff(bytes));
 	} else if (info.format === 'BMP') {

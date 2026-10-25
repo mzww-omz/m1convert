@@ -14,6 +14,16 @@ export const imageFormats: readonly FormatDefinition[] = [
 		matches: b => b[0] === 255 && b[1] === 216 && b[2] === 255 },
 	{ id: 'WEBP', mime: 'image/webp', extension: 'webp', extensions: ['webp'], quality: true,
 		matches: b => b.length >= 12 && ascii(b, 0, 4) === 'RIFF' && ascii(b, 8, 4) === 'WEBP' },
+	{ id: 'JXL', mime: 'image/jxl', extension: 'jxl', extensions: ['jxl'], quality: true,
+		matches: b => (b[0]===255 && b[1]===10) || [0,0,0,12,74,88,76,32,13,10,135,10].every((v,i)=>b[i]===v) },
+	{ id: 'HEIC', mime: 'image/heic', extension: 'heic', extensions: ['heic','heif'], quality: false,
+		matches: b => {
+			if(b.length<16||ascii(b,4,4)!=='ftyp')return false;
+			const size=new DataView(b.buffer,b.byteOffset,b.length).getUint32(0),end=Math.min(size,b.length,4096);
+			if(size<16)return false;
+			for(let p=8;p+4<=end;p+=4)if(p!==12&&['heic','heix','hevc','hevx','heis','heim'].includes(ascii(b,p,4)))return true;
+			return false;
+		} },
 	{ id: 'AVIF', mime: 'image/avif', extension: 'avif', extensions: ['avif'], quality: true,
 		matches: b => {
 			if (b.length < 16 || ascii(b,4,4) !== 'ftyp') return false;
@@ -32,7 +42,7 @@ export const imageFormats: readonly FormatDefinition[] = [
 	{ id:'TIFF', mime:'image/tiff', extension:'tiff', extensions:['tif','tiff'], quality:false,
 		matches:b=>(b[0]===73&&b[1]===73&&b[2]===42&&b[3]===0)||(b[0]===77&&b[1]===77&&b[2]===0&&b[3]===42) }
 ];
-export const imageOutputs=imageFormats.filter(f=>!['SVG','GIF'].includes(f.id));
+export const imageOutputs=imageFormats.filter(f=>!['SVG','GIF','HEIC'].includes(f.id));
 
 export function ascii(bytes: Uint8Array, offset: number, length: number): string {
 	return String.fromCharCode(...bytes.subarray(offset, offset + length));

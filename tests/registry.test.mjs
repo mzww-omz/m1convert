@@ -19,7 +19,7 @@ test('content signatures, not claimed MIME or names, identify PNG/JPEG/WebP', as
 });
 
 test('registry retains all nine original paths, including re-encoding', () => {
-  assert.deepEqual(formats.slice(0,7).map(f => f.id), ['PNG', 'JPEG', 'WEBP', 'AVIF', 'BMP', 'ICO', 'SVG']);
+  assert.deepEqual(formats.slice(0,9).map(f => f.id), ['PNG', 'JPEG', 'WEBP', 'JXL', 'HEIC', 'AVIF', 'BMP', 'ICO', 'SVG']);
   assert.deepEqual(formatsFor('PNG', ['ZIP','TAR','GZIP']), []);
   for (const input of ['PNG', 'JPEG', 'WEBP']) {
     assert.deepEqual(formatsFor(input, ['PNG', 'JPEG', 'WEBP']), ['PNG', 'JPEG', 'WEBP']);

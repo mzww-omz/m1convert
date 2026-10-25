@@ -148,6 +148,8 @@ export async function readImage(file: File, output = false): Promise<{info:Image
 	if (format.id === 'PNG') raw = pngInfo(bytes);
 	else if (format.id === 'JPEG') raw = jpegInfo(bytes);
 	else if (format.id === 'WEBP') raw = webpInfo(bytes);
+	else if (format.id === 'JXL') raw = { ...(await import('./adapters/jxl.ts')).jxlInfo(bytes), orientation:1 };
+	else if (format.id === 'HEIC') raw = { ...(await (await import('./adapters/heic.ts')).heicInfo(bytes)), orientation:1 };
 	else if (format.id === 'GIF') raw = { ...(await import('./adapters/gif.ts')).gifInfo(bytes), orientation:1 };
 	else if (format.id === 'TIFF') raw = { ...(await import('./adapters/tiff.ts')).tiffInfo(bytes), orientation:1 };
 	else if (format.id === 'BMP') raw = { ...(await import('./adapters/bmp.ts')).bmpInfo(bytes), orientation: 1 };
