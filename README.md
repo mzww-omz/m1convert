@@ -1,6 +1,23 @@
 # Convert
 
-Minimal appearance, fluid interaction. A fully client-side image, audio and archive converter built on Svelte 5, TypeScript, SvelteKit and Vite. Files never leave the browser. No conversion service, CDN or telemetry. Audio WASM is pinned, lazily loaded and self-hosted with license notices and corresponding sources.
+Minimal appearance, fluid interaction. A fully client-side image, audio, video and archive converter built on Svelte 5, TypeScript, SvelteKit and Vite. Files never leave the browser. No conversion service, CDN or telemetry. Audio WASM is pinned, lazily loaded and self-hosted with license notices and corresponding sources.
+
+## Phase 11 - eBook, Netpbm images and Unix ar
+
+- **EPUB → TXT:** validated EPUB OCF ZIP/container/package/spine, then local XHTML chapter text extraction in reading order. **Text only:** images, CSS, fonts and page design are not retained. Strict bounded EPUB subset; no MOBI/AZW3 or EPUB→PDF/HTML yet.
+- **PBM / PGM / PPM:** Netpbm P1–P6 ASCII and binary still-image input; P4/P5/P6 binary outputs. Pixels are verified by re-decoding. RGB/transparency are flattened onto white for these opaque output formats; PBM applies monochrome threshold and PGM converts to grayscale.
+- **Unix ar (.ar/.a/.deb):** bounded archive input, including Debian ar-style packages and safe GNU/BSD long names, convertible into ZIP/TAR/compressed TAR when destination constraints allow. A `.deb` is converted as an archive of its members; nested package payloads are not installed or interpreted.
+
+See [Phase 11 exact boundaries and tests](docs/phase-11.md). Run `npm run test:phase11` with a local dev server. Existing MorphSurface/UI and local-only policy remain in place.
+
+## Phase 10 - local video conversion
+
+- **MP4 / MOV / WebM / MKV:** inputs and outputs, with browser-capability-gated H.264, H.265/HEVC, VP8, VP9 and AV1 video codecs. The output container must support the selected codec.
+- **Auto, Remux, Transcode:** Auto copies compatible tracks when possible and transcodes otherwise. Remux forces packet-copy, without quality loss; Transcode re-encodes video at the selected quality. Video/audio track counts, duration, dimensions and output video codec are verified after conversion.
+- Video input allows **exactly one video track, zero or one audio track, and no other tracks**. Subtitles, extra tracks and unsupported media fail explicitly; nothing is quietly discarded. Video processing stays in a local worker. OPFS-backed streaming output has a 2 GiB safety budget; small-file in-memory fallback is limited to 64 MiB.
+- Chromium + FFprobe verified MP4 → MKV lossless remux, MP4 → WebM VP9/Opus, MP4 → MP4 H.264 re-encode and WebM → MP4 H.264/Opus. Opus inside MP4/MOV has reduced compatibility on older players. WebCodecs depends on browser/OS support; codec choices are not a promise of encoding availability.
+
+See [Phase 10 video design, tests and limitations](docs/phase-10.md). Run `npm run test:phase10` while the dev server is running. **No PDF, eBook or Office document conversion in Phase 10.**
 
 ## Phase 9 - additional codecs and formats
 
@@ -8,7 +25,7 @@ Minimal appearance, fluid interaction. A fully client-side image, audio and arch
 - **HEIC/HEIF:** HEVC-coded single-image input (output PNG/JPEG/WebP/JXL/BMP/ICO/TIFF, subject to verified encoders). Tested with two real HEIC images, including a 3992 x 2992 photograph. HEIC/HEIF output is not implemented.
 - **7z, RAR3/RAR5, XZ/TAR.XZ, BZip2/TAR.BZ2, Zstandard/TAR.ZST:** input support. ZIP/TAR/TAR.GZ and conditional single-file GZIP remain available as outputs; **TAR.XZ and TAR.BZ2 outputs** now work for archives with regular files only, representable TAR paths and up to 64 MiB of expanded file data. Six fixture variants were converted to ZIP; RAR3 -> TAR.XZ / TAR.BZ2 -> ZIP round trips were checked in Chromium.
 - All new archive inputs are bounded to 64 MiB compressed and 64 MiB extracted data. Source paths and payloads are validated; filesystem extraction, password decoding and retention of libarchive-only modification dates are not supported.
-- Animated images, multi-image HEIF, video and document conversion remain future work.
+- Animated images, multi-image HEIF and document conversion remain future work (video is introduced in Phase 10).
 
 **The earlier 134-route Phase 8 matrix is a baseline, not the full Phase 9 claim.** Phase 9's larger registry is *not* yet a fully tested all-pairs matrix. See [Phase 9 implementation, licenses, tests and exact limitations](docs/phase-9.md). Run `npm run test:phase9`.
 
@@ -33,7 +50,7 @@ Same-format re-encoding is supported. Output choices are restricted to encoders 
 - PNG, WebP, BMP V4 and ICO retain transparency. JPEG composites transparency onto **white**.
 - JPEG / WebP and a verified AVIF encoder expose quality from 1–100.
 - Dimensions are retained in display orientation. EXIF orientations 1–8 are normalized once, including mirrored images; the output does not retain the original EXIF orientation/GPS or other source metadata.
-- Animated GIF/PNG/WebP/AVIF, video and documents are **not supported**. Animated images are rejected rather than silently flattened.
+- Animated GIF/PNG/WebP/AVIF and documents are **not supported** in the image adapter; video is handled separately by Phase 10. Animated images are rejected rather than silently flattened.
 - Browser Canvas uses its native color conversion and an 8-bit RGBA pipeline. This is not an archival, 16-bit/HDR, color-profile-preserving or metadata-preserving converter.
 
 ### Audio and archives (Phase 8 baseline)
@@ -48,7 +65,7 @@ Same-format re-encoding is supported. Output choices are restricted to encoders 
 
 Audio exposes sample-rate/channel settings, target bitrate and MP3/Vorbis VBR quality. Source metadata (title/artist/cover art/etc.) is removed; newly generated encoder identification and codec delay information may remain. WAV/AIFF/FLAC output is PCM16, not archival precision preservation. Opus uses 48000 Hz; incompatible explicit MP3/Opus UI settings are adjusted visibly on format changes. Multiple supported audio files are converted sequentially with shared settings and downloaded as one real ZIP (32 files / 32 MiB total). ZIP offers Store or Deflate, not fictitious numeric levels. Archives retain bytes, directories and file times where possible; GZIP output drops directory entries and does not store the original filename. No filesystem extraction occurs. All jobs use the existing cancellable worker/deadline lifecycle.
 
-See **[compressed-audio matrix, licensing, payload sizes and limits](docs/compressed-audio.md)** and [archive/image details](docs/continuous-development.md). Compressed audio is capped at **8 million interleaved decoded samples** (about **83 seconds at 48 kHz stereo**); it is a bounded clip converter, not a long-form streaming transcoder. AAC/M4A are native AAC-LC paths, not a bundled AAC WASM fallback. WMA, ALAC, video/multiple audio streams, and fragmented MP4 are not implemented. 7z, RAR and Zstandard are input-only; XZ and BZip2 additionally support TAR.XZ and TAR.BZ2 output when no explicit directories are present (see Phase 9).
+See **[compressed-audio matrix, licensing, payload sizes and limits](docs/compressed-audio.md)** and [archive/image details](docs/continuous-development.md). Compressed audio is capped at **8 million interleaved decoded samples** (about **83 seconds at 48 kHz stereo**); it is a bounded clip converter, not a long-form streaming transcoder. AAC/M4A are native AAC-LC paths, not a bundled AAC WASM fallback. WMA, ALAC and multi-track audio conversion are not implemented in the standalone audio adapter. The Phase 10 video adapter handles a single video track and up to one audio track; fragmented MP4 is not a guaranteed input. 7z, RAR and Zstandard are input-only; XZ and BZip2 additionally support TAR.XZ and TAR.BZ2 output when no explicit directories are present (see Phase 9).
 
 ### Extended image format boundaries
 

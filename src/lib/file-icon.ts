@@ -4,7 +4,7 @@ const extensionGroups: Record<string, string> = {
 	svg: 'svg',
 	audio: '8svx aa aac aax ac3 aif aiff alac amr ape caf cda cdr dss ec3 efs enc flac flp gsm it m3u m3u8 m4a m4b m4p m4r mid mka mmf mod mp3 mpc mscz mtm mui musx mxl nsa ogg opus pkf qcp ra rf64 rip sdt sesx sf2 stap tg voc vqf wav weba wfp wma wpl wproj wv',
 	video: 'webm mkv flv vob ogv gifv avi mov qt wmv yuv rm rmvb mp4 m4v mpg mp2 mpeg mpe mpv m2v',
-	zip: 'zip z tar gz xz lz liz lzma lzma2 lz4 lz5 lzh lha br bz2 bzip2 gzip brotli 7z 001 rar far tz taz tlz txz tgz tpz tbz tbz2 zst zstd tzst tzstd cab cpio rpm deb arj wim swm esd fat xar ntfs hfs squashfs apfs',
+	zip: 'zip z tar gz xz ar a deb lz liz lzma lzma2 lz4 lz5 lzh lha br bz2 bzip2 gzip brotli 7z 001 rar far tz taz tlz txz tgz tpz tbz tbz2 zst zstd tzst tzstd cab cpio rpm deb arj wim swm esd fat xar ntfs hfs squashfs apfs',
 	pdf: 'pdf',
 	document: 'txt',
 	word: 'doc docx rtf odt',
@@ -29,9 +29,11 @@ const mimeIcons: Record<string, string> = {
 	'application/vnd.ms-powerpoint': 'powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'powerpoint'
 };
 
-export function fileIcon(mime: string, category?: 'audio' | 'archive', filename = ''): string {
+export function fileIcon(mime: string, category?: 'audio' | 'archive' | 'video' | 'ebook', filename = ''): string {
 	if (category === 'audio') return 'audio';
 	if (category === 'archive') return 'zip';
+	if (category === 'video') return 'video';
+	if (category === 'ebook') return 'epub';
 	if (Object.hasOwn(mimeIcons, mime)) return mimeIcons[mime];
 	if (mime.startsWith('image/')) return 'image';
 	if (mime.startsWith('audio/')) return 'audio';

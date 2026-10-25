@@ -12,8 +12,8 @@ export const imageEncoders:readonly CodecEngine<OffscreenCanvas,Blob,ImageEncode
 	supports:inputReason,
 	load:async()=>({run:(await import('./native-image.ts')).encodeNativeImage})
 },{
-	capability:{id:'builtin-image',kind:'builtin',operation:'encode',formats:['BMP','ICO','TIFF'],
-		quality:{BMP:'lossless',ICO:'lossless',TIFF:'lossless'},containers:['BMP V4','ICO/PNG','classic TIFF'],
+	capability:{id:'builtin-image',kind:'builtin',operation:'encode',formats:['BMP','ICO','TIFF','PBM','PGM','PPM'],
+		quality:{BMP:'lossless',ICO:'lossless',TIFF:'lossless',PBM:'lossless',PGM:'lossless',PPM:'lossless'},containers:['BMP V4','ICO/PNG','classic TIFF','Netpbm P4/P5/P6'],
 		requirements:['offscreenCanvas'],limits:['24/32-bit BMP decode; RGBA BMP encode','ICO output: 16/32/48/256 px','Single-page uncompressed RGBA8 TIFF','256 MiB estimated image working set; 64 MiB output']},
 	supports:(q,env)=>inputReason(q)??(q.format==='ICO'&&!env.canvasEncoding?'ICO PNG frames require Canvas encoding.':undefined),
 	load:async()=>({run:(await import('./builtin-image.ts')).encodeBuiltinImage})

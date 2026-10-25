@@ -40,7 +40,7 @@ export class Converter {
 		if (!state.file) return;
 		const controller = this.controller = new AbortController();
 		try {
-			const result = await this.engine.run({ file: state.file, format: state.format, quality: state.quality, ...(state.frame === undefined ? {} : {frame:state.frame}), ...(state.analysis?.info.category==='audio' ? {audio:{...state.audio},files:state.files?Array.from(state.files):undefined} : {}), ...(state.analysis?.info.category==='archive' ? {archive:{...state.archive}} : {}) }, controller.signal,
+			const result = await this.engine.run({ file: state.file, format: state.format, quality: state.quality, ...(state.frame === undefined ? {} : {frame:state.frame}), ...(state.analysis?.info.category==='audio' ? {audio:{...state.audio},files:state.files?Array.from(state.files):undefined} : {}), ...(state.analysis?.info.category==='archive' ? {archive:{...state.archive}} : {}), ...(state.analysis?.info.category==='video' ? {video:{...state.video}} : {}) }, controller.signal,
 				progress => this.send({ type: 'TICK', runId: state.runId, progress: progress.percent, stage: progress.stage }));
 			if (!controller.signal.aborted) this.send({ type: 'DONE', runId: state.runId, result });
 			else discardResult(result);

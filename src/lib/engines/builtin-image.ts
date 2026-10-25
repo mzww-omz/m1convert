@@ -9,6 +9,10 @@ function context(canvas:OffscreenCanvas) {
 export async function encodeBuiltinImage(canvas:OffscreenCanvas,q:ImageEncodeOptions,job:EngineContext):Promise<Blob> {
 	job.signal.throwIfAborted();
 	const mime=imageFormats.find(f=>f.id===q.format)!.mime;
+	if(['PBM','PGM','PPM'].includes(q.format)) {
+		const {encodePnm}=await import('../adapters/pnm.ts');
+		return new Blob([encodePnm(context(canvas).getImageData(0,0,canvas.width,canvas.height),q.format as 'PBM'|'PGM'|'PPM')],{type:mime});
+	}
 	if(q.format==='TIFF') {
 		const {encodeTiff}=await import('../adapters/tiff.ts');
 		return new Blob([encodeTiff(context(canvas).getImageData(0,0,canvas.width,canvas.height))],{type:mime});

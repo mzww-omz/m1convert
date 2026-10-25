@@ -1,4 +1,6 @@
-import { adapters, detectFormat, planConversion } from './registry.ts';
+import { adapters, detectFormat, planConversion, formatById } from './registry.ts';
+import { ascii } from './formats.ts';
+import { isIsoBmff } from './video-formats.ts';
 import { LIMITS } from './image-format.ts';
 import { compatibilityWarnings } from './compatibility.ts';
 import {detectEnvironment,detectBrowserCapabilities} from './codec-registry.ts';
@@ -31,8 +33,16 @@ port.onmessage = async ({ data }) => {
 			})
 		};
 		const file = data.type === 'inspect' ? data.file : data.request.file;
-		const input = detectFormat(new Uint8Array(await file.slice(0, 4096).arrayBuffer()));
-		if (!input) throw new Error('This file is not supported. Choose a supported image, PCM audio or archive.');
+		const head = new Uint8Array(await file.slice(0, 4096).arrayBuffer());
+		let input = detectFormat(head);
+		// M4A and video MP4 share the ISO BMFF signature. Inspect actual tracks before routing.
+		if(input?.id==='M4A' && isIsoBmff(head)) {
+			const { Input, BlobSource, ALL_FORMATS } = await import('mediabunny');
+			const probe = new Input({ source: new BlobSource(file), formats: ALL_FORMATS });
+			try { if((await probe.getVideoTracks()).length)input=formatById(ascii(head,8,4)==='qt  '?'MOV':'MP4'); }
+			finally { probe.dispose(); }
+		}
+		if (!input) throw new Error('This file type is not supported. Choose an image, audio, video or archive.');
 		if(file.size>LIMITS.maxFileBytes&&(input.mime.startsWith('image/')||input.mime.startsWith('audio/')))throw new Error('This image/audio engine needs a full input buffer (64 MiB budget). Split the source; streaming archives have a separate disk-backed path.');
 		const definition = data.type === 'inspect'
 			? adapters.find(a => a.inputs.includes(input.id))
@@ -40,8 +50,8 @@ port.onmessage = async ({ data }) => {
 		if (!definition) throw new Error('This conversion is not supported.');
 		const adapter = await definition.load();
 		if (data.type === 'inspect') {
-			const category=input.mime.startsWith('image/')?'image':input.mime.startsWith('audio/')?'audio':undefined;
-			const analysis=await adapter.inspect(file,stage,category?data.verifiedOutputs?.[category]:undefined,context);
+			const category=input.id==='EPUB'?'ebook':input.mime.startsWith('image/')?'image':input.mime.startsWith('audio/')?'audio':input.mime.startsWith('video/')?'video':undefined;
+			const analysis=await adapter.inspect(file,stage,category==='image'||category==='audio'?data.verifiedOutputs?.[category]:undefined,context);
 			port.postMessage({ type:'analyzed', analysis:{...analysis,codecEngines:(category==='image'?imageEncoders:category==='audio'?[...audioDecoders,...audioEncoders]:[]).map(e=>e.capability),environment:detectEnvironment(),browserCapabilities:detectBrowserCapabilities(),warnings:[...(analysis.warnings??[]),...compatibilityWarnings(file,analysis.info.format)]} });
 		}
 		else port.postMessage({ type: 'converted', result: await adapter.run(data.request, stage,context) });
