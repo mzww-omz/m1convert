@@ -50,7 +50,7 @@ port.onmessage = async ({ data }) => {
 		if (!definition) throw new Error('This conversion is not supported.');
 		const adapter = await definition.load();
 		if (data.type === 'inspect') {
-			const category=input.mime.startsWith('image/')?'image':input.mime.startsWith('audio/')?'audio':input.mime.startsWith('video/')?'video':undefined;
+			const category=input.id==='EPUB'?'ebook':input.mime.startsWith('image/')?'image':input.mime.startsWith('audio/')?'audio':input.mime.startsWith('video/')?'video':undefined;
 			const analysis=await adapter.inspect(file,stage,category==='image'||category==='audio'?data.verifiedOutputs?.[category]:undefined,context);
 			port.postMessage({ type:'analyzed', analysis:{...analysis,codecEngines:(category==='image'?imageEncoders:category==='audio'?[...audioDecoders,...audioEncoders]:[]).map(e=>e.capability),environment:detectEnvironment(),browserCapabilities:detectBrowserCapabilities(),warnings:[...(analysis.warnings??[]),...compatibilityWarnings(file,analysis.info.format)]} });
 		}

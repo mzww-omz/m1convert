@@ -19,7 +19,7 @@ export interface ConversionResult {
 	temporaryFile?:string;
 	resources?:{mode:string;bytesWritten:number;maxChunkBytes:number;retainedBytes:number};
 }
-export interface AssetInfo { format: string; mime: string; width?: number; height?: number; frames?: {width:number;height:number}[]; frame?:number; category?:'audio'|'archive'|'video'; entries?:number; sampleRate?:number; channels?:number; duration?:number; codec?:string; audioCodec?:string }
+export interface AssetInfo { format: string; mime: string; width?: number; height?: number; frames?: {width:number;height:number}[]; frame?:number; category?:'audio'|'archive'|'video'|'ebook'; entries?:number; sampleRate?:number; channels?:number; duration?:number; codec?:string; audioCodec?:string }
 export interface Analysis { info: AssetInfo; outputs: string[]; preview: Blob | null; warnings?:string[]; codecEngines?:EngineCapability[]; environment?:EngineEnvironment; browserCapabilities?:BrowserCapabilities }
 export type StageReporter=(stage:Stage,percent?:number)=>void;
 export interface EngineAdapter {

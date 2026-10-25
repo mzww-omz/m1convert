@@ -1,6 +1,7 @@
 import { imageFormats, imageOutputs, type FormatDefinition } from './formats.ts';
 import type { EngineAdapter } from './engine-types.ts';
 import { archiveFormats } from './archive-formats.ts';
+import { ebookFormats } from './ebook-formats.ts';
 import { audioFormats } from './audio-formats.ts';
 import { videoFormats } from './video-formats.ts';
 
@@ -17,6 +18,9 @@ export const adapters: readonly AdapterDefinition[] = [{
 	id: 'canvas', formats: imageFormats,
 	inputs: imageFormats.map(f => f.id), outputs: imageOutputs.map(f => f.id),
 	load: async () => (await import('./adapters/canvas-codec.ts')).canvasCodec
+}, {
+	id:'ebook', formats:ebookFormats, inputs:['EPUB'], outputs:['TXT'],
+	load:async ()=>(await import('./adapters/epub.ts')).epubCodec
 }, {
 	id:'archive', formats:archiveFormats, inputs:archiveFormats.filter(f=>!['TAR.XZ','TAR.BZ2'].includes(f.id)).map(f=>f.id), outputs:['ZIP','TAR','TAR.GZ','GZIP','TAR.XZ','TAR.BZ2'],
 	load:async ()=>(await import('./adapters/archive.ts')).archiveCodec
