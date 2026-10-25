@@ -2,6 +2,7 @@ import { imageFormats, imageOutputs, type FormatDefinition } from './formats.ts'
 import type { EngineAdapter } from './engine-types.ts';
 import { archiveFormats } from './archive-formats.ts';
 import { audioFormats } from './audio-formats.ts';
+import { videoFormats } from './video-formats.ts';
 
 export interface AdapterDefinition {
 	id: string;
@@ -25,6 +26,9 @@ export const adapters: readonly AdapterDefinition[] = [{
 }, {
 	id:'audio',formats:audioFormats,inputs:audioFormats.map(f=>f.id),outputs:['WAV','AIFF','MP3','FLAC','OGG','OPUS','AAC','M4A'],
 	load:async ()=>(await import('./adapters/audio-codec.ts')).audioCodec
+}, {
+	id:'video', formats:videoFormats, inputs:videoFormats.map(f=>f.id),outputs:videoFormats.map(f=>f.id),
+	load:async ()=>(await import('./adapters/video.ts')).videoCodec
 }];
 export const formats = [...new Map(adapters.flatMap(a => a.formats).map(f => [f.id, f])).values()];
 export const formatById = (id: string) => formats.find(f => f.id === id);

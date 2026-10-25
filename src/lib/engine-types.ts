@@ -6,7 +6,8 @@ export const stageLabels: Record<Stage, string> = {
 };
 export interface AudioSettings { sampleRate:number; channels:number; bitrate?:number; mode?:'bitrate'|'quality' }
 export interface ArchiveSettings { compression:'store'|'deflate' }
-export interface ConversionRequest { file: File; format: string; quality: number; frame?: number; audio?:AudioSettings; archive?:ArchiveSettings; files?:File[] }
+export interface VideoSettings { mode:'auto'|'remux'|'transcode'; codec:'auto'|'avc'|'vp8'|'vp9'|'hevc'|'av1' }
+export interface ConversionRequest { file: File; format: string; quality: number; frame?: number; audio?:AudioSettings; archive?:ArchiveSettings; video?:VideoSettings; files?:File[] }
 export interface ConversionResult {
 	blob: Blob;
 	name: string;
@@ -18,7 +19,7 @@ export interface ConversionResult {
 	temporaryFile?:string;
 	resources?:{mode:string;bytesWritten:number;maxChunkBytes:number;retainedBytes:number};
 }
-export interface AssetInfo { format: string; mime: string; width?: number; height?: number; frames?: {width:number;height:number}[]; frame?:number; category?:'audio'|'archive'; entries?:number; sampleRate?:number; channels?:number; duration?:number; codec?:string }
+export interface AssetInfo { format: string; mime: string; width?: number; height?: number; frames?: {width:number;height:number}[]; frame?:number; category?:'audio'|'archive'|'video'; entries?:number; sampleRate?:number; channels?:number; duration?:number; codec?:string; audioCodec?:string }
 export interface Analysis { info: AssetInfo; outputs: string[]; preview: Blob | null; warnings?:string[]; codecEngines?:EngineCapability[]; environment?:EngineEnvironment; browserCapabilities?:BrowserCapabilities }
 export type StageReporter=(stage:Stage,percent?:number)=>void;
 export interface EngineAdapter {
