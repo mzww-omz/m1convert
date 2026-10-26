@@ -1,5 +1,7 @@
 # Phase 11 — EPUB text, Netpbm images and Unix ar
 
+**Follow-up:** EPUB → HTML is now implemented as a separate static, standalone output. See [EPUB HTML: fidelity, security and QA](epub-html.md). The original TXT-only boundaries below describe Phase 11's first release.
+
 Branch: `feat/phase11-ebook-pnm-ar`. Phase 10 commits are its base; this phase does not automatically push or deploy.
 
 ## EPUB (input → plain text)
@@ -48,6 +50,6 @@ Browser verification is Chromium-based; Firefox, Safari, large real ebooks and r
 
 ## Next scopes
 
-- **High-fidelity eBook:** EPUB → reflowable HTML package with assets and sanitization; calibre-equivalent MOBI/AZW3 support requires dedicated parsers/encoders and copyright/DRM boundaries.
+- **High-fidelity eBook:** Standalone EPUB → HTML with validated embedded assets and sanitization is implemented as a follow-up; full EPUB-reader fidelity, exact fixed layout and calibre-equivalent MOBI/AZW3 support remain future work.
 - **Office/Documents:** preserve layout using a real rendering engine; don't call plaintext extraction a PDF/Office conversion.
 - **More formats:** QOI/TGA/ICNS, CAB/CPIO, and additional safe archive writers can be separate phases after tests.
